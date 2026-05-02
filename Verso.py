@@ -4,7 +4,7 @@ import os
 # 1. Page Configuration
 st.set_page_config(
     page_title="Verso",
-    page_icon="image.png", # The orange/blue part for the browser tab
+    page_icon="v.png", # The orange/blue part for the browser tab
     layout="wide"
 )
 
@@ -30,7 +30,7 @@ with st.sidebar:
     if os.path.exists("full_logo.png"):
         st.image("full_logo.png", use_container_width=True)
     else:
-        st.info("📖 Verso: The Ultimate Research Tool")
+        st.info(" Verso: The Ultimate Research Tool")
     
     st.markdown("---")
     st.write("Verso helps students find trusted, diverse perspectives through bias-cutting search logic.")
@@ -38,8 +38,8 @@ with st.sidebar:
 # 4. Main App Header
 col1, col2 = st.columns([0.1, 0.9])
 with col1:
-    if os.path.exists("Image.png"):
-        st.image("image.png", width=60)
+    if os.path.exists("v.png"):
+        st.image("v.png", width=60)
 with col2:
     st.title("Verso AI")
 
