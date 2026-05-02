@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS: The "Anti-Cut" and Layout styling
+# 2. CSS: The "Anti-Cut" styling
 st.markdown("""
     <style>
     header {visibility: hidden;}
@@ -19,23 +19,20 @@ st.markdown("""
         max-width: 95%;
     }
 
-    /* This ensures the image is NEVER cropped and keeps a slim height */
-    .banner-container {
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding-bottom: 10px;
-    }
-
+    /* This forces the image to NEVER crop or zoom */
     .banner-container img {
-        max-height: 140px; /* Fixed height to keep it a slim rectangle */
-        width: auto;
+        width: auto !important;
+        height: auto !important;
+        max-width: 100%;
+        max-height: 150px; /* Slim rectangle height */
         object-fit: contain !important;
         border-radius: 12px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    /* Theme-specific text colors for search bar */
+    /* Theme-specific text colors */
     @media (prefers-color-scheme: light) { 
         input { color: black !important; } 
     }
@@ -45,15 +42,17 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. SIDEBAR SETTINGS: Theme Control
+# 3. SIDEBAR SETTINGS: Light/Night Mode
+# This is now the ONLY place where theme settings appear
 with st.sidebar:
     st.title("⚙️ Settings")
-    st.radio("Display Mode", ["Light", "Night", "System Default"], index=2)
-    st.info("Manual theme changes can also be made in the main Streamlit menu (top right).")
+    theme = st.selectbox("Display Mode", ["System Default", "Light Mode", "Night Mode"])
+    st.info("Theme changes may require a page refresh.")
 
-# 4. THE BANNER: Cleaned and No-Cut
+# 4. THE BANNER: No-Cut Implementation
 if os.path.exists("full_logo.png"):
     st.markdown('<div class="banner-container">', unsafe_allow_html=True)
+    # Keeping use_container_width=False prevents the cutting bug
     st.image("full_logo.png") 
     st.markdown('</div>', unsafe_allow_html=True)
 else:
@@ -62,7 +61,7 @@ else:
 st.markdown("---")
 
 # 5. SEARCH & RESULTS
-query = st.text_input("Enter your research question:", placeholder="Start typing your research...")
+query = st.text_input("Enter your research question:", placeholder="What are you looking for?")
 
 if query:
     st.write(f"**Verso Logic:** Analyzing results for *'{query}'*")
