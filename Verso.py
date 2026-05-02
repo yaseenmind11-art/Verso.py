@@ -8,14 +8,15 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS: Handles no-cut images and creates CLICKABLE red buttons
+# 2. CSS: Handles no-cut images and removes all extra header spacing
 st.markdown("""
     <style>
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
+    /* Pulls the main content to the absolute top of the page */
     .block-container {
-        padding-top: 0.5rem;
+        padding-top: 0rem;
         max-width: 95%;
     }
 
@@ -25,42 +26,7 @@ st.markdown("""
         border-radius: 12px;
     }
 
-    /* Styling for the CLICKABLE red action buttons */
-    .button-container {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        padding-top: 10px;
-    }
-
-    .action-btn {
-        background-color: #ff4b4b;
-        color: white !important;
-        border-radius: 12px;
-        padding: 8px 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none !important;
-        font-family: sans-serif;
-        font-weight: bold;
-        font-size: 14px;
-        height: 40px;
-        min-width: 40px;
-        transition: background-color 0.3s;
-    }
-
-    /* Hover effect to show it's clickable */
-    .action-btn:hover {
-        background-color: #ff3333;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
-    }
-
-    .btn-square {
-        padding: 8px;
-        width: 40px;
-    }
-
+    /* Fix input text visibility for both modes */
     @media (prefers-color-scheme: light) { 
         input { color: black !important; }
     }
@@ -70,20 +36,8 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. TOP BAR: Clickable Red Action Buttons
-col_left, col_right = st.columns([7, 3])
-with col_right:
-    # Replace the "#" with your actual links (e.g., your GitHub or survey link)
-    st.markdown(f"""
-        <div class="button-container">
-            <a class="action-btn" href="https://share.example.com" target="_blank">Share</a>
-            <a class="action-btn btn-square" href="https://github.com" target="_blank" style="color: gold !important;">★</a>
-            <a class="action-btn btn-square" href="https://edit.example.com" target="_blank">✎</a>
-            <a class="action-btn btn-square" href="#">⋮</a>
-        </div>
-    """, unsafe_allow_html=True)
-
-# 4. MAIN BANNER: Proportional squeeze to prevent cutting
+# 3. MAIN BANNER: Proportional squeeze to prevent cutting
+# This column setup ensures the logo stays a slim rectangle
 left_g, center, right_g = st.columns([2.5, 5, 2.5]) 
 with center:
     if os.path.exists("full_logo.png"):
@@ -95,7 +49,7 @@ with center:
 
 st.markdown("---")
 
-# 5. SEARCH & RESULTS SECTION
+# 4. SEARCH & RESULTS SECTION (The Default Part)
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
@@ -104,10 +58,15 @@ if query:
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("✅ Verified Trusted")
-        st.markdown("**[IAEA: Nuclear Science](https://iaea.org)**")
+        # Example trusted result
+        st.markdown("**[IAEA: Nuclear Science and Technology](https://iaea.org)**")
         st.caption("International Atomic Energy Agency. (2024). *Nuclear science and technology*. IAEA.org")
+        st.write("")
+        st.markdown("**[Britannica: Properties of Water](https://britannica.com)**")
+        st.caption("Britannica Editors. (2023). *Properties of water*. Britannica.")
         
     with col2:
         st.subheader("🌐 Other Perspectives")
+        # Example other perspective result
         st.markdown("**[Wikipedia: Global Water Access](https://wikipedia.org)**")
         st.caption("Wikipedia Contributors. (2026). *Global water access*. Wikipedia.")
