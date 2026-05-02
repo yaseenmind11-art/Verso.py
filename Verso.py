@@ -9,19 +9,19 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. THEME ENGINE: Logic to switch colors
-if 'theme' not in st.session_state:
-    st.session_state.theme = "🌓 Auto (System)"
+# 2. THEME ENGINE: Force-refresh state
+if 'theme_state' not in st.session_state:
+    st.session_state.theme_state = "🌓 Auto (System)"
 
 with st.sidebar:
     st.markdown("## ⚙️ Settings")
+    # Using 'key' helps Streamlit track the change properly
     theme_choice = st.radio(
         label="Display Preference",
         options=["☀️ Light Mode", "🌙 Night Mode", "🌓 Auto (System)"],
-        key="theme_selector",
-        label_visibility="collapsed"
+        key="theme_selector"
     )
-    st.session_state.theme = theme_choice
+    st.session_state.theme_state = theme_choice
     st.markdown("---")
     st.markdown("### 🛠️ Active Extensions")
     st.info("Verso Pro Citator: **Active**")
@@ -29,33 +29,37 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Verso Logic v1.2 | Professional Edition")
 
-# 3. DYNAMIC CSS: Changes based on theme_choice
-if st.session_state.theme == "☀️ Light Mode":
-    bg_color = "#FFFFFF"
-    text_color = "#1A1A1A"
-    card_bg = "#F8F9FA"
-    border_color = "#E9ECEF"
-elif st.session_state.theme == "🌙 Night Mode":
-    bg_color = "#0E1117"
-    text_color = "#FAFAFA"
-    card_bg = "#161B22"
-    border_color = "#30363D"
+# 3. DYNAMIC COLOR MAPPING
+if st.session_state.theme_state == "☀️ Light Mode":
+    bg = "#FFFFFF"
+    txt = "#1A1A1A"
+    card = "#F8F9FA"
+    brd = "#E9ECEF"
+    inp_bg = "#FFFFFF"
+elif st.session_state.theme_state == "🌙 Night Mode":
+    bg = "#0E1117"
+    txt = "#FAFAFA"
+    card = "#161B22"
+    brd = "#30363D"
+    inp_bg = "#0E1117"
 else:
-    # Auto/System logic defaults
-    bg_color = "transparent" 
-    text_color = "inherit"
-    card_bg = "rgba(255, 255, 255, 0.05)"
-    border_color = "rgba(255, 255, 255, 0.1)"
+    # System Auto - Transparent colors allow Streamlit's native theme to peek through
+    bg = "transparent" 
+    txt = "inherit"
+    card = "rgba(255, 255, 255, 0.05)"
+    brd = "rgba(255, 255, 255, 0.1)"
+    inp_bg = "rgba(0,0,0,0.1)"
 
+# 4. INJECTED CSS
 st.markdown(f"""
     <style>
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     
-    /* Apply Theme Colors */
+    /* Root App Background */
     .stApp {{
-        background-color: {bg_color};
-        color: {text_color};
+        background-color: {bg} !important;
+        color: {txt} !important;
     }}
 
     .block-container {{
@@ -63,52 +67,50 @@ st.markdown(f"""
         max-width: 95%;
     }}
 
-    /* Result Card Styling */
+    /* Card Styling */
     .result-card {{
-        background-color: {card_bg};
-        border: 1px solid {border_color};
-        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.1);
+        background-color: {card} !important;
+        border: 1px solid {brd} !important;
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 20px;
-        color: {text_color};
+        color: {txt} !important;
     }}
 
     .citation-output {{
-        background-color: {card_bg};
-        border-left: 6px solid #00a1ff;
+        background-color: {card} !important;
+        border-left: 6px solid #00a1ff !important;
         border-radius: 8px;
         padding: 25px;
         margin-top: 25px;
-        color: {text_color};
+        color: {txt} !important;
     }}
 
+    /* Input Fields */
+    .stTextInput>div>div>input {{
+        background-color: {inp_bg} !important;
+        color: {txt} !important;
+        border: 1px solid {brd} !important;
+    }}
+
+    /* Banner Handling */
     .banner-img img {{
         object-fit: contain !important;
         border-radius: 12px;
         padding: 5px;
     }}
 
-    /* Professional Buttons */
-    div.stButton > button:first-child {{
+    /* Buttons */
+    div.stButton > button {{
         background-color: #00a1ff !important;
         color: white !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 2rem !important;
-        font-weight: 600 !important;
         border: none !important;
-    }}
-    
-    /* Input Styling */
-    .stTextInput>div>div>input {{
-        background-color: {card_bg} !important;
-        color: {text_color} !important;
-        border: 1px solid {border_color} !important;
+        font-weight: 600 !important;
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# 4. MAIN BANNER
+# 5. MAIN CONTENT
 left_gap, center, right_gap = st.columns([2.5, 5, 2.5]) 
 with center:
     if os.path.exists("full_logo.png"):
@@ -116,63 +118,25 @@ with center:
         st.image("full_logo.png", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
     else:
-        st.markdown("<h1 style='text-align: center; color: #00a1ff; font-family: sans-serif; letter-spacing: -1px;'>VERSO AI</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; color: #00a1ff;'>VERSO AI</h1>", unsafe_allow_html=True)
 
 st.markdown("---")
 
-# 5. RESEARCH & CITATION TABS
-tab1, tab2, tab3 = st.tabs(["🔍 Intelligent Search", "📜 Verso Pro Citator", "📊 Research Tools"])
+tab1, tab2 = st.tabs(["🔍 Intelligent Search", "📜 Verso Pro Citator"])
 
 with tab1:
-    query = st.text_input("What are we researching today?", placeholder="Ask any question...")
-    
+    query = st.text_input("Research query:", placeholder="Ask anything...", key="search_bar")
     if query:
         st.markdown(f"### ⚡ Analysis: {query}")
-        
-        with st.container():
-            st.markdown(f"""
-            <div class='result-card'>
-                <strong>📊 Executive Summary</strong><br>
-                Initial scans indicate multiple high-authority perspectives on this topic. 
-                Below you will find peer-reviewed data and global consensus reports.
-            </div>
-            """, unsafe_allow_html=True)
-
-        trusted, other = st.columns(2)
-        with trusted:
-            st.markdown("#### ✅ Verified Sources")
-            st.markdown("* **[IAEA](https://iaea.org)**\n* **[Nature Journal](https://nature.com)**")
-        with other:
-            st.markdown("#### 🌐 Broad Perspectives")
-            st.markdown("* **[Wikipedia](https://wikipedia.org)**\n* **[Reuters](https://reuters.com)**")
+        st.markdown(f"<div class='result-card'><strong>📊 Executive Summary</strong><br>Scanning global databases for results...</div>", unsafe_allow_html=True)
 
 with tab2:
     st.markdown("### 📜 APA Citation Generator")
-    cite_url = st.text_input("Search for article by URL:", placeholder="https://example.com/article-link")
-    
-    if st.button("Cite Source"):
-        if cite_url and ("http" in cite_url):
-            today_date = datetime.now().strftime("%Y, %B %d")
-            year_val = datetime.now().strftime("%Y")
+    cite_url = st.text_input("Enter URL:", placeholder="https://...", key="cite_bar")
+    if st.button("Generate Citation"):
+        if cite_url and "http" in cite_url:
             clean_domain = cite_url.split("//")[-1].split("/")[0].replace("www.", "").capitalize()
-            slug = cite_url.rstrip("/").split("/")[-1].replace("-", " ").replace("_", " ")
-            title_guess = slug.capitalize() if len(slug) > 2 else "Web Article"
-            
-            apa_citation = f"{clean_domain}. ({year_val}, {datetime.now().strftime('%B %d')}). *{title_guess}*. {clean_domain}. {cite_url}"
-            
-            st.markdown('<div class="citation-output">', unsafe_allow_html=True)
-            st.markdown("**Your Citation (APA 7th Edition):**")
-            st.code(apa_citation, language="text")
-            st.success("Citation generated successfully!")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-with tab3:
-    st.subheader("📊 Advanced Research Toolkit")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.metric(label="Search Accuracy", value="98.4%", delta="0.2%")
-    with col_b:
-        st.write("✅ Database: Connected")
-        st.write("✅ Citator: Updated")
+            apa = f"{clean_domain}. ({datetime.now().year}). *Web Source*. {cite_url}"
+            st.markdown(f'<div class="citation-output"><strong>Your APA Citation:</strong><br><code>{apa}</code></div>', unsafe_allow_html=True)
 
 st.markdown("---")
