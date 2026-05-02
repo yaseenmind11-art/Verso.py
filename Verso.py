@@ -103,7 +103,7 @@ st.markdown("---")
 tab1, tab2, tab3 = st.tabs(["🔍 Intelligent Search", "📜 Verso Pro Citator", "📊 Research Tools"])
 
 with tab1:
-    query = st.text_input("What are we researching today?", placeholder="Ask a complex question...")
+    query = st.text_input("What are we researching today?", placeholder="Ask any question...")
     
     if query:
         st.markdown(f"### ⚡ Analysis: {query}")
