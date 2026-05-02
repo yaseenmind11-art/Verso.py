@@ -1,90 +1,109 @@
 import streamlit as st
 import os
 
-# 1. TAB CONFIGURATION: Must be the very first line after imports
-# This sets the text in the browser tab and the 'icon.png' logo
+# --- 1. CONFIGURATION (Combined) ---
+# Must be the absolute first line
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# 2. CSS: Controls alignment, prevents cutting, and defines automatic theme colors
-st.markdown("""
-    <style>
-    /* Hides default Streamlit menu and footer to keep the design clean */
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* Pulls everything up to the very top and ensures some side padding */
-    .block-container {
-        padding-top: 0rem;
-        max-width: 95%;
-    }
+# --- 2. THEME STATE LOGIC ---
+def reset_everything():
+    st.session_state.bg_p = "#0e1117"
+    st.session_state.side_p = "#262730"
+    st.session_state.text_p = "#fafafa"
+    st.session_state.accent_p = "#FF4B4B"
 
-    /* Strict 'No-Cut' and 'No-Sparkle' logic for the banner */
-    .banner-img img {
+def Light_Mode():
+    st.session_state.bg_p = "#FFFFFF"
+    st.session_state.side_p = "#F0F2F6"
+    st.session_state.text_p = "#262730"
+    st.session_state.accent_p = "#FF4B4B"
+
+# Initialize session state for colors if not present
+if "bg_p" not in st.session_state:
+    reset_everything()
+
+# --- 3. SIDEBAR (Merged Settings) ---
+with st.sidebar:
+    st.title("⚙️ Settings")
+    
+    st.subheader("Theme Customization 🎨")
+    bgcolorpick = st.color_picker("• Background color", key="bg_p")
+    sidebgcolorpick = st.color_picker("• Sidebar background", key="side_p")
+    textcolorpick = st.color_picker("• Text color", key="text_p")
+    primarycolorpick = st.color_picker("• Accent color", key="accent_p")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.button("Dark Mode", on_click=reset_everything, use_container_width=True)
+    with col2:
+        st.button("Light Mode", on_click=Light_Mode, use_container_width=True)
+
+    st.markdown("---")
+    st.markdown("### Version Info")
+    st.markdown("**Verso Logic v1.3**")
+
+# --- 4. CSS (Merged & Anti-Cut) ---
+st.markdown(f"""
+    <style>
+    /* 1. Global Theme Injection */
+    .stApp {{ background-color: {bgcolorpick}; }}
+    section[data-testid="stSidebar"] {{ background-color: {sidebgcolorpick} !important; }}
+    .stApp, p, h1, h2, h3, span {{ color: {textcolorpick} !important; }}
+    
+    /* Buttons */
+    button, [data-baseweb="button"] {{ 
+        background-color: {primarycolorpick} !important; 
+        color: white !important; 
+    }}
+
+    /* 2. Banner/Layout Clean-up */
+    header {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    .block-container {{ padding-top: 0rem; max-width: 95%; }}
+
+    /* ANTI-CUT LOGIC: Ensures banner is slim and never chopped */
+    .banner-container img {{
+        width: auto !important;
+        height: auto !important;
+        max-width: 100%;
+        max-height: 160px; 
         object-fit: contain !important;
         border-radius: 12px;
-        /* Ensures the logo has breathing room to prevent cutting on mobile */
-        padding: 5px;
-    }
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }}
 
-    /* Auto-Theme color switching for search input and text */
-    @media (prefers-color-scheme: light) {
-        input { color: black !important; }
-        .block-container { color: #222 !important; }
-    }
-    @media (prefers-color-scheme: dark) {
-        input { color: #bbbbbb !important; }
-        .block-container { color: #eee !important; }
-    }
+    /* Input field styling */
+    .stTextInput>div>div>input {{
+        background-color: #F0F2F6 !important;
+        color: #31333F !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
-# 3. SETTINGS IN THE SIDEBAR (for manual Light/Night choice)
-# While Streamlit controls the theme globally in the top-right menu, 
-# this acts as a clear status indicator for the user's manual override.
-with st.sidebar:
-    st.markdown("## ⚙️ Settings")
-    st.markdown("Select your display preference:")
-    
-    # We use query params to track this choice and enforce it via CSS if needed,
-    # but the primary setting is Streamlit's built-in theme engine.
-    theme_choice = st.radio(
-        label="Theme",
-        options=["☀️ Light Mode", "🌙 Night Mode", "🌓 Auto (System)"],
-        index=2,  # Default to system choice
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
-    st.markdown("### Version Info")
-    st.markdown("**Verso Logic v1.2**\n(C) 2026 Verso Tools")
-
-# 4. MAIN BANNER: Proportional squeeze to prevent cutting
-# We use columns to create dead space on the sides. 
-# This forces the main logo to be a slim rectangle that never fills the screen or cuts text.
-left_gap, center, right_gap = st.columns([2.5, 5, 2.5]) 
-with center:
-    if os.path.exists("full_logo.png"):
-        st.markdown('<div class="banner-img">', unsafe_allow_html=True)
-        # Note: If the actual image file 'full_logo.png' has the white Gemini sparkle in it,
-        # it cannot be removed with code; you must use an edited image file.
-        st.image("full_logo.png", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.title("Verso AI")
+# --- 5. MAIN CONTENT (The Banner) ---
+# Using the single container + max-height CSS to stop the 'Cutting' bug
+if os.path.exists("full_logo.png"):
+    st.markdown('<div class="banner-container">', unsafe_allow_html=True)
+    st.image("full_logo.png") 
+    st.markdown('</div>', unsafe_allow_html=True)
+else:
+    st.title("Verso AI")
 
 st.markdown("---")
 
-# 5. SEARCH SECTION
+# --- 6. SEARCH & RESULTS ---
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
     st.write(f"**Verso Logic:** Results for *'{query}'*")
     
-    # Simple examples for the trusted/other columns
     trusted, other = st.columns(2)
     with trusted:
         st.subheader("✅ Verified Trusted")
