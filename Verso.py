@@ -8,25 +8,32 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS for the Sleek Rectangle Look
+# 2. CSS for the "Stretched" Rectangle Look
 st.markdown("""
     <style>
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
+    /* This is the magic part: it removes the side margins of the app */
     .block-container {
-        padding-top: 1rem;
-        max-width: 95%;
+        padding-top: 0rem;
+        padding-left: 0rem;
+        padding-right: 0rem;
+        max-width: 100%;
     }
 
-    /* This forces the image into a wide rectangle and prevents cutting */
+    /* This forces the image to stretch across the whole top bar */
     .stImage > img {
-        width: 100%;
-        max-height: 250px; /* Limits the height so it stays a rectangle */
-        object-fit: contain; /* Ensures the whole logo fits without being squished */
+        width: 100vw; /* 100% of the Viewport Width */
+        max-height: 200px; /* Keeps it a thin rectangle so it doesn't get too tall */
+        object-fit: cover; /* This stretches/crops it to fill the rectangle perfectly */
         display: block;
-        margin-left: auto;
-        margin-right: auto;
+    }
+
+    /* Keep the search bar and results from hitting the edges */
+    .search-padding {
+        padding-left: 5%;
+        padding-right: 5%;
     }
 
     @media (prefers-color-scheme: light) { input { color: black !important; } }
@@ -34,22 +41,21 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Banner Section
+# 3. Stretched Banner
 if os.path.exists("full_logo.png"):
-    # Using container width keeps it wide, but the CSS above keeps it short
-    st.image("full_logo.png", use_container_width=True)
+    st.image("full_logo.png")
 else:
     st.title("Verso AI")
 
-st.markdown("---")
+# 4. Search and Content (Wrapped in a div for padding)
+st.markdown('<div class="search-padding">', unsafe_allow_html=True)
 
-# 4. Search Area
+st.markdown("---")
 query = st.text_input("Enter your research question:", placeholder="Search...")
 
 if query:
     st.write(f"**Verso Logic:** Results for *'{query}'*")
     
-    # Simple APA Style results
     results = [
         {"author": "IAEA", "date": "2024", "title": "Nuclear science", "site": "IAEA.org", "url": "https://www.iaea.org", "trusted": True},
         {"author": "Britannica", "date": "2023", "title": "Water properties", "site": "Britannica", "url": "https://www.britannica.com", "trusted": True},
@@ -72,3 +78,5 @@ if query:
                 st.markdown(f"**[{res['title']}]({res['url']})**")
                 st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
                 st.write("")
+
+st.markdown('</div>', unsafe_allow_html=True)
