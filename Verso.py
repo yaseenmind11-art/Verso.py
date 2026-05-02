@@ -4,7 +4,7 @@ import os
 # This makes the tab look clean
 st.set_page_config(
     page_title="Verso",
-    page_icon="a.png", 
+    page_icon="n.png", 
     layout="wide"
 )
 
@@ -31,8 +31,8 @@ with st.sidebar:
 # Main Header
 c1, c2 = st.columns([0.07, 0.93])
 with c1:
-    if os.path.exists("a.png"):
-        st.image("a.png", width=50)
+    if os.path.exists("n.png"):
+        st.image("n.png", width=50)
 with c2:
     st.title("Verso AI")
 
