@@ -1,3 +1,4 @@
+![Verso Logo](full_logo.png)
 # Verso.py
 🔍 Verso AI: Intelligent Research & Citation Engine
 Verso AI is a professional-grade research assistant designed to streamline the academic workflow for students and researchers. It combines intelligent source discovery with a high-precision APA 7th Edition citation generator to ensure academic integrity and efficiency.
