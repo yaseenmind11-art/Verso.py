@@ -1,92 +1,78 @@
 import streamlit as st
 import os
 
-# 1. TAB CONFIG: Absolute first line for the tab icon and name
+# 1. TAB CONFIG: Must be the absolute first line
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# 2. CSS: Handles the auto-theme colors and "No-Cut" banner
+# 2. CSS: The "Anti-Cut" and Layout styling
 st.markdown("""
     <style>
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
     .block-container {
-        padding-top: 0.5rem;
+        padding-top: 1rem;
         max-width: 95%;
     }
 
-    /* Strict no-cut rule for the banner */
-    .banner-img img {
+    /* This ensures the image is NEVER cropped and keeps a slim height */
+    .banner-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding-bottom: 10px;
+    }
+
+    .banner-container img {
+        max-height: 140px; /* Fixed height to keep it a slim rectangle */
+        width: auto;
         object-fit: contain !important;
         border-radius: 12px;
     }
 
-    /* Top bar styling for the Mode indicator */
-    .header-info {
-        display: flex;
-        justify-content: flex-end;
-        padding-top: 10px;
-        font-family: sans-serif;
-    }
-
-    /* Automatic color switching based on Theme */
+    /* Theme-specific text colors for search bar */
     @media (prefers-color-scheme: light) { 
-        input { color: black !important; }
-        .mode-label { color: #555; background: #f0f2f6; }
+        input { color: black !important; } 
     }
     @media (prefers-color-scheme: dark) { 
-        input { color: #bbbbbb !important; }
-        .mode-label { color: #aaa; background: #262730; }
-    }
-
-    .mode-label {
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: bold;
+        input { color: white !important; } 
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. TOP BAR: Theme Status
-col_left, col_right = st.columns([8, 2])
-with col_right:
-    st.markdown("""
-        <div class="header-info">
-            <span class="mode-label">🌓 Theme: Auto (System)</span>
-        </div>
-    """, unsafe_allow_html=True)
+# 3. SIDEBAR SETTINGS: Theme Control
+with st.sidebar:
+    st.title("⚙️ Settings")
+    st.radio("Display Mode", ["Light", "Night", "System Default"], index=2)
+    st.info("Manual theme changes can also be made in the main Streamlit menu (top right).")
 
-# 4. MAIN BANNER: Proportional squeeze to prevent cutting
-# Squeezing the center column keeps the height low without chopping the logo
-left_g, center, right_g = st.columns([2.5, 5, 2.5]) 
-with center:
-    if os.path.exists("full_logo.png"):
-        st.markdown('<div class="banner-img">', unsafe_allow_html=True)
-        st.image("full_logo.png", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.title("Verso AI")
+# 4. THE BANNER: Cleaned and No-Cut
+if os.path.exists("full_logo.png"):
+    st.markdown('<div class="banner-container">', unsafe_allow_html=True)
+    st.image("full_logo.png") 
+    st.markdown('</div>', unsafe_allow_html=True)
+else:
+    st.title("Verso AI")
 
 st.markdown("---")
 
-# 5. SEARCH & RESULTS SECTION
-query = st.text_input("Enter your research question:", placeholder="Start typing...")
+# 5. SEARCH & RESULTS
+query = st.text_input("Enter your research question:", placeholder="Start typing your research...")
 
 if query:
-    st.write(f"**Verso Logic:** Analyzing trusted perspectives for *'{query}'*")
+    st.write(f"**Verso Logic:** Analyzing results for *'{query}'*")
     
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("✅ Verified Trusted")
-        st.markdown("**[IAEA: Nuclear Science](https://iaea.org)**")
-        st.caption("International Atomic Energy Agency. (2024). *Nuclear science and technology*. IAEA.org")
-        
+        st.markdown("**[Source 1](https://example.com)**")
+        st.caption("Author. (2026). *Title*. Site.")
     with col2:
         st.subheader("🌐 Other Perspectives")
-        st.markdown("**[Wikipedia: Global Water Access](https://wikipedia.org)**")
-        st.caption("Wikipedia Contributors. (2026). *Global water access*. Wikipedia.")
+        st.markdown("**[Source 2](https://example.com)**")
+        st.caption("Author. (2026). *Title*. Site.")
