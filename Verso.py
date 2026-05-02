@@ -72,7 +72,7 @@ with center:
 st.markdown("---")
 
 # 5. RESEARCH & CITATION TABS
-tab1, tab2 = st.tabs(["🔍 Research Search", "📜 Scribbr Pro Citator"])
+tab1, tab2 = st.tabs(["🔍 Research Search", "📜 Pro Citator"])
 
 with tab1:
     query = st.text_input("Enter your research question:", placeholder="Start typing...")
@@ -87,7 +87,7 @@ with tab1:
             st.markdown("**[Wikipedia](https://wikipedia.org)**: Public knowledge results.")
 
 with tab2:
-    st.subheader("📜 Scribbr APA Citation Generator")
+    st.subheader("📜 APA Citation Generator")
     st.write("Paste the URL of the source you want to cite.")
     
     # Just the URL input, exactly like the Scribbr landing page
@@ -114,6 +114,6 @@ with tab2:
             st.caption("Formatted according to APA 7th Edition guidelines.")
             st.markdown('</div>', unsafe_allow_html=True)
         else:
-            st.error("Please enter a URL first.")
+            st.error("Please enter a URL")
 
 st.markdown("---")
