@@ -1,8 +1,4 @@
 # Verso.py
-For a research-heavy project like Verso AI, your README should be clean, academic, and professional. It needs to tell users (and teachers) exactly what the tool does and how it helps the research process.
-
-Here is a template you can copy and paste into your README.md file:
-
 🔍 Verso AI: Intelligent Research & Citation Engine
 Verso AI is a professional-grade research assistant designed to streamline the academic workflow for students and researchers. It combines intelligent source discovery with a high-precision APA 7th Edition citation generator to ensure academic integrity and efficiency.
 
