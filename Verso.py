@@ -1,85 +1,73 @@
 import streamlit as st
 import os
 
-# 1. PAGE CONFIG: MUST BE THE FIRST LINE OF CODE
-# This sets the tab name and the favicon icon
+# 1. TAB CONFIG: This must be line #1 for the icon to work
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# 2. CSS: REMOVING THE "SANDWICH" GAP & CLEANING UI
+# 2. CLEANUP CSS: Pulls everything up and hides the junk
 st.markdown("""
     <style>
-    /* Hides the default Streamlit header and footer */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Removes the top padding to pull everything up */
+    /* Removes the top gap so the banner sits at the very top */
     .block-container {
         padding-top: 0rem;
-        max-width: 90%;
+        max-width: 95%;
     }
 
-    /* Ensures the image is never cropped or zoomed */
+    /* Ensures the image NEVER crops, zooms, or cuts */
     img {
         object-fit: contain !important;
         border-radius: 12px;
     }
 
-    /* Fix text visibility in both Light and Dark modes */
-    @media (prefers-color-scheme: light) {
-        input { color: black !important; }
-    }
-    @media (prefers-color-scheme: dark) {
-        input { color: #bbbbbb !important; }
-    }
+    /* Input text visibility */
+    @media (prefers-color-scheme: light) { input { color: black !important; } }
+    @media (prefers-color-scheme: dark) { input { color: #bbbbbb !important; } }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. THE SLIM HEADER: SQUEEZING THE LOGO
-# By using [3.5, 3, 3.5], we force the logo into a narrow center column.
-# This makes the height naturally small without cutting off any text.
-left_gap, center, right_gap = st.columns([3.5, 3, 3.5]) 
+# 3. THE BANNER: Using columns to control height without cropping
+# Change the [2, 6, 2] to [1, 8, 1] if you want the banner bigger/wider
+left, center, right = st.columns([2, 6, 2]) 
 
 with center:
     if os.path.exists("full_logo.png"):
+        # We use standard image loading here—no forced CSS height
         st.image("full_logo.png", use_container_width=True)
     else:
         st.title("Verso AI")
 
 st.markdown("---")
 
-# 4. SEARCH SECTION
+# 4. SEARCH & RESULTS
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
     st.write(f"**Verso Logic:** Analyzing trusted perspectives for *'{query}'*")
     
-    # Example results data in APA format
     results = [
-        {"author": "IAEA", "date": "2024, March 12", "title": "Nuclear science and technology", "site": "IAEA.org", "url": "https://www.iaea.org", "trusted": True},
-        {"author": "Britannica Editors", "date": "2023, Oct 05", "title": "Properties of water", "site": "Britannica", "url": "https://www.britannica.com", "trusted": True},
-        {"author": "United Nations", "date": "2025, Jan 20", "title": "Sustainable goals", "site": "UN.org", "url": "https://www.un.org", "trusted": True},
-        {"author": "Wikipedia Contributors", "date": "2026, May 02", "title": "Global water access", "site": "Wikipedia", "url": "https://www.wikipedia.org", "trusted": False}
+        {"author": "IAEA", "date": "2024", "title": "Nuclear science", "site": "IAEA.org", "url": "https://www.iaea.org", "trusted": True},
+        {"author": "Britannica", "date": "2023", "title": "Water properties", "site": "Britannica", "url": "https://www.britannica.com", "trusted": True},
+        {"author": "Wikipedia", "date": "2026", "title": "Global access", "site": "Wikipedia", "url": "https://www.wikipedia.org", "trusted": False}
     ]
 
-    # Side-by-Side Results
-    left_res, right_res = st.columns(2)
-
-    with left_res:
+    col1, col2 = st.columns(2)
+    with col1:
         st.subheader("✅ Verified Trusted")
         for res in results:
             if res['trusted']:
                 st.markdown(f"**[{res['title']}]({res['url']})**")
-                st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
-                st.write("")
+                st.caption(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
 
-    with right_res:
+    with col2:
         st.subheader("🌐 Other Perspectives")
         for res in results:
             if not res['trusted']:
                 st.markdown(f"**[{res['title']}]({res['url']})**")
-                st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
-                st.write("")
+                st.caption(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
