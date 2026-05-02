@@ -7,7 +7,7 @@ from datetime import datetime
 # Make sure your file is named exactly 'icon.png' (all lowercase).
 st.set_page_config(
     page_title="Verso",
-    page_icon="icon.png", 
+    page_icon="z.png", 
     layout="wide"
 )
 
