@@ -1,22 +1,21 @@
 import streamlit as st
 import os
 
-# 1. TAB CONFIG: Must be the first line for icon.png to work
+# 1. TAB CONFIG: Absolute first line for the tab icon and name
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# 2. CSS: Handles no-cut images and removes all extra header spacing
+# 2. CSS: Handles the auto-theme colors and "No-Cut" banner
 st.markdown("""
     <style>
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Pulls the main content to the absolute top of the page */
     .block-container {
-        padding-top: 0rem;
+        padding-top: 0.5rem;
         max-width: 95%;
     }
 
@@ -26,18 +25,44 @@ st.markdown("""
         border-radius: 12px;
     }
 
-    /* Fix input text visibility for both modes */
+    /* Top bar styling for the Mode indicator */
+    .header-info {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 10px;
+        font-family: sans-serif;
+    }
+
+    /* Automatic color switching based on Theme */
     @media (prefers-color-scheme: light) { 
         input { color: black !important; }
+        .mode-label { color: #555; background: #f0f2f6; }
     }
     @media (prefers-color-scheme: dark) { 
         input { color: #bbbbbb !important; }
+        .mode-label { color: #aaa; background: #262730; }
+    }
+
+    .mode-label {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. MAIN BANNER: Proportional squeeze to prevent cutting
-# This column setup ensures the logo stays a slim rectangle
+# 3. TOP BAR: Theme Status
+col_left, col_right = st.columns([8, 2])
+with col_right:
+    st.markdown("""
+        <div class="header-info">
+            <span class="mode-label">🌓 Theme: Auto (System)</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+# 4. MAIN BANNER: Proportional squeeze to prevent cutting
+# Squeezing the center column keeps the height low without chopping the logo
 left_g, center, right_g = st.columns([2.5, 5, 2.5]) 
 with center:
     if os.path.exists("full_logo.png"):
@@ -49,7 +74,7 @@ with center:
 
 st.markdown("---")
 
-# 4. SEARCH & RESULTS SECTION (The Default Part)
+# 5. SEARCH & RESULTS SECTION
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
@@ -58,15 +83,10 @@ if query:
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("✅ Verified Trusted")
-        # Example trusted result
-        st.markdown("**[IAEA: Nuclear Science and Technology](https://iaea.org)**")
+        st.markdown("**[IAEA: Nuclear Science](https://iaea.org)**")
         st.caption("International Atomic Energy Agency. (2024). *Nuclear science and technology*. IAEA.org")
-        st.write("")
-        st.markdown("**[Britannica: Properties of Water](https://britannica.com)**")
-        st.caption("Britannica Editors. (2023). *Properties of water*. Britannica.")
         
     with col2:
         st.subheader("🌐 Other Perspectives")
-        # Example other perspective result
         st.markdown("**[Wikipedia: Global Water Access](https://wikipedia.org)**")
         st.caption("Wikipedia Contributors. (2026). *Global water access*. Wikipedia.")
