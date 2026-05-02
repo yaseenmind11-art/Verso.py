@@ -1,31 +1,36 @@
 import streamlit as st
 import os
 
-# 1. Page Configuration
+# CRITICAL: This must be the very first Streamlit command for the tab logo to work
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# 2. CSS for the Slim, Stretched Rectangle
+# CSS for a perfect rectangle banner and fixing the "Sandwich"
 st.markdown("""
     <style>
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    .block-container {
-        padding-top: 1rem;
-        max-width: 90%; /* Keeps it from hitting the extreme edges */
+    /* This makes the top area black to match your logo background */
+    .stApp {
+        background-color: #0e1117;
     }
 
-    /* This forces the banner to be thin and wide */
+    .block-container {
+        padding-top: 0rem;
+        max-width: 90%;
+    }
+
+    /* Professional Banner: No cutting, perfectly centered rectangle */
     .stImage > img {
         width: 100%;
-        max-height: 180px; /* Lowered this to make it 'minimized' */
-        object-fit: cover; /* This stretches the background to fill the rectangle */
-        object-position: center; /* Keeps the logo centered while stretching the sides */
-        border-radius: 15px; /* Matches the rounded corners in your screenshot */
+        max-height: 200px; /* Adjust this to make the rectangle thinner or thicker */
+        object-fit: contain; /* This prevents the 'cut' - it fits the whole logo */
+        background-color: #f4f1ee; /* Matches the paper texture color of your logo */
+        border-radius: 12px;
         display: block;
         margin-left: auto;
         margin-right: auto;
@@ -36,7 +41,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Main Banner
+# 3. The Banner
 if os.path.exists("full_logo.png"):
     st.image("full_logo.png", use_container_width=True)
 else:
@@ -48,27 +53,13 @@ st.markdown("---")
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
-    st.write(f"**Verso Logic:** Results for *'{query}'*")
+    st.subheader(f"Verso Analysis: {query}")
     
-    results = [
-        {"author": "IAEA", "date": "2024", "title": "Nuclear science", "site": "IAEA.org", "url": "https://www.iaea.org", "trusted": True},
-        {"author": "Britannica", "date": "2023", "title": "Water properties", "site": "Britannica", "url": "https://www.britannica.com", "trusted": True},
-        {"author": "Wikipedia", "date": "2026", "title": "Global access", "site": "Wikipedia", "url": "https://www.wikipedia.org", "trusted": False}
-    ]
-
-    left, right = st.columns(2)
-    with left:
-        st.subheader("✅ Trusted Sources")
-        for res in results:
-            if res['trusted']:
-                st.markdown(f"**[{res['title']}]({res['url']})**")
-                st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
-                st.write("")
-
-    with right:
-        st.subheader("🌐 Other Perspectives")
-        for res in results:
-            if not res['trusted']:
-                st.markdown(f"**[{res['title']}]({res['url']})**")
-                st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
-                st.write("")
+    # Example results
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### ✅ Trusted Sources")
+        st.write("Source 1: Credible Info")
+    with col2:
+        st.markdown("### 🌐 Other Perspectives")
+        st.write("Source 2: Alternative View")
