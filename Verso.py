@@ -8,32 +8,27 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CSS for the "Stretched" Rectangle Look
+# 2. CSS for the Slim, Stretched Rectangle
 st.markdown("""
     <style>
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* This is the magic part: it removes the side margins of the app */
     .block-container {
-        padding-top: 0rem;
-        padding-left: 0rem;
-        padding-right: 0rem;
-        max-width: 100%;
+        padding-top: 1rem;
+        max-width: 90%; /* Keeps it from hitting the extreme edges */
     }
 
-    /* This forces the image to stretch across the whole top bar */
+    /* This forces the banner to be thin and wide */
     .stImage > img {
-        width: 100vw; /* 100% of the Viewport Width */
-        max-height: 200px; /* Keeps it a thin rectangle so it doesn't get too tall */
-        object-fit: cover; /* This stretches/crops it to fill the rectangle perfectly */
+        width: 100%;
+        max-height: 180px; /* Lowered this to make it 'minimized' */
+        object-fit: cover; /* This stretches the background to fill the rectangle */
+        object-position: center; /* Keeps the logo centered while stretching the sides */
+        border-radius: 15px; /* Matches the rounded corners in your screenshot */
         display: block;
-    }
-
-    /* Keep the search bar and results from hitting the edges */
-    .search-padding {
-        padding-left: 5%;
-        padding-right: 5%;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     @media (prefers-color-scheme: light) { input { color: black !important; } }
@@ -41,17 +36,16 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Stretched Banner
+# 3. Main Banner
 if os.path.exists("full_logo.png"):
-    st.image("full_logo.png")
+    st.image("full_logo.png", use_container_width=True)
 else:
     st.title("Verso AI")
 
-# 4. Search and Content (Wrapped in a div for padding)
-st.markdown('<div class="search-padding">', unsafe_allow_html=True)
-
 st.markdown("---")
-query = st.text_input("Enter your research question:", placeholder="Search...")
+
+# 4. Search Area
+query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
     st.write(f"**Verso Logic:** Results for *'{query}'*")
@@ -64,7 +58,7 @@ if query:
 
     left, right = st.columns(2)
     with left:
-        st.subheader("✅ Trusted")
+        st.subheader("✅ Trusted Sources")
         for res in results:
             if res['trusted']:
                 st.markdown(f"**[{res['title']}]({res['url']})**")
@@ -72,11 +66,9 @@ if query:
                 st.write("")
 
     with right:
-        st.subheader("🌐 Other")
+        st.subheader("🌐 Other Perspectives")
         for res in results:
             if not res['trusted']:
                 st.markdown(f"**[{res['title']}]({res['url']})**")
                 st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
                 st.write("")
-
-st.markdown('</div>', unsafe_allow_html=True)
