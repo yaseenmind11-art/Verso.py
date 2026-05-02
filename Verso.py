@@ -1,23 +1,33 @@
 import streamlit as st
 import os
 
-# 1. Professional Page Config
+# 1. Page Configuration
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# 2. CSS to clean the header and fix text visibility
+# 2. Advanced CSS for Wide Branding
 st.markdown("""
     <style>
-    /* Hides the default Streamlit header bar to make it all black */
+    /* Hides the default Streamlit header */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Removes the gap at the top */
+    /* Pulls everything to the very top */
     .block-container {
-        padding-top: 1rem;
+        padding-top: 0rem;
+        max-width: 100%;
+    }
+
+    /* This makes the image container ignore standard margins to look wider */
+    .stImage > img {
+        width: 100%;
+        max-width: 800px; /* Adjust this number to make it even wider or narrower */
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     /* Adaptive text colors for search input */
@@ -30,27 +40,23 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Sidebar (Optional: keep it clean or empty)
-with st.sidebar:
-    st.caption("Verso: The Ultimate Research Assistant")
-
-# 4. The New Header Layout
-# This puts the logo in that top black area properly
+# 3. Main Header Branding
+# If you want it to hit the edges, use 'use_container_width=True'
 if os.path.exists("full_logo.png"):
-    st.image("full_logo.png", width=350) # Adjusted width to look sharp in the header
+    st.image("full_logo.png", use_container_width=True)
 else:
     st.title("Verso AI")
     st.write("The Ultimate Research Assistant")
 
 st.markdown("---")
 
-# 5. Search Logic
+# 4. Search Section
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
     st.write(f"**Verso Logic:** Analyzing trusted perspectives for *'{query}'*")
     
-    # Results data (APA Style)
+    # Results data (APA Style as requested)
     results = [
         {"author": "IAEA", "date": "2024, March 12", "title": "Nuclear science and technology", "site": "IAEA.org", "url": "https://www.iaea.org", "trusted": True},
         {"author": "Britannica Editors", "date": "2023, Oct 05", "title": "Properties of water", "site": "Britannica", "url": "https://www.britannica.com", "trusted": True},
