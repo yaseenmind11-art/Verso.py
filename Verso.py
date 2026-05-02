@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. PRO CSS: White Page Aesthetic + Extension Styling
+# 2. PRO CSS: Scribbr Branding & White Aesthetic
 st.markdown("""
     <style>
     header {visibility: hidden;}
@@ -20,13 +20,15 @@ st.markdown("""
         max-width: 95%;
     }
 
-    /* Professional Citation Box Styling */
-    .citation-box {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 10px;
+    /* Scribbr-style Citation Box */
+    .citation-output {
+        background-color: #ffffff;
+        border-left: 5px solid #00a1ff; /* Scribbr Blue */
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+        border-radius: 4px;
         padding: 20px;
         margin-top: 20px;
+        color: #333;
     }
 
     .banner-img img {
@@ -35,14 +37,9 @@ st.markdown("""
         padding: 5px;
     }
 
-    /* Auto-Theme colors */
-    @media (prefers-color-scheme: light) {
-        input { color: black !important; }
-        .block-container { color: #222 !important; }
-    }
-    @media (prefers-color-scheme: dark) {
-        input { color: #bbbbbb !important; }
-        .block-container { color: #eee !important; }
+    /* Input focus colors */
+    .stTextInput>div>div>input:focus {
+        border-color: #00a1ff !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -58,7 +55,7 @@ with st.sidebar:
     )
     st.markdown("---")
     st.markdown("### 🛠️ Active Extensions")
-    st.success("Scribbr Pro Citator: **Active**")
+    st.info("Scribbr Pro Citator: **Active**")
     st.markdown("---")
     st.caption("Verso Logic v1.2 | Pro Extension Edition")
 
@@ -75,7 +72,6 @@ with center:
 st.markdown("---")
 
 # 5. RESEARCH & CITATION TABS
-# We use tabs to separate the "Search" from the "Citation Extension"
 tab1, tab2 = st.tabs(["🔍 Research Search", "📜 Scribbr Pro Citator"])
 
 with tab1:
@@ -91,27 +87,33 @@ with tab1:
             st.markdown("**[Wikipedia](https://wikipedia.org)**: Public knowledge results.")
 
 with tab2:
-    st.subheader("📜 Scribbr Pro Extension")
-    st.write("Paste a URL below to generate an instant APA 7 citation.")
+    st.subheader("📜 Scribbr APA Citation Generator")
+    st.write("Paste the URL of the source you want to cite.")
     
-    cite_url = st.text_input("Enter Web Link (URL):", placeholder="https://www.example.com/article")
-    cite_author = st.text_input("Author/Organization (Optional):", placeholder="e.g., NASA or Smith, J.")
+    # Just the URL input, exactly like the Scribbr landing page
+    cite_url = st.text_input("Search for article by URL:", placeholder="e.g. https://www.nature.com/articles/s41586-024-0000")
     
-    if st.button("✨ Generate APA Citation"):
+    if st.button("Cite"):
         if cite_url:
-            # Automatic logic for current date
-            today = datetime.now().strftime("%Y, %B %d")
-            domain = cite_url.split("//")[-1].split("/")[0].replace("www.", "")
+            # Logic to simulate Scribbr's metadata extraction
+            today_full = datetime.now().strftime("%Y, %B %d")
+            year_only = datetime.now().strftime("%Y")
             
-            # Format like Scribbr
-            author_final = cite_author if cite_author else "Anonymous"
-            citation_result = f"{author_final}. ({today}). *Web Content Reference*. {domain}. Retrieved from {cite_url}"
+            # Extract Domain for the "Site Name"
+            domain = cite_url.split("//")[-1].split("/")[0].replace("www.", "").capitalize()
+            # Split the last part of the URL to guess a title
+            raw_title = cite_url.rstrip("/").split("/")[-1].replace("-", " ").replace("_", " ").capitalize()
             
-            st.markdown('<div class="citation-box">', unsafe_allow_html=True)
-            st.code(citation_result, language="text")
-            st.success("Citation ready! Copy and paste it into your bibliography.")
+            # Generate the APA 7 String
+            # Format: Site Name/Author. (Year, Month Day). Title of work. Website Name. URL
+            apa_citation = f"{domain}. ({year_only}, {datetime.now().strftime('%B %d')}). *{raw_title}*. {domain}. {cite_url}"
+            
+            st.markdown('<div class="citation-output">', unsafe_allow_html=True)
+            st.markdown("**Your APA Citation:**")
+            st.code(apa_citation, language="text")
+            st.caption("Formatted according to APA 7th Edition guidelines.")
             st.markdown('</div>', unsafe_allow_html=True)
         else:
-            st.error("Please enter a valid link to cite.")
+            st.error("Please enter a URL first.")
 
 st.markdown("---")
