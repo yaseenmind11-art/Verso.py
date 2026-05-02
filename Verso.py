@@ -1,105 +1,85 @@
 import streamlit as st
 import os
 
-# 1. TAB CONFIG: Must be the first line for icon.png to work
+# 1. PAGE CONFIG: MUST BE THE FIRST LINE OF CODE
+# This sets the tab name and the favicon icon
 st.set_page_config(
     page_title="Verso",
     page_icon="icon.png", 
     layout="wide"
 )
 
-# 2. CSS: Pulls UI up, handles no-cut images, and creates the red buttons
+# 2. CSS: REMOVING THE "SANDWICH" GAP & CLEANING UI
 st.markdown("""
     <style>
+    /* Hides the default Streamlit header and footer */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
+    /* Removes the top padding to pull everything up */
     .block-container {
-        padding-top: 0.5rem;
-        max-width: 95%;
+        padding-top: 0rem;
+        max-width: 90%;
     }
 
-    /* Strict no-cut rule for the banner */
-    .banner-img img {
+    /* Ensures the image is never cropped or zoomed */
+    img {
         object-fit: contain !important;
         border-radius: 12px;
     }
 
-    /* Styling for the red action buttons */
-    .button-container {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        padding-top: 10px;
-    }
-
-    .action-btn {
-        background-color: #ff4b4b;
-        color: white;
-        border-radius: 12px;
-        padding: 8px 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        font-family: sans-serif;
-        font-weight: bold;
-        font-size: 14px;
-        height: 40px;
-        min-width: 40px;
-    }
-
-    .btn-square {
-        padding: 8px;
-        width: 40px;
-    }
-
-    @media (prefers-color-scheme: light) { 
+    /* Fix text visibility in both Light and Dark modes */
+    @media (prefers-color-scheme: light) {
         input { color: black !important; }
     }
-    @media (prefers-color-scheme: dark) { 
+    @media (prefers-color-scheme: dark) {
         input { color: #bbbbbb !important; }
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. TOP BAR: Red Action Buttons
-col_left, col_right = st.columns([7, 3])
-with col_right:
-    st.markdown(f"""
-        <div class="button-container">
-            <a class="action-btn" href="#">Share</a>
-            <div class="action-btn btn-square" style="color: gold;">★</div>
-            <div class="action-btn btn-square">✎</div>
-            <div class="action-btn btn-square">⋮</div>
-        </div>
-    """, unsafe_allow_html=True)
+# 3. THE SLIM HEADER: SQUEEZING THE LOGO
+# By using [3.5, 3, 3.5], we force the logo into a narrow center column.
+# This makes the height naturally small without cutting off any text.
+left_gap, center, right_gap = st.columns([3.5, 3, 3.5]) 
 
-# 4. MAIN BANNER: Proportional squeeze to prevent cutting
-left_g, center, right_g = st.columns([2.5, 5, 2.5]) 
 with center:
     if os.path.exists("full_logo.png"):
-        st.markdown('<div class="banner-img">', unsafe_allow_html=True)
         st.image("full_logo.png", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.title("Verso AI")
 
 st.markdown("---")
 
-# 5. SEARCH & RESULTS SECTION
+# 4. SEARCH SECTION
 query = st.text_input("Enter your research question:", placeholder="Start typing...")
 
 if query:
     st.write(f"**Verso Logic:** Analyzing trusted perspectives for *'{query}'*")
     
-    col1, col2 = st.columns(2)
-    with col1:
+    # Example results data in APA format
+    results = [
+        {"author": "IAEA", "date": "2024, March 12", "title": "Nuclear science and technology", "site": "IAEA.org", "url": "https://www.iaea.org", "trusted": True},
+        {"author": "Britannica Editors", "date": "2023, Oct 05", "title": "Properties of water", "site": "Britannica", "url": "https://www.britannica.com", "trusted": True},
+        {"author": "United Nations", "date": "2025, Jan 20", "title": "Sustainable goals", "site": "UN.org", "url": "https://www.un.org", "trusted": True},
+        {"author": "Wikipedia Contributors", "date": "2026, May 02", "title": "Global water access", "site": "Wikipedia", "url": "https://www.wikipedia.org", "trusted": False}
+    ]
+
+    # Side-by-Side Results
+    left_res, right_res = st.columns(2)
+
+    with left_res:
         st.subheader("✅ Verified Trusted")
-        st.markdown("**[IAEA: Nuclear Science and Technology](https://iaea.org)**")
-        st.caption("International Atomic Energy Agency. (2024). *Nuclear science and technology*. IAEA.org")
-        
-    with col2:
+        for res in results:
+            if res['trusted']:
+                st.markdown(f"**[{res['title']}]({res['url']})**")
+                st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
+                st.write("")
+
+    with right_res:
         st.subheader("🌐 Other Perspectives")
-        st.markdown("**[Wikipedia: Global Water Access](https://wikipedia.org)**")
-        st.caption("Wikipedia Contributors. (2026). *Global water access*. Wikipedia.")
+        for res in results:
+            if not res['trusted']:
+                st.markdown(f"**[{res['title']}]({res['url']})**")
+                st.markdown(f"{res['author']}. ({res['date']}). *{res['title']}*. {res['site']}.")
+                st.write("")
