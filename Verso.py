@@ -24,7 +24,7 @@ st.markdown("""
 # Sidebar with your full logo
 with st.sidebar:
     if os.path.exists("full_logo.png"):
-        st.image("full_logo.png", width=200)
+        st.image("full_logo.png", width=400)
     st.markdown("---")
     st.write("The Ultimate Research Tool.")
 
