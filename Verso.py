@@ -11,7 +11,7 @@ st.set_page_config(
 
 # 2. THEME ENGINE: Force-refresh state
 if 'theme_state' not in st.session_state:
-    st.session_state.theme_state = "☀️ Light Mode" # Default to Light
+    st.session_state.theme_state = "☀️ Light Mode"
 
 with st.sidebar:
     st.markdown("## ⚙️ Settings")
@@ -27,48 +27,59 @@ if st.session_state.theme_state == "☀️ Light Mode":
     bg = "#FFFFFF"
     txt = "#1A1A1A"
     card = "#F0F2F6"
-    brd = "#DDDDDD"
+    primary = "#00a1ff"
 else:
     bg = "#0E1117"
     txt = "#FAFAFA"
     card = "#262730"
-    brd = "#444444"
+    primary = "#00a1ff"
 
-# 4. TARGETED CSS (This overrides the Streamlit container specifically)
+# 4. THE DEEP OVERRIDE CSS
+# This targets the actual root variables Streamlit uses for its theme
 st.markdown(f"""
     <style>
-    /* This targets the main background of the app */
-    .stApp {{
-        background-color: {bg} !important;
+    :root {{
+        --primary-color: {primary};
+        --background-color: {bg};
+        --secondary-background-color: {card};
+        --text-color: {txt};
+        --font: "sans serif";
     }}
 
-    /* This targets the actual scrolling content area */
-    [data-testid="stMainViewContainer"] {{
+    /* Force the main app background */
+    .stApp, [data-testid="stMainViewContainer"], [data-testid="stAppViewContainer"] {{
         background-color: {bg} !important;
         color: {txt} !important;
     }}
 
-    /* This ensures all text inside the main area follows the theme */
-    [data-testid="stMainViewContainer"] p, 
-    [data-testid="stMainViewContainer"] h1, 
-    [data-testid="stMainViewContainer"] h2, 
-    [data-testid="stMainViewContainer"] h3 {{
+    /* Fix the sidebar specifically */
+    [data-testid="stSidebar"] {{
+        background-color: {card} !important;
+    }}
+
+    /* Ensure all headers and text follow the color */
+    h1, h2, h3, p, span, label {{
         color: {txt} !important;
     }}
 
+    /* Style the result cards */
     .result-card {{
         background-color: {card} !important;
-        border: 1px solid {brd} !important;
+        border: 1px solid {primary}44 !important;
         border-radius: 12px;
         padding: 20px;
         color: {txt} !important;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
     }}
 
-    .stTextInput input {{
-        background-color: {card} !important;
-        color: {txt} !important;
+    /* Make buttons pop */
+    div.stButton > button {{
+        background-color: {primary} !important;
+        color: white !important;
+        border: none !important;
+        width: 100%;
     }}
-    
+
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
@@ -89,7 +100,7 @@ with center:
     with tab1:
         query = st.text_input("Research query:", key="search_bar")
         if query:
-            st.markdown(f"<div class='result-card'><strong>📊 Executive Summary</strong><br>Analyzing '{query}'...</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='result-card'><strong>📊 Executive Summary</strong><br>Analyzing your request in {st.session_state.theme_state}...</div>", unsafe_allow_html=True)
 
     with tab2:
         st.markdown("### 📜 APA Citation Generator")
