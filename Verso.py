@@ -106,7 +106,6 @@ with tab2:
                 else:
                     st.warning("Suggested Improvements:")
                     st.success(f"**Fixed Version:**\n\n{final_output}")
-                    st.caption("This fixed spelling, capitalization, and the letter 'I'.")
 
 # --- TAB 3: CITATION PRO ---
 with tab3:
