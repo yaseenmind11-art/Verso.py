@@ -18,6 +18,15 @@ st.markdown("""
     html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
     header, footer { visibility: hidden; }
     
+    .citation-card {
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
     .status-box {
         padding: 20px;
         border-radius: 12px;
@@ -35,7 +44,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. HEADER & LOGO
+# 3. LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
     if os.path.exists("full_logo.png"):
@@ -48,80 +57,74 @@ st.markdown("---")
 # 4. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
-# --- TAB 1: SMART SEARCH (With Scribbr Links) ---
+# --- TAB 1: SMART SEARCH (With In-App Citations) ---
 with tab1:
-    st.markdown("### 🔍 Research Search")
-    search_q = st.text_input("What are you searching for?", placeholder="e.g., benefits of renewable energy...", key="search_v7")
+    st.markdown("### 🔍 Research Search & Cite")
+    search_q = st.text_input("What are you researching?", placeholder="e.g., impact of climate change...", key="search_v8")
     
     if search_q:
-        q = search_q.replace(" ", "+")
-        col1, col2, col3 = st.columns(3)
+        current_year = datetime.now().year
+        q_clean = search_q.title() # Capitalizes the search query for the citation
+        q_url = search_q.replace(" ", "+")
         
-        with col1:
-            st.link_button("🌐 Google Search", f"https://www.google.com/search?q={q}")
-        with col2:
-            st.link_button("📚 Google Scholar", f"https://scholar.google.com/scholar?q={q}")
-        with col3:
-            st.link_button("📖 Britannica", f"https://www.britannica.com/search?query={q}")
+        st.markdown("#### 📚 Trusted Sources & Citations")
         
-        st.markdown("---")
-        st.markdown("#### 📄 Quick Citations (Scribbr)")
-        st.write("Click a link below to generate a professional citation for your search:")
+        # Source 1: Google Scholar
+        with st.container():
+            st.markdown(f"**1. Google Scholar Results**")
+            st.link_button("Open Source Website", f"https://scholar.google.com/scholar?q={q_url}")
+            st.code(f"Google Scholar. ({current_year}). Research Data on: {q_clean}. Retrieved from https://scholar.google.com/scholar?q={q_url}", language="text")
         
-        # Generating direct Scribbr links for the search results
-        st.markdown(f"- [Cite Google Results on Scribbr](https://www.scribbr.com/citation/generator/mla/website/search?q={q})")
-        st.markdown(f"- [Cite Scholar Results on Scribbr](https://www.scribbr.com/citation/generator/mla/journal/search?q={q})")
-        st.markdown(f"- [Cite Britannica Results on Scribbr](https://www.scribbr.com/citation/generator/mla/website/search?q={q}+britannica)")
+        # Source 2: Britannica
+        with st.container():
+            st.markdown(f"**2. Britannica Encyclopedia**")
+            st.link_button("Open Source Website", f"https://www.britannica.com/search?query={q_url}")
+            st.code(f"Britannica. ({current_year}). {q_clean} - Encyclopedia Entry. Retrieved from https://www.britannica.com/search?query={q_url}", language="text")
 
-# --- TAB 2: VERSO EDITOR (Grammar & Smart Capitalization) ---
+# --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your text here...", key="v_editor_v7")
+    user_text = st.text_area("Your Writing:", height=250, key="v_editor_v8")
 
     if user_text:
         col_a, col_b = st.columns(2)
-        
         with col_a:
-            st.markdown("#### 🌐 Global Translator")
-            target_lang = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german", "japanese", "russian"])
+            st.markdown("#### 🌐 Translator")
+            target_lang = st.selectbox("Language:", ["arabic", "french", "spanish", "german"])
             if st.button("Translate Now"):
-                result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
-                st.success(result)
+                st.info(GoogleTranslator(source='auto', target=target_lang).translate(user_text))
 
         with col_b:
             st.markdown("#### 📏 Grammar & Case Check")
             if st.button("Analyze Writing"):
-                # Spelling Check
+                # Spelling check
                 blob = TextBlob(user_text)
-                temp_text = str(blob.correct())
+                temp = str(blob.correct())
                 
-                # Smart Capitalization Logic
-                sentences = temp_text.split('. ')
+                # Sentence Capitalization & "I" Logic
+                sentences = temp.split('. ')
                 final_sentences = []
                 for s in sentences:
                     if len(s) > 0:
-                        # Fix sentence starts and the letter 'I'
-                        s = s[0].upper() + s[1:]
-                        s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
+                        s = s[0].upper() + s[1:] # Capitalize first letter
+                        s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.") # Fix 'i'
                         final_sentences.append(s)
                 
                 final_output = ". ".join(final_sentences)
                 
                 if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown('<div class="status-box">🎉 Congratulations! No mistakes left.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Congratulations! Your writing is perfect.</div>', unsafe_allow_html=True)
                 else:
-                    st.warning("Suggested Improvements:")
-                    st.success(f"**Fixed Version:**\n\n{final_output}")
+                    st.warning("Suggested Version:")
+                    st.success(final_output)
 
 # --- TAB 3: CITATION PRO ---
 with tab3:
     st.markdown("### 📜 Citation Pro")
-    url_input = st.text_input("Enter URL for Manual Citation:", key="cite_v7")
-    if st.button("Go to Scribbr Generator"):
-        if url_input:
-            st.link_button("Open Scribbr", f"https://www.scribbr.com/citation/generator/mla/website/")
-        else:
-            st.error("Please enter a URL.")
+    st.info("The citations are now generated automatically in the 'Smart Search' tab!")
+    manual_url = st.text_input("Enter any other URL to cite:")
+    if st.button("Generate Manual Citation"):
+        st.code(f"Online Resource. ({datetime.now().year}). Retrieved from: {manual_url}")
 
 st.markdown("---")
