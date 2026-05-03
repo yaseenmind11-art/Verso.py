@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from datetime import datetime
 from deep_translator import GoogleTranslator
-from textblob import TextBlob
+from gingerit.gingerit import GingerIt
 
 # 1. PAGE SETUP
 st.set_page_config(
@@ -31,21 +31,11 @@ st.markdown("""
         color: white !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        width: 100%;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. SIDEBAR (The Gear Menu)
-with st.sidebar:
-    st.markdown("## ⚙️ Settings")
-    if st.button("🗑️ Clear My Work"):
-        st.rerun()
-    st.markdown("---")
-    st.success("Translation: Online")
-    st.success("Grammar Engine: Fast Mode")
-
-# 4. LOGO
+# 3. LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
     if os.path.exists("full_logo.png"):
@@ -55,42 +45,32 @@ with t_center:
 
 st.markdown("---")
 
-# 5. MAIN TABS
+# 4. TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
-
-with tab1:
-    search_q = st.text_input("Enter research topic:")
-    if search_q:
-        q = search_q.replace(" ", "+")
-        st.markdown(f"**Links:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
 
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste text here...", key="verso_editor")
+    user_text = st.text_area("Your Writing:", height=200, placeholder="Paste text here...", key="verso_smart_editor")
 
     if user_text:
         col_a, col_b = st.columns(2)
         
         with col_a:
-            st.markdown("#### 🌐 Global Translator")
-            # Extra languages added
-            target_lang = st.selectbox("Choose Language:", [
-                "arabic", "french", "spanish", "german", "italian", 
-                "chinese (simplified)", "japanese", "korean", "russian", 
-                "portuguese", "turkish", "hindi", "dutch"
-            ])
-            if st.button("Translate Text"):
+            st.markdown("#### 🌐 Translator")
+            target_lang = st.selectbox("Language:", ["arabic", "french", "spanish", "german", "italian", "japanese", "russian"])
+            if st.button("Translate Now"):
                 result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
                 st.info(result)
 
         with col_b:
-            st.markdown("#### 📏 Grammar Check")
+            st.markdown("#### 📏 Smart Grammar Check")
             if st.button("Analyze Writing"):
-                # TextBlob is fast and doesn't need Java
-                blob = TextBlob(user_text)
-                corrected = str(blob.correct())
+                parser = GingerIt()
+                result = parser.parse(user_text)
+                corrected = result['result']
                 
-                if corrected.lower().strip() == user_text.lower().strip():
+                # Check if any corrections were actually made
+                if corrected.strip() == user_text.strip():
                     st.balloons()
                     st.markdown("""
                         <div class="status-box">
@@ -99,14 +79,15 @@ with tab2:
                         </div>
                     """, unsafe_allow_html=True)
                 else:
-                    st.warning("Found some errors. See the corrected version below:")
-                    st.code(corrected)
-                    st.caption("Copy this text back into the editor if you like the fixes!")
+                    st.warning("Improvements suggested:")
+                    st.success(f"**Corrected:** {corrected}")
+                    
+                    with st.expander("See specific changes"):
+                        for fix in result['corrections']:
+                            st.write(f"❌ '{fix['text']}' → ✅ '{fix['correct']}'")
 
 with tab3:
     st.markdown("### 📜 Citation Pro")
     url = st.text_input("Source URL:")
     if st.button("Cite Now"):
         st.code(f"Resource. ({datetime.now().year}). [Online Source]. {url}")
-
-st.markdown("---")
