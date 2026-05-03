@@ -11,69 +11,76 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. INITIALIZE TOOLS (Cached for speed)
+# 2. FAST ENGINE LOADING
 @st.cache_resource
 def load_grammarian():
+    # This downloads the 'server' once and keeps it alive for speed
     return language_tool_python.LanguageTool('en-US')
 
-# Attempt to load, with a fallback if the engine is still starting
+# Pre-load the tool
 try:
     tool = load_grammarian()
-except Exception:
+except:
     tool = None
+
+# Initialize session state for text so it doesn't disappear
+if 'editor_text' not in st.session_state:
+    st.session_state.editor_text = ""
 
 # 3. ADVANCED UI CSS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
-    header, footer { visibility: hidden; }
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
     
-    /* Result & Editor Cards */
-    .result-card, .editor-output {
-        background: white;
-        border: 1px solid #E2E8F0;
+    /* Sidebar Gear Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #f8fafc;
+        border-right: 1px solid #e2e8f0;
+    }
+
+    .editor-output {
+        background: #ffffff;
+        border: 2px solid #00a1ff;
         border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
+        padding: 15px;
         color: #1e293b;
     }
 
-    .citation-output {
-        background-color: #F0F9FF;
-        border-left: 5px solid #00a1ff;
-        border-radius: 8px;
-        padding: 20px;
-    }
-
+    /* Primary Buttons */
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
         color: white !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        width: 100%;
+        border: none !important;
+        transition: 0.3s;
+    }
+    
+    div.stButton > button:hover {
+        background-color: #0077bb !important;
+        transform: translateY(-1px);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 4. SETTINGS GEAR (Sidebar)
+# 4. THE GEAR SETTINGS (Sidebar)
 with st.sidebar:
-    st.markdown("## ⚙️ Settings")
-    st.write("Manage Verso AI Engines")
+    st.markdown("## ⚙️ System Settings")
+    st.write("Configure Verso AI behavior")
     
-    if st.button("🧹 Clear Workspace"):
+    # Fast action buttons
+    if st.button("🗑️ Clear My Work"):
+        st.session_state.editor_text = ""
         st.rerun()
         
-    if st.button("🔄 Refresh AI Engine"):
-        st.cache_resource.clear()
-        st.success("Engines Rebooted!")
-        
-    if st.button("📄 Export Report"):
-        st.download_button("Download", data="Verso Research Log", file_name="report.txt")
-
+    st.toggle("Auto-Correct Mode", value=True)
+    st.toggle("High-Performance Engine", value=True)
+    
     st.markdown("---")
-    st.caption("Verso Pro v2.7 | IB Research Edition")
+    st.caption("Verso Pro v2.8 | Optimized for Egypt 🇪🇬")
 
 # 5. LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
@@ -85,62 +92,56 @@ with t_center:
 
 st.markdown("---")
 
-# 6. MAIN TABS
-tab1, tab2, tab3, tab4 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro", "🏛️ Gateways"])
+# 6. TABS
+tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
 with tab1:
-    search_q = st.text_input("What are we researching today?", placeholder="Enter your topic...")
+    search_q = st.text_input("Enter research topic:", placeholder="Search academic sources...")
     if search_q:
-        clean_q = search_q.replace(" ", "+")
-        st.markdown(f"### ⚡ Analysis: {search_q}")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("#### 🎓 Academic")
-            st.markdown(f"* [Google Scholar](https://scholar.google.com/scholar?q={clean_q})")
-        with col2:
-            st.markdown("#### 🏛️ Institutional")
-            st.markdown(f"* [Britannica](https://www.britannica.com/search?query={clean_q})")
+        q = search_q.replace(" ", "+")
+        st.markdown(f"**Results for {search_q}:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
 
 with tab2:
-    st.markdown("### ✍️ Verso Editor & Translator")
-    input_text = st.text_area("Enter text for analysis:", height=150, placeholder="Type your paragraph here...")
+    st.markdown("### ✍️ Verso Editor")
     
-    if input_text:
-        col_trans, col_gram = st.columns(2)
-        
-        with col_trans:
-            st.markdown("#### 🌐 Translation")
-            # Added language selection here
-            lang_choice = st.selectbox("Select Target Language:", ["arabic", "french", "spanish", "german"])
-            if st.button("Run Translation"):
-                with st.spinner("Translating..."):
-                    translated = GoogleTranslator(source='auto', target=lang_choice).translate(input_text)
-                    st.markdown(f'<div class="editor-output">{translated}</div>', unsafe_allow_html=True)
+    # Use session state to hold the text
+    text_input = st.text_area("Your Research:", value=st.session_state.editor_text, height=200, key="main_editor")
+    st.session_state.editor_text = text_input
 
-        with col_gram:
-            st.markdown("#### 📏 Grammar Check")
-            if st.button("Fix Spelling & Grammar"):
-                if tool:
-                    with st.spinner("Analyzing..."):
-                        corrected = tool.correct(input_text)
-                        st.markdown(f'<div class="editor-output">{corrected}</div>', unsafe_allow_html=True)
-                        st.success("Grammar fixed!")
-                else:
-                    st.warning("Grammar engine is still loading. Please wait 30 seconds.")
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.markdown("#### 🌐 Translator")
+        target_lang = st.selectbox("Language:", ["arabic", "french", "spanish"])
+        if st.button("Translate Text"):
+            with st.spinner("Translating..."):
+                result = GoogleTranslator(source='auto', target=target_lang).translate(st.session_state.editor_text)
+                st.markdown(f'<div class="editor-output">{result}</div>', unsafe_allow_html=True)
+
+    with col_b:
+        st.markdown("#### 📏 Grammar Engine")
+        if st.button("Analyze & Auto-Fix"):
+            if tool:
+                with st.spinner("Running deep check..."):
+                    # Find matches
+                    matches = tool.check(st.session_state.editor_text)
+                    # Automatically create corrected version
+                    corrected = tool.correct(st.session_state.editor_text)
+                    
+                    if len(matches) == 0:
+                        st.success("Writing looks perfect!")
+                    else:
+                        st.warning(f"Fixed {len(matches)} errors.")
+                        # Update the editor text immediately
+                        st.session_state.editor_text = corrected
+                        st.rerun() 
+            else:
+                st.error("Grammar engine starting up. Try again in 10 seconds.")
 
 with tab3:
-    st.markdown("### 📜 Citation Generator")
-    cite_url = st.text_input("Paste URL here:")
-    if st.button("Generate Citation"):
-        if "http" in cite_url:
-            domain = cite_url.split("//")[-1].split("/")[0].replace("www.", "").capitalize()
-            apa = f"{domain}. ({datetime.now().year}). *Research Resource*. {cite_url}"
-            st.markdown('<div class="citation-output">', unsafe_allow_html=True)
-            st.code(apa, language="text")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-with tab4:
-    st.subheader("🏛️ Institutional Gateways")
-    st.markdown("* [World Bank](https://data.worldbank.org) \n* [NASA](https://earthdata.nasa.gov)")
+    st.markdown("### 📜 Citator")
+    url = st.text_input("Source URL:")
+    if st.button("Create Citation"):
+        st.code(f"Resource. ({datetime.now().year}). Academic Data. {url}")
 
 st.markdown("---")
