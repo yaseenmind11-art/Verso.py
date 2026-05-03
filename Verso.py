@@ -27,14 +27,6 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Clean look for the search container */
-    .search-container {
-        border-radius: 15px;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-        margin-top: 20px;
-    }
-
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
         color: white !important;
@@ -55,42 +47,35 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
-tab1, tab2, tab3 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "📜 Citation Pro"])
+tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
 
 # --- TAB 1: TRUSTED SEARCH (Clean Masked View) ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
     st.write("Displaying verified results from **.gov, .edu, .org, and .ac.uk** domains.")
     
-    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
+    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_v13")
     
     if search_q:
-        current_year = datetime.now().year
-        q_clean = search_q.title()
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        # Using a specialized URL to focus on results
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         
-        # Citation Display
-        st.markdown("#### 📄 Citation for this Search")
-        st.code(f"{q_clean} Research. ({current_year}). Filtered Trusted Database Search. Retrieved from: {q_url}", language="text")
-        
-        st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # We use HTML/CSS to "crop" the top of the Google page to hide the logo and search bar
-        # This makes it look like the results belong to your app
+        # HTML/CSS setup to crop the view
+        # margin-top: -160px hides the top search bar
+        # margin-bottom: -240px hides the bottom Google logo/location but keeps page numbers
         html_string = f"""
-            <div style="width: 100%; height: 800px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0;">
-                <iframe src="{q_url}" style="width: 100%; height: 1000px; margin-top: -150px; border: none;"></iframe>
+            <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
+                <iframe src="{q_url}" style="width: 100%; height: 1300px; margin-top: -160px; margin-bottom: -240px; border: none;"></iframe>
             </div>
         """
-        components.html(html_string, height=800)
+        components.html(html_string, height=870)
 
 # --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, key="v_editor_final")
+    user_text = st.text_area("Your Writing:", height=300, key="v_editor_v13")
 
     if user_text:
         col_a, col_b = st.columns(2)
@@ -123,12 +108,5 @@ with tab2:
                 else:
                     st.warning("Suggested Revision:")
                     st.success(final_output)
-
-# --- TAB 3: CITATION PRO ---
-with tab3:
-    st.markdown("### 📜 Citation Pro")
-    manual_url = st.text_input("Enter URL to cite manually:")
-    if st.button("Generate Citation"):
-        st.code(f"Source Title. ({datetime.now().year}). [Online Resource]. {manual_url}")
 
 st.markdown("---")
