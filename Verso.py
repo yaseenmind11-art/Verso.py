@@ -38,7 +38,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. HEADER & LOGO (With Error Protection)
+# 3. HEADER & LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
     logo_path = "full_logo.png"
@@ -46,7 +46,6 @@ with t_center:
     
     if os.path.exists(logo_path):
         try:
-            # Verify the image is actually readable
             img = Image.open(logo_path)
             st.image(img, use_container_width=True)
             logo_success = True
@@ -59,7 +58,7 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
-tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
+tab1, tab2, tab3 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
 # --- TAB 1: TRUSTED SEARCH (Clean Masked View) ---
 with tab1:
@@ -75,7 +74,7 @@ with tab1:
         st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # Professional "Sandwich" Crop
+        # Professional "Sandwich" Crop to show page numbers but hide branding
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
                 <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
@@ -102,10 +101,11 @@ with tab2:
                 blob = TextBlob(user_text)
                 temp = str(blob.correct())
                 
-                # Punctuation & Formatting Logic
+                # Punctuation spacing logic
                 temp = re.sub(r'\s+([,.!?;:])', r'\1', temp)
                 temp = re.sub(r'([,.!?;:])(?=[^\s\d])', r'\1 ', temp)
                 
+                # Capitalization & "I" logic
                 sentences = re.split(r'(?<=[.!?])\s+', temp)
                 final_sentences = []
                 for s in sentences:
@@ -122,5 +122,12 @@ with tab2:
                 else:
                     st.warning("Suggested Revision:")
                     st.success(final_output)
+
+# --- TAB 3: CITATION PRO (Manual Entry) ---
+with tab3:
+    st.markdown("### 📜 Citation Pro")
+    manual_url = st.text_input("Enter URL to cite manually:")
+    if st.button("Generate Citation"):
+        st.code(f"Source Title. ({datetime.now().year}). [Online Resource]. {manual_url}")
 
 st.markdown("---")
