@@ -48,19 +48,31 @@ st.markdown("---")
 # 4. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
+with tab1:
+    st.markdown("### 🔍 Research Search")
+    # THIS IS THE SEARCH BOX YOU WERE LOOKING FOR
+    search_q = st.text_input("What are you searching for?", placeholder="e.g., Climate change in Egypt...", key="main_search")
+    
+    if search_q:
+        q = search_q.replace(" ", "+")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.link_button("🌐 Search Google", f"https://www.google.com/search?q={q}")
+        with col2:
+            st.link_button("📚 Google Scholar", f"https://scholar.google.com/scholar?q={q}")
+        with col3:
+            st.link_button("📖 Britannica", f"https://www.britannica.com/search?query={q}")
+
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your research work here...", key="v_editor_final")
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your text here...", key="v_editor")
 
     if user_text:
         col_a, col_b = st.columns(2)
         
         with col_a:
             st.markdown("#### 🌐 Global Translator")
-            target_lang = st.selectbox("Select Language:", [
-                "arabic", "french", "spanish", "german", "italian", 
-                "japanese", "korean", "russian", "portuguese"
-            ])
+            target_lang = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german", "japanese", "russian"])
             if st.button("Translate Now"):
                 result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
                 st.info(result)
@@ -68,27 +80,27 @@ with tab2:
         with col_b:
             st.markdown("#### 📏 Grammar & Spelling")
             if st.button("Analyze Writing"):
-                # Use TextBlob for actual spelling intelligence
+                # SMART GRAMMAR LOGIC
                 blob = TextBlob(user_text)
                 corrected = str(blob.correct())
                 
-                # Check if it actually changed anything
+                # Check if text is already perfect
                 if corrected.lower().strip() == user_text.lower().strip():
                     st.balloons()
                     st.markdown("""
                         <div class="status-box">
                             <h2 style="color: #00a1ff; margin:0;">🎉 Congratulations!</h2>
-                            <p style="font-size: 18px;">There are no mistakes left.</p>
+                            <p style="font-size: 18px;">Your writing is perfect!</p>
                         </div>
                     """, unsafe_allow_html=True)
                 else:
-                    st.warning("Found potential improvements:")
+                    st.warning("Potential improvements:")
+                    # Display the corrected version clearly
                     st.success(f"**Suggested:** {corrected}")
-                    st.caption("If this looks better, copy and paste it into your editor.")
 
 with tab3:
     st.markdown("### 📜 Citation Pro")
-    url = st.text_input("Source URL:")
+    url = st.text_input("Source URL:", key="cite_url")
     if st.button("Generate Citation"):
         st.code(f"Resource. ({datetime.now().year}). [Online Source]. {url}")
 
