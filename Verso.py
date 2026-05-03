@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 from datetime import datetime
 from deep_translator import GoogleTranslator
@@ -48,38 +49,34 @@ st.markdown("---")
 # 4. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
-# --- TAB 1: TRUSTED SEARCH (The "Filter" Engine) ---
+# --- TAB 1: TRUSTED SEARCH (Embedded In-App) ---
 with tab1:
-    st.markdown("### 🔍 Filtered Research Search")
-    st.write("This search automatically filters for trusted domains: **.gov, .edu, .org, and .ac.uk**")
+    st.markdown("### 🔍 In-App Filtered Search")
+    st.write("Browse trusted results (.gov, .edu, .org, .ac.uk) directly below.")
     
-    search_q = st.text_input("Enter your research topic:", placeholder="e.g., impact of plastic on oceans...", key="search_v9")
+    search_q = st.text_input("Enter your research topic:", placeholder="e.g., benefits of solar energy...", key="search_v10")
     
     if search_q:
-        # The Secret Sauce: This forces Google to only show the domains you trust
+        # Create the trusted filter URL
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        q_url = f"{search_q} {trusted_filter}".replace(" ", "+")
+        q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         
-        st.markdown("#### 🛡️ Trusted Results & In-App Citations")
-        
-        # Action Buttons
-        col_link, col_empty = st.columns([1, 2])
-        with col_link:
-            st.link_button("🚀 Open Trusted Results", f"https://www.google.com/search?q={q_url}")
-        
-        # Instant Citation Generation
-        st.markdown("---")
-        st.info("Copy the citation below for your bibliography:")
+        # Display the Citation first so it's easy to grab
+        st.markdown("#### 📄 Citation for this Search")
         current_year = datetime.now().year
         q_clean = search_q.title()
+        st.code(f"{q_clean} Research. ({current_year}). Filtered Trusted Database Search. Retrieved from: {q_url}", language="text")
         
-        # Formatted Citation
-        st.code(f"{q_clean} Research. ({current_year}). Collected from Verified Educational/Government Databases. Retrieved from: https://www.google.com/search?q={q_url}", language="text")
+        st.markdown("---")
+        st.markdown("#### 🌐 Live Trusted Results")
+        # Embedding the Google search results in an Iframe
+        # Note: 'igu=1' is a parameter that helps Google allow embedding in some contexts.
+        components.iframe(q_url, height=800, scrolling=True)
 
-# --- TAB 2: VERSO EDITOR (Grammar & Smart Capitalization) ---
+# --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your text here...", key="v_editor_v9")
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Start typing...", key="v_editor_v10")
 
     if user_text:
         col_a, col_b = st.columns(2)
@@ -87,14 +84,13 @@ with tab2:
         with col_a:
             st.markdown("#### 🌐 Translator")
             target_lang = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german"])
-            if st.button("Translate"):
+            if st.button("Translate Now"):
                 result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
-                st.write(result)
+                st.info(result)
 
         with col_b:
             st.markdown("#### 📏 Grammar & Case Fix")
             if st.button("Analyze & Correct"):
-                # Spelling correction
                 blob = TextBlob(user_text)
                 temp_text = str(blob.correct())
                 
@@ -112,7 +108,7 @@ with tab2:
                 
                 if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown('<div class="status-box">🎉 Perfect! No errors found.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Looking good! No errors found.</div>', unsafe_allow_html=True)
                 else:
                     st.warning("Suggested Improvements:")
                     st.success(final_output)
@@ -120,9 +116,8 @@ with tab2:
 # --- TAB 3: CITATION PRO ---
 with tab3:
     st.markdown("### 📜 Citation Pro")
-    st.write("Manual Citation Generator (MLA/APA Style)")
-    manual_url = st.text_input("Enter URL:")
-    if st.button("Cite Now"):
-        st.code(f"Online Resource. ({datetime.now().year}). [Website Source]. {manual_url}")
+    manual_url = st.text_input("Enter URL to cite manually:")
+    if st.button("Generate Citation"):
+        st.code(f"Source Title. ({datetime.now().year}). [Online Resource]. {manual_url}")
 
 st.markdown("---")
