@@ -47,40 +47,35 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
-tab1, tab2, tab3 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "📜 Citation Pro"])
+tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
 
-# --- TAB 1: TRUSTED SEARCH (Clean Professional View) ---
+# --- TAB 1: TRUSTED SEARCH (Clean View with Page Numbers) ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
-    st.write("Displaying verified results from **.gov, .edu, .org, and .ac.uk** domains.")
+    st.write("Results filtered for **.gov, .edu, .org, and .ac.uk** domains.")
     
-    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_v11")
+    search_q = st.text_input("What are you looking for today?", placeholder="Enter topic...", key="search_v12")
     
     if search_q:
-        current_year = datetime.now().year
-        q_clean = search_q.title()
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         
-        # Citation Display
-        st.markdown("#### 📄 Citation for this Search")
-        st.code(f"{q_clean} Research. ({current_year}). Filtered Trusted Database Search. Retrieved from: {q_url}", language="text")
+        st.markdown("#### 🌐 Live Results")
         
-        st.markdown("---")
-        st.markdown("#### 🌐 Live Trusted Results")
-        
-        # This HTML setup crops the top AND the bottom to hide logos and footers
+        # Adjusted margins: 
+        # -160px hides the top Google bar
+        # height 900px with -250px margin keeps page numbers visible but hides the bottom logo/location
         html_string = f"""
-            <div style="width: 100%; height: 700px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
-                <iframe src="{q_url}" style="width: 100%; height: 1200px; margin-top: -160px; margin-bottom: -300px; border: none;"></iframe>
+            <div style="width: 100%; height: 900px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
+                <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -160px; margin-bottom: -250px; border: none;"></iframe>
             </div>
         """
-        components.html(html_string, height=720)
+        components.html(html_string, height=920)
 
 # --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, key="v_editor_v11")
+    user_text = st.text_area("Your Writing:", height=300, key="v_editor_v12")
 
     if user_text:
         col_a, col_b = st.columns(2)
@@ -101,7 +96,9 @@ with tab2:
                 final_sentences = []
                 for s in sentences:
                     if len(s) > 0:
+                        # Capitalize sentence start
                         s = s[0].upper() + s[1:]
+                        # Fix the letter 'I'
                         s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
                         final_sentences.append(s)
                 
@@ -109,16 +106,9 @@ with tab2:
                 
                 if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown('<div class="status-box">🎉 Perfect! No errors found.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Looking perfect! No changes needed.</div>', unsafe_allow_html=True)
                 else:
                     st.warning("Suggested Revision:")
                     st.success(final_output)
-
-# --- TAB 3: CITATION PRO ---
-with tab3:
-    st.markdown("### 📜 Citation Pro")
-    manual_url = st.text_input("Enter URL to cite manually:")
-    if st.button("Generate Citation"):
-        st.code(f"Source Title. ({datetime.now().year}). [Online Resource]. {manual_url}")
 
 st.markdown("---")
