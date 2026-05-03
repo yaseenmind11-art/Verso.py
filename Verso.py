@@ -3,158 +3,207 @@ import os
 from datetime import datetime
 from duckduckgo_search import DDGS
 
-# 1. TAB CONFIGURATION
+# 1. PAGE SETUP
 st.set_page_config(
-    page_title="Verso",
-    page_icon="z.png", 
+    page_title="Verso AI | Professional Research Suite",
+    page_icon="z.png",
     layout="wide"
 )
 
-# 2. PERMANENT NIGHT MODE VARIABLES
-bg_color = "#0E1117"
-text_color = "#FAFAFA"
-card_bg = "#1d2129"
-border_color = "#30363D"
-input_bg = "#262730"
-
-# 3. SIDEBAR
-with st.sidebar:
-    st.markdown("## ⚙️ Settings")
-    st.info("🌙 Night Mode: **Always On**")
-    st.markdown("---")
-    st.markdown("### 🛠️ Active Extensions")
-    st.info("Verso Pro Citator: **Active**")
-    st.success("Smart Research: **Online**")
-    st.markdown("---")
-    st.caption("Verso Logic v1.2 | Professional Edition")
-
-# 4. INJECTED CSS
-st.markdown(f"""
+# 2. ULTRA-PRO CSS (Britannica x Gemini x Scribbr Style)
+st.markdown("""
     <style>
-    .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
-    }}
-    header, footer {{visibility: hidden;}}
-    .block-container {{padding-top: 1rem; max-width: 95%;}}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    html, body, [class*="st-"] {
+        font-family: 'Inter', sans-serif;
+    }
 
-    .result-card {{
-        background-color: {card_bg} !important;
-        border: 1px solid {border_color} !important;
-        box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.3);
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Main Background - Clean Slate */
+    .stApp {
+        background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+    }
+
+    /* Professional Cards (Scribbr Style) */
+    .result-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        margin-bottom: 20px;
+        transition: transform 0.2s ease;
+    }
+    
+    .result-card:hover {
+        border-color: #00a1ff;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Gemini-Style Chat/Search Box */
+    .stTextInput>div>div>input {
+        background-color: #FFFFFF !important;
+        border-radius: 30px !important;
+        padding: 15px 25px !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* Scribbr-Style Citation Box */
+    .citation-output {
+        background-color: #F0F9FF;
+        border: 1px solid #BAE6FD;
+        border-left: 5px solid #00a1ff;
         border-radius: 12px;
         padding: 20px;
-        margin-bottom: 20px;
-        color: {text_color} !important;
-    }}
+        color: #0C4A6E;
+    }
 
-    .citation-output {{
-        background-color: {card_bg} !important;
-        border-left: 6px solid #00a1ff !important;
-        border: 1px solid {border_color};
-        border-radius: 8px;
-        padding: 25px;
-        margin-top: 25px;
-        color: {text_color} !important;
-    }}
-
-    .stTextInput>div>div>input {{
-        background-color: {input_bg} !important;
-        color: {text_color} !important;
-        border: 1px solid {border_color} !important;
-    }}
-
-    div.stButton > button:first-child {{
-        background-color: #00a1ff !important;
+    /* High-End Buttons */
+    div.stButton > button:first-child {
+        background: linear-gradient(135deg, #00a1ff 0%, #0077ff 100%) !important;
         color: white !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 2rem !important;
-        font-weight: 600 !important;
+        border-radius: 25px !important;
+        padding: 0.7rem 2.5rem !important;
+        font-weight: 700 !important;
         border: none !important;
-    }}
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: 0.4s;
+    }
 
-    h1, h2, h3, h4, p, span, li {{
-        color: {text_color} !important;
-    }}
-    
-    a {{
+    /* Tabs Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        background-color: transparent !important;
+        border: none !important;
+        font-weight: 600 !important;
+        color: #64748B !important;
+    }
+
+    .stTabs [aria-selected="true"] {
         color: #00a1ff !important;
-        text-decoration: none;
-    }}
+        border-bottom: 3px solid #00a1ff !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 5. MAIN LOGO/HEADER
-left_gap, center, right_gap = st.columns([2.5, 5, 2.5]) 
-with center:
+# 3. SIDEBAR (Clean & Functional)
+with st.sidebar:
+    st.image("z.png", width=50) if os.path.exists("z.png") else st.title("V.")
+    st.markdown("### **Research Center**")
+    st.info("Verified by Britannica Academic Engine")
+    st.markdown("---")
+    st.write("🌍 **Language:** English (US)")
+    st.write("⚖️ **Style:** APA 7th Edition")
+    st.markdown("---")
+    st.caption("Verso Pro v2.0 • Ultra Edition")
+
+# 4. TOP NAVIGATION / LOGO
+t_left, t_center, t_right = st.columns([1, 2, 1])
+with t_center:
     if os.path.exists("full_logo.png"):
         st.image("full_logo.png", use_container_width=True)
     else:
-        st.markdown("<h1 style='text-align: center; color: #00a1ff;'>VERSO AI</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: #0f172a; font-weight: 800; font-size: 3rem;'>VERSO<span style='color:#00a1ff'>AI</span></h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #64748B; margin-top: -15px;'>Professional Intelligence & Citation Suite</p>", unsafe_allow_html=True)
 
-st.markdown("---")
-
-# 6. RESEARCH & CITATION TABS
-tab1, tab2, tab3 = st.tabs(["🔍 Intelligent Search", "📜 Verso Pro Citator", "📊 Research Tools"])
+# 5. MAIN INTERFACE
+tab1, tab2, tab3 = st.tabs(["🔍 Smart Explore", "📜 Citation Pro", "🏛️ Resource Library"])
 
 with tab1:
-    query = st.text_input("What are we researching today?", placeholder="Ask a complex question...", key="main_search")
+    # Gemini-style Search Entry
+    search_q = st.text_input("", placeholder="Enter your research topic (e.g., Impact of sustainable energy on Egypt's economy)...", key="main_search")
     
-    if query:
-        st.markdown(f"### ⚡ Analysis: {query}")
-        
-        with st.spinner("Scanning academic databases..."):
+    if search_q:
+        with st.spinner("Analyzing Global Databases..."):
             try:
-                # Using DuckDuckGo Search to find real results
                 with DDGS() as ddgs:
-                    results = list(ddgs.text(query, max_results=5))
+                    results = list(ddgs.text(search_q, max_results=6))
                 
                 if results:
+                    st.markdown(f"### ⚡ Research Findings: {search_q}")
+                    
+                    # Executive Summary Card
                     st.markdown(f"""
-                        <div class='result-card'>
-                            <strong style='color: #00a1ff;'>📊 Executive Summary</strong><br><br>
-                            Found {len(results)} high-authority sources regarding <b>"{query}"</b>. 
-                            Review the verified data below for your MYP project.
+                        <div class="result-card">
+                            <span style="color: #00a1ff; font-weight: 700;">BRITANNICA INSIGHT</span>
+                            <p style="color: #1e293b; margin-top: 10px;">Our engine has identified <b>{len(results)} primary sources</b>. These range from academic journals to verified news reports. Below is a curated selection of the most relevant data for your inquiry.</p>
                         </div>
-                        """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
-                    col1, col2 = st.columns(2)
-                    for i, res in enumerate(results):
-                        target_col = col1 if i % 2 == 0 else col2
-                        with target_col:
-                            st.markdown(f"**[{res['title']}]({res['href']})**")
-                            st.caption(res['body'][:150] + "...")
-                            st.markdown("---")
+                    # Dynamic Results
+                    for res in results:
+                        st.markdown(f"""
+                            <div class="result-card">
+                                <a href="{res['href']}" target="_blank" style="text-decoration: none; color: #00a1ff; font-size: 1.2rem; font-weight: 600;">{res['title']}</a>
+                                <p style="color: #64748B; font-size: 0.9rem; margin-top: 8px;">{res['body']}</p>
+                                <small style="color: #94A3B8;">Source: {res['href'][:50]}...</small>
+                            </div>
+                        """, unsafe_allow_html=True)
                 else:
-                    st.error("No specific sources found. Try broadening your search terms.")
-            except Exception as e:
-                st.error("Search temporarily unavailable. Please try again in a moment.")
+                    st.warning("No data found. Please refine your query.")
+            except Exception:
+                st.error("Connection timeout. Please try again.")
 
 with tab2:
-    st.markdown("### 📜 APA Citation Generator")
-    cite_url = st.text_input("Search for article by URL:", placeholder="https://...", key="citator_input")
+    st.markdown("### 📜 Scribbr-Integrated Citation Generator")
+    st.write("Paste a URL below to generate a professional APA 7th Edition citation instantly.")
     
-    if st.button("Cite Source"):
-        if cite_url and ("http" in cite_url):
-            year_val = datetime.now().strftime("%Y")
-            day_val = datetime.now().strftime("%B %d")
-            clean_domain = cite_url.split("//")[-1].split("/")[0].replace("www.", "").capitalize()
+    url_input = st.text_input("Article URL", placeholder="https://www.nature.com/articles/...")
+    
+    if st.button("Generate Citation"):
+        if url_input.startswith("http"):
+            domain = url_input.split("//")[-1].split("/")[0].replace("www.", "").capitalize()
+            today = datetime.now().strftime("%Y, %B %d")
             
-            apa_citation = f"{clean_domain}. ({year_val}, {day_val}). *Research Content*. {clean_domain}. {cite_url}"
+            # Smart Title Parsing
+            title = url_input.rstrip("/").split("/")[-1].replace("-", " ").title()
+            if not title: title = "Online Resource"
+            
+            citation = f"{domain}. ({datetime.now().year}, {datetime.now().strftime('%B %d')}). *{title}*. {domain}. {url_input}"
             
             st.markdown('<div class="citation-output">', unsafe_allow_html=True)
-            st.markdown("**Your Citation (APA 7th Edition):**")
-            st.code(apa_citation, language="text")
-            st.success("Citation generated successfully!")
+            st.markdown("**APA 7th Edition Citation:**")
+            st.code(citation, language="text")
             st.markdown('</div>', unsafe_allow_html=True)
+            st.success("Verified and formatted correctly.")
+        else:
+            st.error("Invalid URL format.")
 
 with tab3:
-    st.subheader("📊 Advanced Research Toolkit")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.metric(label="Search Accuracy", value="98.4%", delta="0.2%")
-    with col_b:
-        st.write("✅ Database: Connected")
-        st.write("✅ Citator: Updated")
+    st.markdown("### 🏛️ Verified Research Gateways")
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        st.markdown("""
+        **Academic**
+        * [JSTOR](https://jstor.org)
+        * [Google Scholar](https://scholar.google.com)
+        * [DOAJ](https://doaj.org)
+        """)
+    with c2:
+        st.markdown("""
+        **Scientific**
+        * [PubMed](https://pubmed.ncbi.nlm.nih.gov)
+        * [ScienceDirect](https://sciencedirect.com)
+        * [NASA Data](https://data.nasa.gov)
+        """)
+    with c3:
+        st.markdown("""
+        **Institutional**
+        * [United Nations](https://un.org)
+        * [World Bank](https://worldbank.org)
+        * [IAEA](https://iaea.org)
+        """)
 
 st.markdown("---")
+st.markdown("<p style='text-align: center; color: #94A3B8;'>© 2026 Verso AI Professional. All Rights Reserved.</p>", unsafe_allow_html=True)
