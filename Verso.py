@@ -112,7 +112,6 @@ with tab1:
         with st.container():
             st.markdown("""
             <div class='result-card'>
-                <strong>📊 Executive Summary</strong><br>
                 Initial scans indicate multiple high-authority perspectives on this topic. 
                 Below you will find peer-reviewed data and global consensus reports.
             </div>
