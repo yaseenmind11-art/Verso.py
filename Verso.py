@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. UI STYLING (Custom CSS)
+# 2. UI STYLING
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -52,11 +52,10 @@ tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Ci
 # --- TAB 1: SMART SEARCH ---
 with tab1:
     st.markdown("### 🔍 Research Search")
-    search_q = st.text_input("What are you searching for?", placeholder="e.g., Sustainable energy in Egypt...", key="main_search_bar")
+    search_q = st.text_input("What are you searching for?", placeholder="e.g., Climate change impact...", key="search_bar_v5")
     
     if search_q:
         q = search_q.replace(" ", "+")
-        st.info(f"Generating research links for: **{search_q}**")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.link_button("🌐 Google Search", f"https://www.google.com/search?q={q}")
@@ -65,10 +64,10 @@ with tab1:
         with col3:
             st.link_button("📖 Britannica", f"https://www.britannica.com/search?query={q}")
 
-# --- TAB 2: VERSO EDITOR (Grammar & Translator) ---
+# --- TAB 2: VERSO EDITOR (Grammar & Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your research work here...", key="v_editor_v4")
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Type here...", key="v_editor_v5")
 
     if user_text:
         col_a, col_b = st.columns(2)
@@ -77,44 +76,43 @@ with tab2:
             st.markdown("#### 🌐 Global Translator")
             target_lang = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german", "japanese", "russian"])
             if st.button("Translate Now"):
-                with st.spinner("Translating..."):
-                    result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
-                    st.success("**Translated Text:**")
-                    st.write(result)
+                result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
+                st.success(result)
 
         with col_b:
-            st.markdown("#### 📏 Grammar & Spelling")
+            st.markdown("#### 📏 Grammar & Case Check")
             if st.button("Analyze Writing"):
-                # 1. Core Correction
+                # STEP 1: Fix Spelling
                 blob = TextBlob(user_text)
-                corrected = str(blob.correct())
+                corrected_text = str(blob.correct())
                 
-                # 2. Smart Comparison Logic
-                # Only suggest if the corrected version is actually different
-                if corrected.lower().strip() == user_text.lower().strip():
+                # STEP 2: Logic for Capitalization
+                # This fixes "i" to "I" and ensures sentences start with capital letters
+                sentences = corrected_text.split('. ')
+                final_sentences = []
+                for s in sentences:
+                    if len(s) > 0:
+                        # Capitalize first letter of sentence and fix standalone "i"
+                        s = s[0].upper() + s[1:]
+                        s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
+                        final_sentences.append(s)
+                
+                final_output = ". ".join(final_sentences)
+                
+                # Compare original to final
+                if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown("""
-                        <div class="status-box">
-                            <h2 style="color: #00a1ff; margin:0;">🎉 Congratulations!</h2>
-                            <p style="font-size: 18px;">Your writing is already excellent.</p>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Your writing is perfect!</div>', unsafe_allow_html=True)
                 else:
-                    st.warning("Found potential improvements:")
-                    st.success(f"**Suggested Revision:**\n\n{corrected}")
-                    st.caption("Note: This logic focuses on spelling and common patterns.")
+                    st.warning("Suggested Improvements:")
+                    st.success(f"**Fixed Version:**\n\n{final_output}")
+                    st.caption("This fixed spelling, capitalization, and the letter 'I'.")
 
 # --- TAB 3: CITATION PRO ---
 with tab3:
     st.markdown("### 📜 Citation Pro")
-    url = st.text_input("Paste Source URL here:", key="cite_tool_url")
+    url = st.text_input("Source URL:", key="cite_v5")
     if st.button("Generate Citation"):
-        if url:
-            current_year = datetime.now().year
-            st.markdown("#### MLA/APA Style Draft:")
-            st.code(f"Resource. ({current_year}). [Online Academic Source]. Retrieved from: {url}")
-        else:
-            st.error("Please enter a URL first.")
+        st.code(f"Source. ({datetime.now().year}). [Online]. {url}")
 
 st.markdown("---")
-st.caption("Verso AI v3.0 | Stable Edition (No Java Required)")
