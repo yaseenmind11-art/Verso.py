@@ -27,6 +27,14 @@ st.markdown("""
         text-align: center;
     }
     
+    /* Clean look for the search container */
+    .search-container {
+        border-radius: 15px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        margin-top: 20px;
+    }
+
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
         color: white !important;
@@ -47,24 +55,26 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
+# Removed tab3 (Citation Pro) here
 tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
 
-# --- TAB 1: TRUSTED SEARCH (Clean Masked View) ---
+# --- TAB 1: TRUSTED SEARCH (Clean Professional View) ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
     st.write("Displaying verified results from **.gov, .edu, .org, and .ac.uk** domains.")
     
-    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_v13")
+    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
     
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
+        # Using a specialized URL to focus on results
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # HTML/CSS setup to crop the view
-        # margin-top: -160px hides the top search bar
-        # margin-bottom: -240px hides the bottom Google logo/location but keeps page numbers
+        # We use HTML/CSS to "crop" the view. 
+        # margin-top: -160px hides the top Google bar.
+        # margin-bottom: -240px hides the footer but leaves the page numbers visible.
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
                 <iframe src="{q_url}" style="width: 100%; height: 1300px; margin-top: -160px; margin-bottom: -240px; border: none;"></iframe>
@@ -75,7 +85,7 @@ with tab1:
 # --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=300, key="v_editor_v13")
+    user_text = st.text_area("Your Writing:", height=250, key="v_editor_final")
 
     if user_text:
         col_a, col_b = st.columns(2)
