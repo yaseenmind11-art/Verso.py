@@ -110,7 +110,7 @@ with tab1:
         
         # Professional Summary Box (Gemini Style)
     
-                        <strong>📊 Executive Summary</strong><br>
+         <strong>📊 Executive Summary</strong><br>
 
         with st.container():
             st.markdown("""
