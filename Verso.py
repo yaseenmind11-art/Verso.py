@@ -109,6 +109,9 @@ with tab1:
         st.markdown(f"### ⚡ Analysis: {query}")
         
         # Professional Summary Box (Gemini Style)
+    
+                        <strong>📊 Executive Summary</strong><br>
+
         with st.container():
             st.markdown("""
             <div class='result-card'>
