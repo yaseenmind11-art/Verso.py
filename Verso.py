@@ -26,14 +26,6 @@ st.markdown("""
         background-color: #f0f9ff;
         text-align: center;
     }
-    
-    /* Clean look for the search container */
-    .search-container {
-        border-radius: 15px;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-        margin-top: 20px;
-    }
 
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
@@ -57,18 +49,17 @@ st.markdown("---")
 # 4. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
-# --- TAB 1: TRUSTED SEARCH (Clean Masked View) ---
+# --- TAB 1: TRUSTED SEARCH (Clean Professional View) ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
     st.write("Displaying verified results from **.gov, .edu, .org, and .ac.uk** domains.")
     
-    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
+    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_v11")
     
     if search_q:
         current_year = datetime.now().year
         q_clean = search_q.title()
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        # Using a specialized URL to focus on results
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         
         # Citation Display
@@ -78,19 +69,18 @@ with tab1:
         st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # We use HTML/CSS to "crop" the top of the Google page to hide the logo and search bar
-        # This makes it look like the results belong to your app
+        # This HTML setup crops the top AND the bottom to hide logos and footers
         html_string = f"""
-            <div style="width: 100%; height: 800px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0;">
-                <iframe src="{q_url}" style="width: 100%; height: 1000px; margin-top: -150px; border: none;"></iframe>
+            <div style="width: 100%; height: 700px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
+                <iframe src="{q_url}" style="width: 100%; height: 1200px; margin-top: -160px; margin-bottom: -300px; border: none;"></iframe>
             </div>
         """
-        components.html(html_string, height=800)
+        components.html(html_string, height=720)
 
 # --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, key="v_editor_final")
+    user_text = st.text_area("Your Writing:", height=250, key="v_editor_v11")
 
     if user_text:
         col_a, col_b = st.columns(2)
@@ -106,7 +96,7 @@ with tab2:
                 blob = TextBlob(user_text)
                 temp = str(blob.correct())
                 
-                # Capitalization & "I" logic
+                # Smart Capitalization Logic
                 sentences = temp.split('. ')
                 final_sentences = []
                 for s in sentences:
@@ -119,7 +109,7 @@ with tab2:
                 
                 if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown('<div class="status-box">🎉 Looking great! No errors found.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Perfect! No errors found.</div>', unsafe_allow_html=True)
                 else:
                     st.warning("Suggested Revision:")
                     st.success(final_output)
