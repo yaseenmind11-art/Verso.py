@@ -5,6 +5,7 @@ from datetime import datetime
 from deep_translator import GoogleTranslator
 from textblob import TextBlob
 import re
+from PIL import Image
 
 # 1. PAGE SETUP
 st.set_page_config(
@@ -28,13 +29,6 @@ st.markdown("""
         text-align: center;
     }
     
-    .search-container {
-        border-radius: 15px;
-        overflow: hidden;
-        border: 1px solid #e2e8f0;
-        margin-top: 20px;
-    }
-
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
         color: white !important;
@@ -44,12 +38,22 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. HEADER & LOGO
+# 3. HEADER & LOGO (With Error Protection)
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
-    if os.path.exists("full_logo.png"):
-        st.image("full_logo.png", use_container_width=True)
-    else:
+    logo_path = "full_logo.png"
+    logo_success = False
+    
+    if os.path.exists(logo_path):
+        try:
+            # Verify the image is actually readable
+            img = Image.open(logo_path)
+            st.image(img, use_container_width=True)
+            logo_success = True
+        except Exception:
+            logo_success = False
+
+    if not logo_success:
         st.markdown("<h1 style='text-align: center; color: #0f172a; font-weight: 800;'>VERSO<span style='color:#00a1ff'>AI</span></h1>", unsafe_allow_html=True)
 
 st.markdown("---")
@@ -71,9 +75,7 @@ with tab1:
         st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # Professional "Sandwich" Crop:
-        # margin-top: -155px hides the top Google bar
-        # margin-bottom: -250px hides the bottom logo/black bar but keeps page numbers visible
+        # Professional "Sandwich" Crop
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
                 <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
@@ -97,24 +99,18 @@ with tab2:
         with col_b:
             st.markdown("#### 📏 Grammar & Punctuation Fix")
             if st.button("Analyze & Correct"):
-                # Initial spelling and grammar check
                 blob = TextBlob(user_text)
                 temp = str(blob.correct())
                 
-                # Advanced Punctuation & Formatting Logic
-                # 1. Fix spacing around punctuation (e.g., "hello , world" -> "hello, world")
+                # Punctuation & Formatting Logic
                 temp = re.sub(r'\s+([,.!?;:])', r'\1', temp)
-                # 2. Ensure a space exists after punctuation if missing
                 temp = re.sub(r'([,.!?;:])(?=[^\s\d])', r'\1 ', temp)
                 
-                # Capitalization & "I" logic
                 sentences = re.split(r'(?<=[.!?])\s+', temp)
                 final_sentences = []
                 for s in sentences:
                     if len(s) > 0:
-                        # Capitalize start of sentence
                         s = s[0].upper() + s[1:]
-                        # Fix lowercase "i" issues
                         s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
                         final_sentences.append(s)
                 
@@ -124,7 +120,7 @@ with tab2:
                     st.balloons()
                     st.markdown('<div class="status-box">🎉 Writing is perfect! No errors found.</div>', unsafe_allow_html=True)
                 else:
-                    st.warning("Suggested Revision (includes punctuation & casing):")
+                    st.warning("Suggested Revision:")
                     st.success(final_output)
 
 st.markdown("---")
