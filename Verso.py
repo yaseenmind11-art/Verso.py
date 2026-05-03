@@ -58,7 +58,7 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS (Now with 4 tabs)
-tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "🌐 Verso Translate", "📜 Citation Pro"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Grammer And Punctuation Checker", "🌐 Verso Translate", "📜 Citation Pro"])
 
 # --- TAB 1: TRUSTED SEARCH ---
 with tab1:
