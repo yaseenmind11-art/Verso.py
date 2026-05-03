@@ -55,10 +55,10 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
-# Removed tab3 (Citation Pro) here
+# Tab 3 (Citation Pro) is removed here
 tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
 
-# --- TAB 1: TRUSTED SEARCH (Clean Professional View) ---
+# --- TAB 1: TRUSTED SEARCH ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
     st.write("Displaying verified results from **.gov, .edu, .org, and .ac.uk** domains.")
@@ -67,22 +67,21 @@ with tab1:
     
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        # Using a specialized URL to focus on results
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         
+        st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # We use HTML/CSS to "crop" the view. 
-        # margin-top: -160px hides the top Google bar.
-        # margin-bottom: -240px hides the footer but leaves the page numbers visible.
+        # This setup ensures the search results and page numbers are visible 
+        # while hiding the top bar and the very bottom black location bar.
         html_string = f"""
-            <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
-                <iframe src="{q_url}" style="width: 100%; height: 1300px; margin-top: -160px; margin-bottom: -240px; border: none;"></iframe>
+            <div style="width: 100%; height: 900px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
+                <iframe src="{q_url}" style="width: 100%; height: 1400px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
             </div>
         """
-        components.html(html_string, height=870)
+        components.html(html_string, height=920)
 
-# --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
+# --- TAB 2: VERSO EDITOR ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
     user_text = st.text_area("Your Writing:", height=250, key="v_editor_final")
