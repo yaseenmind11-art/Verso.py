@@ -110,8 +110,6 @@ with tab1:
         
         # Professional Summary Box (Gemini Style)
     
-            <strong>📊 Executive Summary</strong><br>
-
         with st.container():
             st.markdown("""
             <div class='result-card'>
@@ -119,7 +117,7 @@ with tab1:
                 Below you will find peer-reviewed data and global consensus reports.
             </div>
             """, unsafe_allow_html=True)
-
+                                        <strong>📊 Executive Summary</strong><br>
         trusted, other = st.columns(2)
         with trusted:
             st.markdown("#### ✅ Verified Sources")
