@@ -128,7 +128,7 @@ with tab1:
             st.markdown(f"* [Pew Research Center Data](https://www.pewresearch.org/search/{clean_q})")
 
 with tab2:
-    st.markdown("### 📜 Scribbr-Style Citation Generator")
+    st.markdown("### 📜 Verso pro Citation Generator")
     st.write("Generate APA 7 citations instantly.")
     
     cite_url = st.text_input("Paste URL here:", placeholder="https://...")
