@@ -20,3 +20,4 @@ Styling: Custom CSS (Scribbr-inspired branding & dynamic theme engine)
 Logic: Python 3.x
 
 Deployment: Optimized for local hosting or Streamlit Cloud
+Link: Launch Live App
