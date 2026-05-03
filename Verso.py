@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from datetime import datetime
 from deep_translator import GoogleTranslator
-import language_tool_python
+from textblob import TextBlob
 
 # 1. PAGE SETUP
 st.set_page_config(
@@ -11,55 +11,41 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. CACHED GRAMMAR ENGINE
-@st.cache_resource
-def load_tool():
-    # Using 'en-US' for general academic research
-    return language_tool_python.LanguageTool('en-US')
-
-# 3. ADVANCED UI CSS
+# 2. UI STYLING
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    header, footer { visibility: hidden; }
     
-    .stTextArea textarea {
-        font-size: 16px !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 10px !important;
-    }
-
     .status-box {
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        border: 1px solid #00a1ff;
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid #00a1ff;
         background-color: #f0f9ff;
+        text-align: center;
     }
     
-    .sidebar-gear {
-        font-size: 24px;
-        margin-bottom: 20px;
+    div.stButton > button:first-child {
+        background-color: #00a1ff !important;
+        color: white !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        width: 100%;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 4. SIDEBAR (The Gear Menu)
+# 3. SIDEBAR (The Gear Menu)
 with st.sidebar:
-    st.markdown('<div class="sidebar-gear">⚙️ System Settings</div>', unsafe_allow_html=True)
-    
-    if st.button("🔄 Hard Reset App"):
-        st.cache_resource.clear()
+    st.markdown("## ⚙️ Settings")
+    if st.button("🗑️ Clear My Work"):
         st.rerun()
-    
     st.markdown("---")
-    st.write("**Engine Status:**")
-    st.success("Translation Engine: Online")
-    st.success("Grammar Engine: Ready")
+    st.success("Translation: Online")
+    st.success("Grammar Engine: Fast Mode")
 
-# 5. LOGO
+# 4. LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
     if os.path.exists("full_logo.png"):
@@ -69,71 +55,58 @@ with t_center:
 
 st.markdown("---")
 
-# 6. TABS
+# 5. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
 with tab1:
-    search_q = st.text_input("What are we researching?", placeholder="Topic...")
+    search_q = st.text_input("Enter research topic:")
     if search_q:
         q = search_q.replace(" ", "+")
-        st.markdown(f"**Quick Links:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
+        st.markdown(f"**Links:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
 
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    
-    # Text input area
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your research work here...", key="editor_box")
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste text here...", key="verso_editor")
 
     if user_text:
-        col_lang, col_check = st.columns(2)
+        col_a, col_b = st.columns(2)
         
-        with col_lang:
+        with col_a:
             st.markdown("#### 🌐 Global Translator")
-            # Expanded Language List
-            target_lang = st.selectbox("Select Language:", [
+            # Extra languages added
+            target_lang = st.selectbox("Choose Language:", [
                 "arabic", "french", "spanish", "german", "italian", 
-                "chinese (simplified)", "japanese", "korean", "russian", "portuguese"
+                "chinese (simplified)", "japanese", "korean", "russian", 
+                "portuguese", "turkish", "hindi", "dutch"
             ])
-            
-            if st.button("Translate Now"):
-                with st.spinner("Translating..."):
-                    translated_text = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
-                    st.markdown("---")
-                    st.write(f"**Result ({target_lang.title()}):**")
-                    st.info(translated_text)
+            if st.button("Translate Text"):
+                result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
+                st.info(result)
 
-        with col_check:
-            st.markdown("#### 📏 Grammar & Spelling")
+        with col_b:
+            st.markdown("#### 📏 Grammar Check")
             if st.button("Analyze Writing"):
-                with st.spinner("Checking for mistakes..."):
-                    # Load the tool inside the button to ensure it's ready
-                    grammar_tool = load_tool()
-                    matches = grammar_tool.check(user_text)
-                    
-                    if len(matches) == 0:
-                        st.balloons()
-                        st.markdown("""
-                            <div class="status-box">
-                                <h3 style="color: #059669; margin:0;">🎉 Congratulations!</h3>
-                                <p style="margin:0;">There are no mistakes left in your text. Your writing is perfect!</p>
-                            </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.warning(f"Found {len(matches)} potential improvements.")
-                        corrected_text = grammar_tool.correct(user_text)
-                        
-                        st.write("**Suggested Improvements:**")
-                        st.code(corrected_text)
-                        
-                        # Show specific errors
-                        with st.expander("Show detailed error list"):
-                            for match in matches:
-                                st.write(f"❌ {match.message}")
+                # TextBlob is fast and doesn't need Java
+                blob = TextBlob(user_text)
+                corrected = str(blob.correct())
+                
+                if corrected.lower().strip() == user_text.lower().strip():
+                    st.balloons()
+                    st.markdown("""
+                        <div class="status-box">
+                            <h2 style="color: #00a1ff; margin:0;">🎉 Congratulations!</h2>
+                            <p style="font-size: 18px;">There are no mistakes left.</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning("Found some errors. See the corrected version below:")
+                    st.code(corrected)
+                    st.caption("Copy this text back into the editor if you like the fixes!")
 
 with tab3:
     st.markdown("### 📜 Citation Pro")
-    url_cite = st.text_input("Source URL:")
+    url = st.text_input("Source URL:")
     if st.button("Cite Now"):
-        st.code(f"Resource. ({datetime.now().year}). [Online Article]. {url_cite}")
+        st.code(f"Resource. ({datetime.now().year}). [Online Source]. {url}")
 
 st.markdown("---")
