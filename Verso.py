@@ -26,12 +26,19 @@ st.markdown("""
         text-align: center;
     }
     
+    .citation-box {
+        background-color: #f8fafc;
+        border-left: 5px solid #00a1ff;
+        padding: 10px;
+        margin-top: 10px;
+        font-family: monospace;
+    }
+
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
         color: white !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        border: none;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -49,25 +56,41 @@ st.markdown("---")
 # 4. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
-# --- TAB 1: SMART SEARCH ---
+# --- TAB 1: SMART SEARCH (With Instant Citations) ---
 with tab1:
     st.markdown("### 🔍 Research Search")
-    search_q = st.text_input("What are you searching for?", placeholder="e.g., Climate change impact...", key="search_bar_v5")
+    search_q = st.text_input("What are you searching for?", placeholder="e.g., advantages of water pipes...", key="search_v6")
     
     if search_q:
         q = search_q.replace(" ", "+")
         col1, col2, col3 = st.columns(3)
+        
+        # Define URLs
+        g_url = f"https://www.google.com/search?q={q}"
+        s_url = f"https://scholar.google.com/scholar?q={q}"
+        b_url = f"https://www.britannica.com/search?query={q}"
+
         with col1:
-            st.link_button("🌐 Google Search", f"https://www.google.com/search?q={q}")
+            st.link_button("🌐 Google Search", g_url)
         with col2:
-            st.link_button("📚 Google Scholar", f"https://scholar.google.com/scholar?q={q}")
+            st.link_button("📚 Google Scholar", s_url)
         with col3:
-            st.link_button("📖 Britannica", f"https://www.britannica.com/search?query={q}")
+            st.link_button("📖 Britannica", b_url)
+        
+        # Instant Citation Section
+        st.markdown("---")
+        st.markdown("#### 📄 Quick Citations (Copy & Paste)")
+        st.write("Click below to copy a draft citation for your bibliography:")
+        
+        # Displaying Citations in a code block for easy copying
+        year = datetime.now().year
+        st.code(f"Google Search Results. ({year}). Research on: {search_q}. {g_url}", language="text")
+        st.code(f"Britannica Encyclopedia. ({year}). {search_q}. {b_url}", language="text")
 
 # --- TAB 2: VERSO EDITOR (Grammar & Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=250, placeholder="Type here...", key="v_editor_v5")
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Start typing...", key="v_editor_v6")
 
     if user_text:
         col_a, col_b = st.columns(2)
@@ -82,36 +105,38 @@ with tab2:
         with col_b:
             st.markdown("#### 📏 Grammar & Case Check")
             if st.button("Analyze Writing"):
-                # STEP 1: Fix Spelling
+                # Spelling correction
                 blob = TextBlob(user_text)
-                corrected_text = str(blob.correct())
+                temp_text = str(blob.correct())
                 
-                # STEP 2: Logic for Capitalization
-                # This fixes "i" to "I" and ensures sentences start with capital letters
-                sentences = corrected_text.split('. ')
+                # Capitalization & "I" logic
+                sentences = temp_text.split('. ')
                 final_sentences = []
                 for s in sentences:
                     if len(s) > 0:
-                        # Capitalize first letter of sentence and fix standalone "i"
+                        # Capitalize first word of sentences
                         s = s[0].upper() + s[1:]
+                        # Fix lowercase "i" and "i'm"
                         s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
                         final_sentences.append(s)
                 
                 final_output = ". ".join(final_sentences)
                 
-                # Compare original to final
                 if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown('<div class="status-box">🎉 Your writing is perfect!</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Congratulations! No mistakes left.</div>', unsafe_allow_html=True)
                 else:
-                    st.warning("Suggested Improvements:")
-                    st.success(f"**Fixed Version:**\n\n{final_output}")
+                    st.warning("Found improvements:")
+                    st.success(f"**Suggested Version:**\n\n{final_output}")
 
 # --- TAB 3: CITATION PRO ---
 with tab3:
     st.markdown("### 📜 Citation Pro")
-    url = st.text_input("Source URL:", key="cite_v5")
+    url_input = st.text_input("Enter a specific URL to cite:", key="cite_v6")
     if st.button("Generate Citation"):
-        st.code(f"Source. ({datetime.now().year}). [Online]. {url}")
+        if url_input:
+            st.code(f"Source Title. ({datetime.now().year}). [Online]. {url_input}")
+        else:
+            st.error("Please enter a URL.")
 
 st.markdown("---")
