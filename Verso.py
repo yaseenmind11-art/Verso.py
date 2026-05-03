@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from deep_translator import GoogleTranslator
 from textblob import TextBlob
+import re
 
 # 1. PAGE SETUP
 st.set_page_config(
@@ -27,7 +28,6 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Clean look for the search container */
     .search-container {
         border-radius: 15px;
         overflow: hidden;
@@ -55,7 +55,6 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
-# Tab 3 (Citation Pro) removed for a cleaner workspace
 tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
 
 # --- TAB 1: TRUSTED SEARCH (Clean Masked View) ---
@@ -72,9 +71,9 @@ with tab1:
         st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # This setup "sandwiches" the view to keep the professional look
-        # margin-top: -155px hides the Google search bar
-        # margin-bottom: -250px hides the bottom Google logo/footer while keeping page numbers
+        # Professional "Sandwich" Crop:
+        # margin-top: -155px hides the top Google bar
+        # margin-bottom: -250px hides the bottom logo/black bar but keeps page numbers visible
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
                 <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
@@ -82,7 +81,7 @@ with tab1:
         """
         components.html(html_string, height=870)
 
-# --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
+# --- TAB 2: VERSO EDITOR (Grammar, Punctuation & Case Fix) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
     user_text = st.text_area("Your Writing:", height=250, key="v_editor_final")
@@ -96,27 +95,36 @@ with tab2:
                 st.info(GoogleTranslator(source='auto', target=target_lang).translate(user_text))
 
         with col_b:
-            st.markdown("#### 📏 Grammar & Case Fix")
+            st.markdown("#### 📏 Grammar & Punctuation Fix")
             if st.button("Analyze & Correct"):
+                # Initial spelling and grammar check
                 blob = TextBlob(user_text)
                 temp = str(blob.correct())
                 
+                # Advanced Punctuation & Formatting Logic
+                # 1. Fix spacing around punctuation (e.g., "hello , world" -> "hello, world")
+                temp = re.sub(r'\s+([,.!?;:])', r'\1', temp)
+                # 2. Ensure a space exists after punctuation if missing
+                temp = re.sub(r'([,.!?;:])(?=[^\s\d])', r'\1 ', temp)
+                
                 # Capitalization & "I" logic
-                sentences = temp.split('. ')
+                sentences = re.split(r'(?<=[.!?])\s+', temp)
                 final_sentences = []
                 for s in sentences:
                     if len(s) > 0:
+                        # Capitalize start of sentence
                         s = s[0].upper() + s[1:]
+                        # Fix lowercase "i" issues
                         s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
                         final_sentences.append(s)
                 
-                final_output = ". ".join(final_sentences)
+                final_output = " ".join(final_sentences)
                 
                 if final_output.strip() == user_text.strip():
                     st.balloons()
-                    st.markdown('<div class="status-box">🎉 Looking great! No errors found.</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="status-box">🎉 Writing is perfect! No errors found.</div>', unsafe_allow_html=True)
                 else:
-                    st.warning("Suggested Revision:")
+                    st.warning("Suggested Revision (includes punctuation & casing):")
                     st.success(final_output)
 
 st.markdown("---")
