@@ -55,10 +55,10 @@ with t_center:
 st.markdown("---")
 
 # 4. MAIN TABS
-# Tab 3 (Citation Pro) is removed here
+# Tab 3 (Citation Pro) removed here
 tab1, tab2 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor"])
 
-# --- TAB 1: TRUSTED SEARCH ---
+# --- TAB 1: TRUSTED SEARCH (Clean Masked View) ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
     st.write("Displaying verified results from **.gov, .edu, .org, and .ac.uk** domains.")
@@ -72,16 +72,17 @@ with tab1:
         st.markdown("---")
         st.markdown("#### 🌐 Live Trusted Results")
         
-        # This setup ensures the search results and page numbers are visible 
-        # while hiding the top bar and the very bottom black location bar.
+        # Optimized iframe cropping: 
+        # -155px margin-top hides the Google search bar/logo
+        # -250px margin-bottom hides the bottom black footer/location bar
         html_string = f"""
-            <div style="width: 100%; height: 900px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
-                <iframe src="{q_url}" style="width: 100%; height: 1400px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
+            <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
+                <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
             </div>
         """
-        components.html(html_string, height=920)
+        components.html(html_string, height=870)
 
-# --- TAB 2: VERSO EDITOR ---
+# --- TAB 2: VERSO EDITOR (Grammar & Auto-Capitalization) ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
     user_text = st.text_area("Your Writing:", height=250, key="v_editor_final")
