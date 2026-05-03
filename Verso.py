@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from datetime import datetime
 from deep_translator import GoogleTranslator
-import language_tool_python
+from textblob import TextBlob
 
 # 1. PAGE SETUP
 st.set_page_config(
@@ -11,78 +11,31 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. FAST ENGINE LOADING
-@st.cache_resource
-def load_grammarian():
-    # This downloads the 'server' once and keeps it alive for speed
-    return language_tool_python.LanguageTool('en-US')
-
-# Pre-load the tool
-try:
-    tool = load_grammarian()
-except:
-    tool = None
-
-# Initialize session state for text so it doesn't disappear
-if 'editor_text' not in st.session_state:
-    st.session_state.editor_text = ""
-
-# 3. ADVANCED UI CSS
+# 2. UI STYLING
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    header, footer { visibility: hidden; }
     
-    /* Sidebar Gear Styling */
-    section[data-testid="stSidebar"] {
-        background-color: #f8fafc;
-        border-right: 1px solid #e2e8f0;
-    }
-
-    .editor-output {
-        background: #ffffff;
-        border: 2px solid #00a1ff;
+    .status-box {
+        padding: 20px;
         border-radius: 12px;
-        padding: 15px;
-        color: #1e293b;
+        border: 2px solid #00a1ff;
+        background-color: #f0f9ff;
+        text-align: center;
     }
-
-    /* Primary Buttons */
+    
     div.stButton > button:first-child {
         background-color: #00a1ff !important;
         color: white !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        border: none !important;
-        transition: 0.3s;
-    }
-    
-    div.stButton > button:hover {
-        background-color: #0077bb !important;
-        transform: translateY(-1px);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 4. THE GEAR SETTINGS (Sidebar)
-with st.sidebar:
-    st.markdown("## ⚙️ System Settings")
-    st.write("Configure Verso AI behavior")
-    
-    # Fast action buttons
-    if st.button("🗑️ Clear My Work"):
-        st.session_state.editor_text = ""
-        st.rerun()
-        
-    st.toggle("Auto-Correct Mode", value=True)
-    st.toggle("High-Performance Engine", value=True)
-    
-    st.markdown("---")
-    st.caption("Verso Pro v2.8 | Optimized for Egypt 🇪🇬")
-
-# 5. LOGO
+# 3. LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
     if os.path.exists("full_logo.png"):
@@ -92,56 +45,63 @@ with t_center:
 
 st.markdown("---")
 
-# 6. TABS
+# 4. MAIN TABS
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
 with tab1:
-    search_q = st.text_input("Enter research topic:", placeholder="Search academic sources...")
+    st.markdown("### 🔍 Research Search")
+    # THIS IS THE SEARCH BOX YOU WERE LOOKING FOR
+    search_q = st.text_input("What are you searching for?", placeholder="e.g., Climate change in Egypt...", key="main_search")
+    
     if search_q:
         q = search_q.replace(" ", "+")
-        st.markdown(f"**Results for {search_q}:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.link_button("🌐 Search Google", f"https://www.google.com/search?q={q}")
+        with col2:
+            st.link_button("📚 Google Scholar", f"https://scholar.google.com/scholar?q={q}")
+        with col3:
+            st.link_button("📖 Britannica", f"https://www.britannica.com/search?query={q}")
 
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    
-    # Use session state to hold the text
-    text_input = st.text_area("Your Research:", value=st.session_state.editor_text, height=200, key="main_editor")
-    st.session_state.editor_text = text_input
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your text here...", key="v_editor")
 
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        st.markdown("#### 🌐 Translator")
-        target_lang = st.selectbox("Language:", ["arabic", "french", "spanish"])
-        if st.button("Translate Text"):
-            with st.spinner("Translating..."):
-                result = GoogleTranslator(source='auto', target=target_lang).translate(st.session_state.editor_text)
-                st.markdown(f'<div class="editor-output">{result}</div>', unsafe_allow_html=True)
+    if user_text:
+        col_a, col_b = st.columns(2)
+        
+        with col_a:
+            st.markdown("#### 🌐 Global Translator")
+            target_lang = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german", "japanese", "russian"])
+            if st.button("Translate Now"):
+                result = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
+                st.info(result)
 
-    with col_b:
-        st.markdown("#### 📏 Grammar Engine")
-        if st.button("Analyze & Auto-Fix"):
-            if tool:
-                with st.spinner("Running deep check..."):
-                    # Find matches
-                    matches = tool.check(st.session_state.editor_text)
-                    # Automatically create corrected version
-                    corrected = tool.correct(st.session_state.editor_text)
-                    
-                    if len(matches) == 0:
-                        st.success("Writing looks perfect!")
-                    else:
-                        st.warning(f"Fixed {len(matches)} errors.")
-                        # Update the editor text immediately
-                        st.session_state.editor_text = corrected
-                        st.rerun() 
-            else:
-                st.error("Grammar engine starting up. Try again in 10 seconds.")
+        with col_b:
+            st.markdown("#### 📏 Grammar & Spelling")
+            if st.button("Analyze Writing"):
+                # SMART GRAMMAR LOGIC
+                blob = TextBlob(user_text)
+                corrected = str(blob.correct())
+                
+                # Check if text is already perfect
+                if corrected.lower().strip() == user_text.lower().strip():
+                    st.balloons()
+                    st.markdown("""
+                        <div class="status-box">
+                            <h2 style="color: #00a1ff; margin:0;">🎉 Congratulations!</h2>
+                            <p style="font-size: 18px;">Your writing is perfect!</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.warning("Potential improvements:")
+                    # Display the corrected version clearly
+                    st.success(f"**Suggested:** {corrected}")
 
 with tab3:
-    st.markdown("### 📜 Citator")
-    url = st.text_input("Source URL:")
-    if st.button("Create Citation"):
-        st.code(f"Resource. ({datetime.now().year}). Academic Data. {url}")
+    st.markdown("### 📜 Citation Pro")
+    url = st.text_input("Source URL:", key="cite_url")
+    if st.button("Generate Citation"):
+        st.code(f"Resource. ({datetime.now().year}). [Online Source]. {url}")
 
 st.markdown("---")
