@@ -11,21 +11,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. FAST ENGINE LOADING
+# 2. CACHED GRAMMAR ENGINE
 @st.cache_resource
-def load_grammarian():
-    # This downloads the 'server' once and keeps it alive for speed
+def load_tool():
+    # Using 'en-US' for general academic research
     return language_tool_python.LanguageTool('en-US')
-
-# Pre-load the tool
-try:
-    tool = load_grammarian()
-except:
-    tool = None
-
-# Initialize session state for text so it doesn't disappear
-if 'editor_text' not in st.session_state:
-    st.session_state.editor_text = ""
 
 # 3. ADVANCED UI CSS
 st.markdown("""
@@ -35,52 +25,39 @@ st.markdown("""
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Sidebar Gear Styling */
-    section[data-testid="stSidebar"] {
-        background-color: #f8fafc;
-        border-right: 1px solid #e2e8f0;
+    .stTextArea textarea {
+        font-size: 16px !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 10px !important;
     }
 
-    .editor-output {
-        background: #ffffff;
-        border: 2px solid #00a1ff;
-        border-radius: 12px;
+    .status-box {
         padding: 15px;
-        color: #1e293b;
-    }
-
-    /* Primary Buttons */
-    div.stButton > button:first-child {
-        background-color: #00a1ff !important;
-        color: white !important;
-        border-radius: 8px !important;
-        font-weight: 700 !important;
-        border: none !important;
-        transition: 0.3s;
+        border-radius: 10px;
+        margin: 10px 0;
+        border: 1px solid #00a1ff;
+        background-color: #f0f9ff;
     }
     
-    div.stButton > button:hover {
-        background-color: #0077bb !important;
-        transform: translateY(-1px);
+    .sidebar-gear {
+        font-size: 24px;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 4. THE GEAR SETTINGS (Sidebar)
+# 4. SIDEBAR (The Gear Menu)
 with st.sidebar:
-    st.markdown("## ⚙️ System Settings")
-    st.write("Configure Verso AI behavior")
+    st.markdown('<div class="sidebar-gear">⚙️ System Settings</div>', unsafe_allow_html=True)
     
-    # Fast action buttons
-    if st.button("🗑️ Clear My Work"):
-        st.session_state.editor_text = ""
+    if st.button("🔄 Hard Reset App"):
+        st.cache_resource.clear()
         st.rerun()
-        
-    st.toggle("Auto-Correct Mode", value=True)
-    st.toggle("High-Performance Engine", value=True)
     
     st.markdown("---")
-    st.caption("Verso Pro v2.8 | Optimized for Egypt 🇪🇬")
+    st.write("**Engine Status:**")
+    st.success("Translation Engine: Online")
+    st.success("Grammar Engine: Ready")
 
 # 5. LOGO
 t_left, t_center, t_right = st.columns([1, 2, 1])
@@ -96,52 +73,67 @@ st.markdown("---")
 tab1, tab2, tab3 = st.tabs(["🔍 Smart Search", "✍️ Verso Editor", "📜 Citation Pro"])
 
 with tab1:
-    search_q = st.text_input("Enter research topic:", placeholder="Search academic sources...")
+    search_q = st.text_input("What are we researching?", placeholder="Topic...")
     if search_q:
         q = search_q.replace(" ", "+")
-        st.markdown(f"**Results for {search_q}:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
+        st.markdown(f"**Quick Links:** [Scholar](https://scholar.google.com/scholar?q={q}) | [Britannica](https://www.britannica.com/search?query={q})")
 
 with tab2:
     st.markdown("### ✍️ Verso Editor")
     
-    # Use session state to hold the text
-    text_input = st.text_area("Your Research:", value=st.session_state.editor_text, height=200, key="main_editor")
-    st.session_state.editor_text = text_input
+    # Text input area
+    user_text = st.text_area("Your Writing:", height=250, placeholder="Paste your research work here...", key="editor_box")
 
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        st.markdown("#### 🌐 Translator")
-        target_lang = st.selectbox("Language:", ["arabic", "french", "spanish"])
-        if st.button("Translate Text"):
-            with st.spinner("Translating..."):
-                result = GoogleTranslator(source='auto', target=target_lang).translate(st.session_state.editor_text)
-                st.markdown(f'<div class="editor-output">{result}</div>', unsafe_allow_html=True)
+    if user_text:
+        col_lang, col_check = st.columns(2)
+        
+        with col_lang:
+            st.markdown("#### 🌐 Global Translator")
+            # Expanded Language List
+            target_lang = st.selectbox("Select Language:", [
+                "arabic", "french", "spanish", "german", "italian", 
+                "chinese (simplified)", "japanese", "korean", "russian", "portuguese"
+            ])
+            
+            if st.button("Translate Now"):
+                with st.spinner("Translating..."):
+                    translated_text = GoogleTranslator(source='auto', target=target_lang).translate(user_text)
+                    st.markdown("---")
+                    st.write(f"**Result ({target_lang.title()}):**")
+                    st.info(translated_text)
 
-    with col_b:
-        st.markdown("#### 📏 Grammar Engine")
-        if st.button("Analyze & Auto-Fix"):
-            if tool:
-                with st.spinner("Running deep check..."):
-                    # Find matches
-                    matches = tool.check(st.session_state.editor_text)
-                    # Automatically create corrected version
-                    corrected = tool.correct(st.session_state.editor_text)
+        with col_check:
+            st.markdown("#### 📏 Grammar & Spelling")
+            if st.button("Analyze Writing"):
+                with st.spinner("Checking for mistakes..."):
+                    # Load the tool inside the button to ensure it's ready
+                    grammar_tool = load_tool()
+                    matches = grammar_tool.check(user_text)
                     
                     if len(matches) == 0:
-                        st.success("Writing looks perfect!")
+                        st.balloons()
+                        st.markdown("""
+                            <div class="status-box">
+                                <h3 style="color: #059669; margin:0;">🎉 Congratulations!</h3>
+                                <p style="margin:0;">There are no mistakes left in your text. Your writing is perfect!</p>
+                            </div>
+                        """, unsafe_allow_html=True)
                     else:
-                        st.warning(f"Fixed {len(matches)} errors.")
-                        # Update the editor text immediately
-                        st.session_state.editor_text = corrected
-                        st.rerun() 
-            else:
-                st.error("Grammar engine starting up. Try again in 10 seconds.")
+                        st.warning(f"Found {len(matches)} potential improvements.")
+                        corrected_text = grammar_tool.correct(user_text)
+                        
+                        st.write("**Suggested Improvements:**")
+                        st.code(corrected_text)
+                        
+                        # Show specific errors
+                        with st.expander("Show detailed error list"):
+                            for match in matches:
+                                st.write(f"❌ {match.message}")
 
 with tab3:
-    st.markdown("### 📜 Citator")
-    url = st.text_input("Source URL:")
-    if st.button("Create Citation"):
-        st.code(f"Resource. ({datetime.now().year}). Academic Data. {url}")
+    st.markdown("### 📜 Citation Pro")
+    url_cite = st.text_input("Source URL:")
+    if st.button("Cite Now"):
+        st.code(f"Resource. ({datetime.now().year}). [Online Article]. {url_cite}")
 
 st.markdown("---")
