@@ -14,26 +14,44 @@ st.set_page_config(
     layout="wide"
 )
 
-# This hidden component helps Google Search Console find your verification tag
+# Essential for Google Search Console Verification
 components.html(
     """
-    <meta name="google-site-verification" content="o5P8qGPR5xXYBN4aEmV-DqsQgf1hAdcym8CTT12Cwc8" />
+    <html>
+        <head>
+            <meta name="google-site-verification" content="o5P8qGPR5xXYBN4aEmV-DqsQgf1hAdcym8CTT12Cwc8" />
+        </head>
+    </html>
     """,
     height=0,
 )
 
-# 2. UI STYLING
+# 2. UI STYLING (Professional White & Grey Theme)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-    html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+    
+    html, body, [class*="st-"], .stApp { 
+        font-family: 'Inter', sans-serif; 
+        background-color: #ffffff !important; 
+    }
+    
     header, footer { visibility: hidden; }
     
+    /* Welcome Card Styling */
+    .welcome-card {
+        padding: 30px;
+        border-radius: 15px;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 25px;
+    }
+
     .status-box {
         padding: 20px;
         border-radius: 12px;
-        border: 2px solid #00a1ff;
-        background-color: #f0f9ff;
+        border: 2px solid #e2e8f0;
+        background-color: #f8fafc;
         text-align: center;
         font-weight: 600;
         color: #0f172a;
@@ -44,6 +62,19 @@ st.markdown("""
         color: white !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
+        border: none !important;
+        transition: 0.3s;
+    }
+
+    div.stButton > button:hover {
+        background-color: #0077c2 !important;
+        transform: translateY(-2px);
+    }
+
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #e2e8f0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -61,39 +92,59 @@ with t_center:
     else:
         st.markdown("<h1 style='text-align: center; color: #0f172a; font-weight: 800;'>VERSO<span style='color:#00a1ff'>AI</span></h1>", unsafe_allow_html=True)
 
-st.markdown("---")
+# 4. WELCOME DASHBOARD
+st.markdown(f"""
+    <div class="welcome-card">
+        <h2 style='margin-top:0;'>Welcome to Verso AI</h2>
+        <p style='color: #64748b; font-size: 1.1em;'>
+            Your intelligent workspace for academic excellence. Verso AI streamlines your research workflow 
+            by combining verified source discovery with high-precision writing tools.
+        </p>
+        <div style='display: flex; gap: 20px; margin-top: 15px;'>
+            <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                <strong>Status:</strong> <span style='color: #10b981;'>● Operational</span>
+            </div>
+            <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                <strong>Date:</strong> {datetime.now().strftime('%B %d, %Y')}
+            </div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
-# 4. MAIN TABS
+# 5. MAIN NAVIGATION TABS
 tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "🌐 Verso Translate", "📜 Citation Pro"])
 
 # --- TAB 1: TRUSTED SEARCH ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
-    st.write("Searching verified results from **.gov, .edu, .org, and .ac.uk** domains.")
-    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
+    st.info("Results are filtered to show only .gov, .edu, .org, and .ac.uk domains.")
+    search_q = st.text_input("What are you researching today?", placeholder="e.g., Renewable energy solutions in urban areas", key="search_final")
+    
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
+        # Parameters used to force light mode: igu=1, cs=0, hl=en, light_mode=1
+        q_url = f"https://www.google.com/search?igu=1&cs=0&hl=en&light_mode=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         st.markdown("---")
+        
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
-                <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
+                <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none; background-color: white;"></iframe>
             </div>
         """
         components.html(html_string, height=870)
 
-# --- TAB 2: VERSO EDITOR (Grammar & Punctuation) ---
+# --- TAB 2: VERSO EDITOR ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=300, key="v_editor_final", placeholder="Type here to check grammar...")
+    user_text = st.text_area("Your Draft:", height=300, key="v_editor_final", placeholder="Paste your paragraph here to check for grammar and logic...")
     
     if user_text:
-        if st.button("Analyze & Correct"):
+        if st.button("Check Writing"):
             input_text = user_text.strip()
             blob = TextBlob(input_text)
             temp = str(blob.correct())
             
-            # Punctuation spacing fix
+            # Logic: Fix punctuation spacing and capitalization
             temp = re.sub(r'\s+([,.!?;:])', r'\1', temp)
             temp = re.sub(r'([,.!?;:])(?=[^\s\d])', r'\1 ', temp)
             
@@ -104,9 +155,9 @@ with tab2:
                     s = s[0].upper() + s[1:]
                     s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
                     
-                    # Smart Question Detection
-                    question_words = ['What', 'Who', 'Where', 'When', 'Why', 'How', 'Is', 'Are', 'Do', 'Does', 'Can']
-                    if any(s.startswith(word) for word in question_words) and not s.endswith('?'):
+                    # Smart Question Logic
+                    q_words = ['What', 'Who', 'Where', 'When', 'Why', 'How', 'Is', 'Are', 'Do', 'Does', 'Can']
+                    if any(s.startswith(w) for w in q_words) and not s.endswith('?'):
                         if s.endswith('.'): s = s[:-1]
                         s += '?'
                     final_sentences.append(s)
@@ -115,43 +166,47 @@ with tab2:
             
             if final_output == input_text:
                 st.balloons()
-                st.markdown('<div class="status-box">🎉 Congratulations! Your writing is perfect.</div>', unsafe_allow_html=True)
+                st.markdown('<div class="status-box">🎉 Your writing is grammatically sound. Great work!</div>', unsafe_allow_html=True)
             else:
-                st.warning("Suggested Revision:")
+                st.markdown("#### Suggested Improvements:")
                 st.success(final_output)
 
 # --- TAB 3: VERSO TRANSLATE ---
 with tab3:
     st.markdown("### 🌐 Verso Translate")
-    translate_text = st.text_area("Text to Translate:", height=200, key="trans_area")
-    target_lang = st.selectbox("Select Target Language:", ["arabic", "french", "spanish", "german", "italian"])
+    t_text = st.text_area("Source Text:", height=200, key="trans_area")
+    target_l = st.selectbox("Target Language:", ["arabic", "french", "spanish", "german", "italian", "chinese"])
     
-    if st.button("Translate Now"):
-        if translate_text:
+    if st.button("Run Translation"):
+        if t_text:
             try:
-                result = GoogleTranslator(source='auto', target=target_lang).translate(translate_text)
-                st.markdown("#### Translation:")
+                result = GoogleTranslator(source='auto', target=target_l).translate(t_text)
+                st.markdown("#### Translation Output:")
                 st.info(result)
-            except Exception:
-                st.error("Translation service is busy. Please try again.")
-        else:
-            st.warning("Please enter some text.")
+            except:
+                st.error("The translation engine is currently busy. Please try again.")
 
 # --- TAB 4: CITATION PRO ---
 with tab4:
     st.markdown("### 📜 Citation Pro")
-    st.write("Generate professional APA-style citations.")
-    c_title = st.text_input("Source Title:", placeholder="e.g. Climate Change Impacts")
-    c_author = st.text_input("Author/Organization:", placeholder="e.g. NASA")
-    c_url = st.text_input("URL:", placeholder="https://nasa.gov/example")
+    st.write("Generate accurate APA-style citations for your bibliography.")
+    col1, col2 = st.columns(2)
+    with col1:
+        c_title = st.text_input("Source Title:", placeholder="e.g. The Paris Agreement")
+        c_author = st.text_input("Author/Organization:", placeholder="e.g. United Nations")
+    with col2:
+        c_url = st.text_input("Source URL:", placeholder="https://un.org/example")
+        c_year = st.text_input("Publication Year:", placeholder=str(datetime.now().year))
     
     if st.button("Generate Citation"):
         if c_title and c_url:
-            year = datetime.now().year
-            author = c_author if c_author else "n.d."
-            formatted_citation = f"{author}. ({year}). {c_title}. Retrieved from {c_url}"
-            st.code(formatted_citation, language="text")
+            year_val = c_year if c_year else "n.d."
+            auth_val = c_author if c_author else "n.d."
+            formatted = f"{auth_val}. ({year_val}). {c_title}. Retrieved from {c_url}"
+            st.markdown("#### Your APA Citation:")
+            st.code(formatted, language="text")
         else:
-            st.error("Title and URL are required.")
+            st.error("Please provide at least a Title and a URL.")
 
 st.markdown("---")
+st.markdown("<p style='text-align: center; color: #94a3b8;'>Verso AI Research Suite | Professional Edition</p>", unsafe_allow_html=True)
