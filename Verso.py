@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Hidden verification for Google Search Console
+# Verification component for Google Search Console
 components.html(
     """
     <html>
@@ -26,19 +26,18 @@ components.html(
     height=0,
 )
 
-# 2. UI STYLING (Reset to White & Grey theme)
+# 2. UI STYLING (Forced White & Grey Theme)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     html, body, [class*="st-"] { 
         font-family: 'Inter', sans-serif; 
-        background-color: #ffffff; 
+        background-color: #ffffff !important; 
     }
     header, footer { visibility: hidden; }
     
-    /* White/Grey Theme Elements */
     .stApp {
-        background-color: #ffffff;
+        background-color: #ffffff !important;
     }
 
     .status-box {
@@ -59,7 +58,6 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Input styling for grey/white look */
     .stTextInput > div > div > input {
         background-color: #f8fafc !important;
         color: #0f172a !important;
@@ -85,16 +83,18 @@ st.markdown("---")
 # 4. MAIN TABS
 tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "🌐 Verso Translate", "📜 Citation Pro"])
 
-# --- TAB 1: TRUSTED SEARCH (WHITE BACKGROUND) ---
+# --- TAB 1: TRUSTED SEARCH (FIXED WHITE THEME) ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
     st.write("Searching verified results from **.gov, .edu, .org, and .ac.uk** domains.")
     search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
+        # Added '&cs=0' and '&hl=en' to force light mode and English results
+        q_url = f"https://www.google.com/search?igu=1&cs=0&hl=en&q={search_q}+{trusted_filter}".replace(" ", "+")
         st.markdown("---")
-        # Fixed search container with white background
+        
+        # We ensure the iframe background and the container background are both pure white
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
                 <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none; background-color: white;"></iframe>
