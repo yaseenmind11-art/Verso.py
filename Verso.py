@@ -26,7 +26,7 @@ components.html(
     height=0,
 )
 
-# 2. THE ULTIMATE BUTTON FIX
+# 2. THE FINAL BUTTON & UI FIX
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -47,32 +47,25 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* THE BUTTON REPAIR: Targets every possible internal layer */
+    /* THE BUTTON REPAIR: Final layer removal for image_66e95e.png */
     div.stButton > button {
         background-color: #00a1ff !important;
         color: white !important;
-        border: 2px solid #00a1ff !important;
+        border: none !important;
         border-radius: 8px !important;
-        padding: 0.6rem 2rem !important;
+        padding: 0.6rem 2.5rem !important;
         font-weight: 700 !important;
         width: 100% !important;
-        transition: all 0.2s ease !important;
     }
 
-    /* This removes the white box shown in your screenshot */
-    div.stButton > button div, 
-    div.stButton > button p, 
-    div.stButton > button span,
-    div.stButton > button label {
+    /* FORCED TRANSPARENCY for all internal Streamlit button tags */
+    div.stButton > button * {
         background-color: transparent !important;
         color: white !important;
-        border: none !important;
     }
 
     div.stButton > button:hover {
         background-color: #008ae6 !important;
-        border-color: #008ae6 !important;
-        color: white !important;
     }
 
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
@@ -101,15 +94,14 @@ st.markdown(f"""
     <div class="welcome-card">
         <h2 style='margin-top:0;'>Welcome to Verso AI</h2>
         <p style='color: #64748b; font-size: 1.1em;'>
-            Your intelligent workspace for academic excellence. Verso AI streamlines your research workflow 
-            by combining verified source discovery with high-precision writing tools.
+            Professional academic suite for IB research and writing. 
         </p>
         <div style='display: flex; gap: 20px; margin-top: 15px;'>
             <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
-                <strong>Status:</strong> <span style='color: #10b981;'>● Operational</span>
+                <strong>System:</strong> <span style='color: #10b981;'>● Active</span>
             </div>
             <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
-                <strong>Network:</strong> <span style='color: #00a1ff;'>Secure</span>
+                <strong>Date:</strong> {datetime.now().strftime('%B %d, %Y')}
             </div>
         </div>
     </div>
@@ -121,13 +113,10 @@ tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", 
 # --- TAB 1: TRUSTED SEARCH ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
-    st.info("Filtering for .gov, .edu, .org, and .ac.uk domains.")
-    search_q = st.text_input("Research Topic:", placeholder="Enter keywords...", key="search_final")
-    
+    search_q = st.text_input("Enter Topic:", placeholder="Search .edu, .gov, .org...", key="search_final")
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
-        st.markdown("---")
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
                 <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
@@ -138,64 +127,49 @@ with tab1:
 # --- TAB 2: VERSO EDITOR ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Draft:", height=300, key="v_editor_final", placeholder="Paste text to analyze logic and grammar...")
-    
+    user_text = st.text_area("Your Draft:", height=300, placeholder="Check your writing...")
     if user_text:
-        if st.button("Run Grammar Analysis"):
-            input_text = user_text.strip()
-            blob = TextBlob(input_text)
+        if st.button("Analyze Writing"):
+            blob = TextBlob(user_text.strip())
             temp = str(blob.correct())
-            
-            temp = re.sub(r'\s+([,.!?;:])', r'\1', temp)
-            temp = re.sub(r'([,.!?;:])(?=[^\s\d])', r'\1 ', temp)
-            
-            sentences = re.split(r'(?<=[.!?])\s+', temp)
-            final_sentences = []
-            for s in sentences:
-                if len(s) > 0:
-                    s = s[0].upper() + s[1:]
-                    s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
-                    q_words = ['What', 'Who', 'Where', 'When', 'Why', 'How', 'Is', 'Are', 'Do', 'Does', 'Can']
-                    if any(s.startswith(w) for w in q_words) and not s.endswith('?'):
-                        if s.endswith('.'): s = s[:-1]
-                        s += '?'
-                    final_sentences.append(s)
-            
-            final_output = " ".join(final_sentences).strip()
-            if final_output == input_text:
-                st.balloons()
-                st.success("Writing looks professional. No changes needed!")
-            else:
-                st.warning("Suggested Revision:")
-                st.write(final_output)
+            st.warning("Suggested Revision:")
+            st.write(temp)
 
 # --- TAB 3: VERSO TRANSLATE ---
 with tab3:
     st.markdown("### 🌐 Verso Translate")
-    t_text = st.text_area("Source:", height=200, key="trans_area")
-    target_l = st.selectbox("Language:", ["arabic", "french", "spanish", "german", "italian"])
+    t_text = st.text_area("Source Text:", height=200)
     
-    if st.button("Translate Content"):
+    # Expanded Language List
+    languages = {
+        "Arabic": "ar", "Chinese (Simplified)": "zh-CN", "Dutch": "nl", 
+        "French": "fr", "German": "de", "Greek": "el", "Hindi": "hi", 
+        "Italian": "it", "Japanese": "ja", "Korean": "ko", "Latin": "la",
+        "Portuguese": "pt", "Russian": "ru", "Spanish": "es", "Turkish": "tr",
+        "Urdu": "ur", "Vietnamese": "vi"
+    }
+    
+    target_lang_name = st.selectbox("Select Target Language:", list(languages.keys()))
+    
+    if st.button("Translate Now"):
         if t_text:
-            result = GoogleTranslator(source='auto', target=target_l).translate(t_text)
-            st.info(result)
+            try:
+                result = GoogleTranslator(source='auto', target=languages[target_lang_name]).translate(t_text)
+                st.info(result)
+            except:
+                st.error("Connection error. Try again.")
 
 # --- TAB 4: CITATION PRO ---
 with tab4:
     st.markdown("### 📜 Citation Pro")
-    st.write("Generate accurate **APA 7th Generation** style citations for your bibliography.")
-    
-    # URL-only input
-    c_url = st.text_input("Source URL:", placeholder="https://example.com/source-link")
-    
+    st.write("Generate accurate **APA 7th Generation** style citations.")
+    c_url = st.text_input("Source URL:", placeholder="Paste link here...")
     if st.button("Generate APA 7th Citation"):
         if c_url:
             today = datetime.now().strftime('%Y, %B %d')
             formatted = f"Online Resource. ({datetime.now().year}). Retrieved {today}, from {c_url}"
-            st.markdown("#### Your APA 7th Edition Citation:")
             st.code(formatted, language="text")
         else:
-            st.error("Enter a URL first.")
+            st.error("Paste a URL first.")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #94a3b8;'>Verso AI | Professional Research Suite</p>", unsafe_allow_html=True)
