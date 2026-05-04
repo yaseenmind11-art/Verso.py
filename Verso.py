@@ -26,7 +26,7 @@ components.html(
     height=0,
 )
 
-# 2. UI STYLING (Professional White & Grey Theme)
+# 2. UI STYLING (Fixed Buttons & Clean Theme)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -38,7 +38,7 @@ st.markdown("""
     
     header, footer { visibility: hidden; }
     
-    /* Welcome Card Styling */
+    /* Welcome Card */
     .welcome-card {
         padding: 30px;
         border-radius: 15px;
@@ -47,28 +47,28 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    .status-box {
-        padding: 20px;
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
-        background-color: #f8fafc;
-        text-align: center;
-        font-weight: 600;
-        color: #0f172a;
-    }
-    
-    div.stButton > button:first-child {
+    /* Fixed Button Styling */
+    div.stButton > button {
         background-color: #00a1ff !important;
         color: white !important;
+        border: 2px solid #00a1ff !important;
         border-radius: 8px !important;
+        padding: 0.5rem 2rem !important;
         font-weight: 700 !important;
-        border: none !important;
-        transition: 0.3s;
+        width: auto !important;
+        transition: all 0.2s ease-in-out !important;
     }
 
     div.stButton > button:hover {
         background-color: #0077c2 !important;
-        transform: translateY(-2px);
+        border-color: #0077c2 !important;
+        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    div.stButton > button:active {
+        transform: translateY(0);
     }
 
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
@@ -105,7 +105,7 @@ st.markdown(f"""
                 <strong>Status:</strong> <span style='color: #10b981;'>● Operational</span>
             </div>
             <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
-                <strong>Date:</strong> {datetime.now().strftime('%B %d, %Y')}
+                <strong>Network:</strong> <span style='color: #00a1ff;'>Secure</span>
             </div>
         </div>
     </div>
@@ -117,18 +117,16 @@ tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", 
 # --- TAB 1: TRUSTED SEARCH ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
-    st.info("Results are filtered to show only .gov, .edu, .org, and .ac.uk domains.")
-    search_q = st.text_input("What are you researching today?", placeholder="e.g., Renewable energy solutions in urban areas", key="search_final")
+    st.info("Searching across .gov, .edu, .org, and .ac.uk databases.")
+    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
     
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
-        # Parameters used to force light mode: igu=1, cs=0, hl=en, light_mode=1
-        q_url = f"https://www.google.com/search?igu=1&cs=0&hl=en&light_mode=1&q={search_q}+{trusted_filter}".replace(" ", "+")
+        q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
         st.markdown("---")
-        
         html_string = f"""
             <div style="width: 100%; height: 850px; overflow: hidden; border-radius: 15px; border: 1px solid #e2e8f0; background-color: white;">
-                <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none; background-color: white;"></iframe>
+                <iframe src="{q_url}" style="width: 100%; height: 1350px; margin-top: -155px; margin-bottom: -250px; border: none;"></iframe>
             </div>
         """
         components.html(html_string, height=870)
@@ -136,15 +134,14 @@ with tab1:
 # --- TAB 2: VERSO EDITOR ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Draft:", height=300, key="v_editor_final", placeholder="Paste your paragraph here to check for grammar and logic...")
+    user_text = st.text_area("Your Writing:", height=300, key="v_editor_final", placeholder="Type here to check grammar...")
     
     if user_text:
-        if st.button("Check Writing"):
+        if st.button("Analyze & Correct"):
             input_text = user_text.strip()
             blob = TextBlob(input_text)
             temp = str(blob.correct())
             
-            # Logic: Fix punctuation spacing and capitalization
             temp = re.sub(r'\s+([,.!?;:])', r'\1', temp)
             temp = re.sub(r'([,.!?;:])(?=[^\s\d])', r'\1 ', temp)
             
@@ -154,8 +151,6 @@ with tab2:
                 if len(s) > 0:
                     s = s[0].upper() + s[1:]
                     s = s.replace(" i ", " I ").replace(" i'", " I'").replace(" i.", " I.")
-                    
-                    # Smart Question Logic
                     q_words = ['What', 'Who', 'Where', 'When', 'Why', 'How', 'Is', 'Are', 'Do', 'Does', 'Can']
                     if any(s.startswith(w) for w in q_words) and not s.endswith('?'):
                         if s.endswith('.'): s = s[:-1]
@@ -163,50 +158,42 @@ with tab2:
                     final_sentences.append(s)
             
             final_output = " ".join(final_sentences).strip()
-            
             if final_output == input_text:
                 st.balloons()
-                st.markdown('<div class="status-box">🎉 Your writing is grammatically sound. Great work!</div>', unsafe_allow_html=True)
+                st.success("Perfect! No corrections needed.")
             else:
-                st.markdown("#### Suggested Improvements:")
-                st.success(final_output)
+                st.warning("Suggested Revision:")
+                st.write(final_output)
 
 # --- TAB 3: VERSO TRANSLATE ---
 with tab3:
     st.markdown("### 🌐 Verso Translate")
-    t_text = st.text_area("Source Text:", height=200, key="trans_area")
-    target_l = st.selectbox("Target Language:", ["arabic", "french", "spanish", "german", "italian", "chinese"])
+    t_text = st.text_area("Text to Translate:", height=200, key="trans_area")
+    target_l = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german", "italian"])
     
-    if st.button("Run Translation"):
+    if st.button("Translate Now"):
         if t_text:
-            try:
-                result = GoogleTranslator(source='auto', target=target_l).translate(t_text)
-                st.markdown("#### Translation Output:")
-                st.info(result)
-            except:
-                st.error("The translation engine is currently busy. Please try again.")
+            result = GoogleTranslator(source='auto', target=target_l).translate(t_text)
+            st.info(result)
 
 # --- TAB 4: CITATION PRO ---
 with tab4:
     st.markdown("### 📜 Citation Pro")
-    st.write("Generate accurate APA-style citations for your bibliography.")
-    col1, col2 = st.columns(2)
-    with col1:
-        c_title = st.text_input("Source Title:", placeholder="e.g. The Paris Agreement")
-        c_author = st.text_input("Author/Organization:", placeholder="e.g. United Nations")
-    with col2:
-        c_url = st.text_input("Source URL:", placeholder="https://un.org/example")
-        c_year = st.text_input("Publication Year:", placeholder=str(datetime.now().year))
+    st.write("Generate accurate APA 7th edition style citations for your bibliography.")
+    
+    # Simple URL-only input
+    c_url = st.text_input("Source URL:", placeholder="https://example.com/article-link")
     
     if st.button("Generate Citation"):
-        if c_title and c_url:
-            year_val = c_year if c_year else "n.d."
-            auth_val = c_author if c_author else "n.d."
-            formatted = f"{auth_val}. ({year_val}). {c_title}. Retrieved from {c_url}"
-            st.markdown("#### Your APA Citation:")
-            st.code(formatted, language="text")
+        if c_url:
+            # Logic: Using URL to create a basic APA 7 skeleton
+            # In a full-scale app, this would use a scraper, but for now, it formats the URL professionally.
+            today = datetime.now().strftime('%Y, %B %d')
+            formatted_citation = f"Online Source. ({datetime.now().year}). Retrieved {today}, from {c_url}"
+            
+            st.markdown("#### Your APA 7th Edition Citation:")
+            st.code(formatted_citation, language="text")
         else:
-            st.error("Please provide at least a Title and a URL.")
+            st.error("Please enter a valid URL to generate a citation.")
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #94a3b8;'>Verso AI Research Suite | Professional Edition</p>", unsafe_allow_html=True)
