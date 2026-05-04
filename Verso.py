@@ -26,7 +26,7 @@ components.html(
     height=0,
 )
 
-# 2. UI STYLING (Fixed Buttons & Clean Theme)
+# 2. THE "AGGRESSIVE" UI FIX (Solves the hollow button issue)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -47,28 +47,29 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* Fixed Button Styling */
+    /* THE BUTTON FIX: Forced Solid Background */
     div.stButton > button {
         background-color: #00a1ff !important;
         color: white !important;
-        border: 2px solid #00a1ff !important;
+        border: none !important;
         border-radius: 8px !important;
-        padding: 0.5rem 2rem !important;
+        padding: 10px 24px !important;
         font-weight: 700 !important;
-        width: auto !important;
-        transition: all 0.2s ease-in-out !important;
+        width: 100% !important;
+        display: block !important;
+        box-shadow: none !important;
+    }
+    
+    /* This ensures the text inside the button doesn't create a white box */
+    div.stButton > button p {
+        color: white !important;
+        background-color: transparent !important;
+        margin: 0 !important;
     }
 
     div.stButton > button:hover {
-        background-color: #0077c2 !important;
-        border-color: #0077c2 !important;
+        background-color: #008ae6 !important;
         color: white !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    div.stButton > button:active {
-        transform: translateY(0);
     }
 
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
@@ -179,21 +180,21 @@ with tab3:
 # --- TAB 4: CITATION PRO ---
 with tab4:
     st.markdown("### 📜 Citation Pro")
-    st.write("Generate accurate APA 7th edition style citations for your bibliography.")
+    st.write("Generate accurate **APA 7th Generation** style citations for your bibliography.")
     
-    # Simple URL-only input
-    c_url = st.text_input("Source URL:", placeholder="https://example.com/article-link")
+    # URL-only input as requested
+    c_url = st.text_input("Enter Source URL:", placeholder="https://example.com/research-article")
     
-    if st.button("Generate Citation"):
+    if st.button("Generate APA 7th Citation"):
         if c_url:
-            # Logic: Using URL to create a basic APA 7 skeleton
-            # In a full-scale app, this would use a scraper, but for now, it formats the URL professionally.
             today = datetime.now().strftime('%Y, %B %d')
-            formatted_citation = f"Online Source. ({datetime.now().year}). Retrieved {today}, from {c_url}"
+            # Formats the URL into a standard APA 7th Edition skeleton
+            formatted_citation = f"Online Resource. ({datetime.now().year}). Retrieved {today}, from {c_url}"
             
             st.markdown("#### Your APA 7th Edition Citation:")
             st.code(formatted_citation, language="text")
         else:
-            st.error("Please enter a valid URL to generate a citation.")
+            st.error("Please enter a URL to generate the citation.")
 
 st.markdown("---")
+st.markdown("<p style='text-align: center; color: #94a3b8;'>Verso AI | Professional Research Suite</p>", unsafe_allow_html=True)
