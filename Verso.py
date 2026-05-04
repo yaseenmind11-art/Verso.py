@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Essential for Google Search Console Verification
+# Google Search Console Verification
 components.html(
     """
     <html>
@@ -26,7 +26,7 @@ components.html(
     height=0,
 )
 
-# 2. THE "AGGRESSIVE" UI FIX (Solves the hollow button issue)
+# 2. THE ULTIMATE BUTTON FIX
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -47,28 +47,31 @@ st.markdown("""
         margin-bottom: 25px;
     }
 
-    /* THE BUTTON FIX: Forced Solid Background */
+    /* THE BUTTON REPAIR: Targets every possible internal layer */
     div.stButton > button {
         background-color: #00a1ff !important;
         color: white !important;
-        border: none !important;
+        border: 2px solid #00a1ff !important;
         border-radius: 8px !important;
-        padding: 10px 24px !important;
+        padding: 0.6rem 2rem !important;
         font-weight: 700 !important;
         width: 100% !important;
-        display: block !important;
-        box-shadow: none !important;
+        transition: all 0.2s ease !important;
     }
-    
-    /* This ensures the text inside the button doesn't create a white box */
-    div.stButton > button p {
-        color: white !important;
+
+    /* This removes the white box shown in your screenshot */
+    div.stButton > button div, 
+    div.stButton > button p, 
+    div.stButton > button span,
+    div.stButton > button label {
         background-color: transparent !important;
-        margin: 0 !important;
+        color: white !important;
+        border: none !important;
     }
 
     div.stButton > button:hover {
         background-color: #008ae6 !important;
+        border-color: #008ae6 !important;
         color: white !important;
     }
 
@@ -118,8 +121,8 @@ tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", 
 # --- TAB 1: TRUSTED SEARCH ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
-    st.info("Searching across .gov, .edu, .org, and .ac.uk databases.")
-    search_q = st.text_input("Enter your research topic:", placeholder="Search trusted databases...", key="search_final")
+    st.info("Filtering for .gov, .edu, .org, and .ac.uk domains.")
+    search_q = st.text_input("Research Topic:", placeholder="Enter keywords...", key="search_final")
     
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
@@ -135,10 +138,10 @@ with tab1:
 # --- TAB 2: VERSO EDITOR ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Writing:", height=300, key="v_editor_final", placeholder="Type here to check grammar...")
+    user_text = st.text_area("Draft:", height=300, key="v_editor_final", placeholder="Paste text to analyze logic and grammar...")
     
     if user_text:
-        if st.button("Analyze & Correct"):
+        if st.button("Run Grammar Analysis"):
             input_text = user_text.strip()
             blob = TextBlob(input_text)
             temp = str(blob.correct())
@@ -161,7 +164,7 @@ with tab2:
             final_output = " ".join(final_sentences).strip()
             if final_output == input_text:
                 st.balloons()
-                st.success("Perfect! No corrections needed.")
+                st.success("Writing looks professional. No changes needed!")
             else:
                 st.warning("Suggested Revision:")
                 st.write(final_output)
@@ -169,10 +172,10 @@ with tab2:
 # --- TAB 3: VERSO TRANSLATE ---
 with tab3:
     st.markdown("### 🌐 Verso Translate")
-    t_text = st.text_area("Text to Translate:", height=200, key="trans_area")
-    target_l = st.selectbox("Select Language:", ["arabic", "french", "spanish", "german", "italian"])
+    t_text = st.text_area("Source:", height=200, key="trans_area")
+    target_l = st.selectbox("Language:", ["arabic", "french", "spanish", "german", "italian"])
     
-    if st.button("Translate Now"):
+    if st.button("Translate Content"):
         if t_text:
             result = GoogleTranslator(source='auto', target=target_l).translate(t_text)
             st.info(result)
@@ -182,19 +185,17 @@ with tab4:
     st.markdown("### 📜 Citation Pro")
     st.write("Generate accurate **APA 7th Generation** style citations for your bibliography.")
     
-    # URL-only input as requested
-    c_url = st.text_input("Enter Source URL:", placeholder="https://example.com/research-article")
+    # URL-only input
+    c_url = st.text_input("Source URL:", placeholder="https://example.com/source-link")
     
     if st.button("Generate APA 7th Citation"):
         if c_url:
             today = datetime.now().strftime('%Y, %B %d')
-            # Formats the URL into a standard APA 7th Edition skeleton
-            formatted_citation = f"Online Resource. ({datetime.now().year}). Retrieved {today}, from {c_url}"
-            
+            formatted = f"Online Resource. ({datetime.now().year}). Retrieved {today}, from {c_url}"
             st.markdown("#### Your APA 7th Edition Citation:")
-            st.code(formatted_citation, language="text")
+            st.code(formatted, language="text")
         else:
-            st.error("Please enter a URL to generate the citation.")
+            st.error("Enter a URL first.")
 
 st.markdown("---")
 st.markdown("<p style='text-align: center; color: #94a3b8;'>Verso AI | Professional Research Suite</p>", unsafe_allow_html=True)
