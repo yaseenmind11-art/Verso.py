@@ -133,7 +133,7 @@ with tab2:
 with tab3:
     st.markdown("### 🌐 Verso Translate")
     
-    # Expanded Dictionary (100+ Languages)
+    # Language Dictionary (100+ Languages)
     languages = {
         "Afrikaans": "af", "Albanian": "sq", "Amharic": "am", "Arabic": "ar", "Armenian": "hy", "Azerbaijani": "az",
         "Basque": "eu", "Belarusian": "be", "Bengali": "bn", "Bosnian": "bs", "Bulgarian": "bg", "Catalan": "ca",
@@ -157,8 +157,8 @@ with tab3:
 
     t_text = st.text_area("Source Text:", height=150, placeholder="Enter text")
     
-    # THE SEARCHABLE SELECTOR
-    target_lang_name = st.selectbox("Choose language", list(languages.keys()), index=3) 
+    # This acts as the Search Bar + Language Selection
+    target_lang_name = st.selectbox("Choose language", list(languages.keys()), index=3) # Default to Arabic (index 3)
 
     if st.button("Translate Content"):
         if t_text:
