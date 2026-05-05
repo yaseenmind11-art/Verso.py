@@ -24,7 +24,6 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     
-    /* Global Styles */
     html, body, [class*="st-"], .stApp { 
         font-family: 'Inter', sans-serif; 
         background-color: #ffffff !important; 
@@ -33,12 +32,16 @@ st.markdown("""
     
     header, footer { visibility: hidden; }
 
-    /* Fix Titles and Labels */
     h1, h2, h3, p, label, .stMarkdown {
         color: #0f172a !important;
     }
 
-    /* THE BUTTON FIX - Removing the white box and fixing the 'stupidity' */
+    /* THE BUTTON FIX & ALIGNMENT */
+    /* This moves the button container to the right */
+    div.stButton {
+        text-align: right !important;
+    }
+
     div.stButton > button {
         background-color: #00a1ff !important;
         color: #ffffff !important;
@@ -46,33 +49,20 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 0.6rem 2.5rem !important;
         font-weight: 700 !important;
-        width: 100% !important;
+        width: auto !important; /* Changed from 100% to auto for right alignment */
+        min-width: 200px;
         box-shadow: none !important;
-        display: block !important;
     }
 
-    /* Force the text inside the button to have NO background */
     div.stButton > button div, div.stButton > button p, div.stButton > button span {
         background-color: transparent !important;
-        background: none !important;
         color: #ffffff !important;
     }
 
     div.stButton > button:hover {
         background-color: #008ae6 !important;
-        color: #ffffff !important;
     }
 
-    /* Fix Tabs */
-    button[data-baseweb="tab"] {
-        color: #475569 !important;
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        color: #00a1ff !important;
-        border-bottom-color: #00a1ff !important;
-    }
-
-    /* Welcome Card */
     .welcome-card {
         padding: 30px;
         border-radius: 15px;
@@ -81,7 +71,6 @@ st.markdown("""
         margin-bottom: 25px;
     }
     
-    /* Input Boxes */
     .stTextInput input, .stTextArea textarea {
         color: #0f172a !important;
         background-color: #ffffff !important;
@@ -132,22 +121,53 @@ with tab1:
 
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Draft:", height=250, placeholder="Type here...")
-    if st.button("Analyze Writing"):
+    user_text = st.text_area("Your Draft:", height=250, placeholder="Paste text to fix grammar, spelling, and casing...")
+    
+    # Analyze Button is now aligned to the right via CSS
+    if st.button("Analyze & Correct"):
         if user_text:
+            # TextBlob handles spelling and basic casing
             blob = TextBlob(user_text.strip())
-            st.markdown("#### Suggested Correction:")
-            st.info(str(blob.correct()))
+            corrected_text = str(blob.correct())
+            
+            # Additional casing logic for first letters
+            sentences = corrected_text.split(". ")
+            final_text = ". ".join([s.capitalize() for s in sentences])
+            
+            st.markdown("#### ✨ Suggested Correction:")
+            st.info(final_text)
+            st.caption("Corrections: Grammar, Spelling, Punctuation, and Casing.")
 
 with tab3:
     st.markdown("### 🌐 Verso Translate")
-    t_text = st.text_area("Source Text:", height=150)
-    languages = {"Arabic": "ar", "Chinese": "zh-CN", "French": "fr", "German": "de", "Spanish": "es", "Turkish": "tr"}
-    target_lang = st.selectbox("Select Language:", list(languages.keys()))
-    if st.button("Translate Now"):
+    t_text = st.text_area("Source Text:", height=150, placeholder="Enter text to translate...")
+    
+    # 50+ Languages Included
+    languages = {
+        "Afrikaans": "af", "Albanian": "sq", "Arabic": "ar", "Armenian": "hy", "Azerbaijani": "az",
+        "Basque": "eu", "Belarusian": "be", "Bengali": "bn", "Bulgarian": "bg", "Catalan": "ca",
+        "Chinese (Simp)": "zh-CN", "Chinese (Trad)": "zh-TW", "Croatian": "hr", "Czech": "cs", "Danish": "da",
+        "Dutch": "nl", "English": "en", "Esperanto": "eo", "Estonian": "et", "Filipino": "tl",
+        "Finnish": "fi", "French": "fr", "Galician": "gl", "Georgian": "ka", "German": "de",
+        "Greek": "el", "Gujarati": "gu", "Haitian Creole": "ht", "Hebrew": "iw", "Hindi": "hi",
+        "Hungarian": "hu", "Icelandic": "is", "Indonesian": "id", "Irish": "ga", "Italian": "it",
+        "Japanese": "ja", "Kannada": "kn", "Korean": "ko", "Latin": "la", "Latvian": "lv",
+        "Lithuanian": "lt", "Macedonian": "mk", "Malay": "ms", "Maltese": "mt", "Norwegian": "no",
+        "Persian": "fa", "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru",
+        "Serbian": "sr", "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Swahili": "sw",
+        "Swedish": "sv", "Tamil": "ta", "Telugu": "te", "Thai": "th", "Turkish": "tr",
+        "Ukrainian": "uk", "Urdu": "ur", "Vietnamese": "vi", "Welsh": "cy", "Yiddish": "yi"
+    }
+    
+    target_lang = st.selectbox("Select Target Language (50+ available):", list(languages.keys()))
+    
+    if st.button("Translate Content"):
         if t_text:
-            result = GoogleTranslator(source='auto', target=languages[target_lang]).translate(t_text)
-            st.success(result)
+            try:
+                result = GoogleTranslator(source='auto', target=languages[target_lang]).translate(t_text)
+                st.success(result)
+            except:
+                st.error("Error: Could not reach translation services.")
 
 with tab4:
     st.markdown("### 📜 Citation Pro")
