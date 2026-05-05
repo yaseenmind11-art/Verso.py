@@ -4,17 +4,16 @@ import os
 from datetime import datetime
 from deep_translator import GoogleTranslator
 from textblob import TextBlob
-import re
 from PIL import Image
 
-# 1. PAGE SETUP & GOOGLE VERIFICATION
+# 1. PAGE SETUP
 st.set_page_config(
-    page_title="Verso AI | Professional Research Suite",
+    page_title="Verso | Professional Research Suite",
     page_icon="z.png",
     layout="wide"
 )
 
-# Google Search Console Verification
+# 2. GOOGLE VERIFICATION (Invisible to users)
 components.html(
     """
     <html>
@@ -26,7 +25,8 @@ components.html(
     height=0,
 )
 
-# 2. THE FINAL BUTTON & UI FIX
+# 3. VISIBILITY FIX (CSS)
+# This fixes the "invisible" text problem from image_dc4bbb.jpg
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -38,16 +38,17 @@ st.markdown("""
     
     header, footer { visibility: hidden; }
     
-    /* Welcome Card */
+    /* Welcome Card - Darker text for visibility */
     .welcome-card {
         padding: 30px;
         border-radius: 15px;
         background-color: #f8fafc;
         border: 1px solid #e2e8f0;
         margin-bottom: 25px;
+        color: #0f172a !important;
     }
 
-    /* THE BUTTON REPAIR: Final layer removal for image_66e95e.png */
+    /* THE BUTTON REPAIR */
     div.stButton > button {
         background-color: #00a1ff !important;
         color: white !important;
@@ -58,7 +59,7 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* FORCED TRANSPARENCY for all internal Streamlit button tags */
+    /* Force button text to stay white */
     div.stButton > button * {
         background-color: transparent !important;
         color: white !important;
@@ -68,6 +69,7 @@ st.markdown("""
         background-color: #008ae6 !important;
     }
 
+    /* Input text color fix */
     .stTextInput > div > div > input, .stTextArea > div > div > textarea {
         background-color: #ffffff !important;
         color: #0f172a !important;
@@ -76,7 +78,8 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. HEADER & LOGO
+# 4. HEADER & LOGO
+st.write("") # Tiny spacer for the top
 t_left, t_center, t_right = st.columns([1, 2, 1])
 with t_center:
     logo_path = "full_logo.png"
@@ -89,31 +92,31 @@ with t_center:
     else:
         st.markdown("<h1 style='text-align: center; color: #0f172a; font-weight: 800;'>VERSO<span style='color:#00a1ff'>AI</span></h1>", unsafe_allow_html=True)
 
-# 4. WELCOME DASHBOARD
+# 5. DASHBOARD
 st.markdown(f"""
     <div class="welcome-card">
-        <h2 style='margin-top:0;'>Welcome to Verso AI</h2>
-        <p style='color: #64748b; font-size: 1.1em;'>
+        <h2 style='margin-top:0; color: #0f172a;'>Welcome to Verso AI</h2>
+        <p style='color: #475569; font-size: 1.1em;'>
             Professional academic suite for IB research and writing. 
         </p>
         <div style='display: flex; gap: 20px; margin-top: 15px;'>
-            <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
+            <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0; color: #0f172a;'>
                 <strong>System:</strong> <span style='color: #10b981;'>● Active</span>
             </div>
-            <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0;'>
+            <div style='background: white; padding: 10px 20px; border-radius: 8px; border: 1px solid #e2e8f0; color: #0f172a;'>
                 <strong>Date:</strong> {datetime.now().strftime('%B %d, %Y')}
             </div>
         </div>
     </div>
 """, unsafe_allow_html=True)
 
-# 5. MAIN NAVIGATION TABS
+# 6. TABS
 tab1, tab2, tab3, tab4 = st.tabs(["🔍 Trusted Search", "✍️ Verso Editor", "🌐 Verso Translate", "📜 Citation Pro"])
 
-# --- TAB 1: TRUSTED SEARCH ---
+# --- TAB 1: SEARCH ---
 with tab1:
     st.markdown("### 🔍 Verified Resource Search")
-    search_q = st.text_input("Enter Topic:", placeholder="Search .edu, .gov, .org...", key="search_final")
+    search_q = st.text_input("Enter Topic:", placeholder="Search .edu, .gov, .org...", key="search_main")
     if search_q:
         trusted_filter = "(site:.gov OR site:.edu OR site:.org OR site:.ac.uk)"
         q_url = f"https://www.google.com/search?igu=1&q={search_q}+{trusted_filter}".replace(" ", "+")
@@ -124,29 +127,27 @@ with tab1:
         """
         components.html(html_string, height=870)
 
-# --- TAB 2: VERSO EDITOR ---
+# --- TAB 2: EDITOR ---
 with tab2:
     st.markdown("### ✍️ Verso Editor")
-    user_text = st.text_area("Your Draft:", height=300, placeholder="Check your writing...")
+    user_text = st.text_area("Your Draft:", height=300, placeholder="Type here to check spelling...")
     if user_text:
         if st.button("Analyze Writing"):
             blob = TextBlob(user_text.strip())
-            temp = str(blob.correct())
-            st.warning("Suggested Revision:")
-            st.write(temp)
+            st.warning("Suggested Correction:")
+            st.write(str(blob.correct()))
 
-# --- TAB 3: VERSO TRANSLATE ---
+# --- TAB 3: TRANSLATE (Extra Languages Added) ---
 with tab3:
     st.markdown("### 🌐 Verso Translate")
-    t_text = st.text_area("Source Text:", height=200)
+    t_text = st.text_area("Source Text:", height=200, key="trans_area")
     
-    # Expanded Language List
     languages = {
         "Arabic": "ar", "Chinese (Simplified)": "zh-CN", "Dutch": "nl", 
         "French": "fr", "German": "de", "Greek": "el", "Hindi": "hi", 
         "Italian": "it", "Japanese": "ja", "Korean": "ko", "Latin": "la",
         "Portuguese": "pt", "Russian": "ru", "Spanish": "es", "Turkish": "tr",
-        "Urdu": "ur", "Vietnamese": "vi"
+        "Urdu": "ur", "Vietnamese": "vi", "Swedish": "sv", "Polish": "pl"
     }
     
     target_lang_name = st.selectbox("Select Target Language:", list(languages.keys()))
@@ -157,19 +158,18 @@ with tab3:
                 result = GoogleTranslator(source='auto', target=languages[target_lang_name]).translate(t_text)
                 st.info(result)
             except:
-                st.error("Connection error. Try again.")
+                st.error("Translation error. Please check your internet.")
 
-# --- TAB 4: CITATION PRO ---
+# --- TAB 4: CITATION ---
 with tab4:
     st.markdown("### 📜 Citation Pro")
-    st.write("Generate accurate **APA 7th Generation** style citations.")
-    c_url = st.text_input("Source URL:", placeholder="Paste link here...")
-    if st.button("Generate APA 7th Citation"):
+    st.write("Generate **APA 7th Edition** citations.")
+    c_url = st.text_input("Source URL:", placeholder="Paste your research link here...")
+    if st.button("Generate Citation"):
         if c_url:
+            year = datetime.now().year
             today = datetime.now().strftime('%Y, %B %d')
-            formatted = f"Online Resource. ({datetime.now().year}). Retrieved {today}, from {c_url}"
+            formatted = f"Online Resource. ({year}). Retrieved {today}, from {c_url}"
             st.code(formatted, language="text")
-        else:
-            st.error("Paste a URL first.")
 
 st.markdown("---")
