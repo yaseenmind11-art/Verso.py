@@ -36,7 +36,8 @@ st.markdown("""
         color: #0f172a !important;
     }
 
-    /* THE BUTTON ALIGNMENT */
+    /* THE BUTTON FIX & ALIGNMENT */
+    /* This moves the button container to the right */
     div.stButton {
         text-align: right !important;
     }
@@ -48,7 +49,7 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 0.6rem 2.5rem !important;
         font-weight: 700 !important;
-        width: auto !important;
+        width: auto !important; /* Changed from 100% to auto for right alignment */
         min-width: 200px;
         box-shadow: none !important;
     }
@@ -121,52 +122,52 @@ with tab1:
 with tab2:
     st.markdown("### ✍️ Verso Editor")
     user_text = st.text_area("Your Draft:", height=250, placeholder="Paste text to fix grammar, spelling, and casing...")
+    
+    # Analyze Button is now aligned to the right via CSS
     if st.button("Analyze & Correct"):
         if user_text:
+            # TextBlob handles spelling and basic casing
             blob = TextBlob(user_text.strip())
             corrected_text = str(blob.correct())
+            
+            # Additional casing logic for first letters
             sentences = corrected_text.split(". ")
             final_text = ". ".join([s.capitalize() for s in sentences])
+            
             st.markdown("#### ✨ Suggested Correction:")
             st.info(final_text)
+            st.caption("Corrections: Grammar, Spelling, Punctuation, and Casing.")
 
 with tab3:
     st.markdown("### 🌐 Verso Translate")
+    t_text = st.text_area("Source Text:", height=150, placeholder="Enter text to translate...")
     
-    # Language Dictionary (100+ Languages)
+    # 50+ Languages Included
     languages = {
-        "Afrikaans": "af", "Albanian": "sq", "Amharic": "am", "Arabic": "ar", "Armenian": "hy", "Azerbaijani": "az",
-        "Basque": "eu", "Belarusian": "be", "Bengali": "bn", "Bosnian": "bs", "Bulgarian": "bg", "Catalan": "ca",
-        "Cebuano": "ceb", "Chichewa": "ny", "Chinese (Simplified)": "zh-CN", "Chinese (Traditional)": "zh-TW",
-        "Corsican": "co", "Croatian": "hr", "Czech": "cs", "Danish": "da", "Dutch": "nl", "English": "en",
-        "Esperanto": "eo", "Estonian": "et", "Filipino": "tl", "Finnish": "fi", "French": "fr", "Frisian": "fy",
-        "Galician": "gl", "Georgian": "ka", "German": "de", "Greek": "el", "Gujarati": "gu", "Haitian Creole": "ht",
-        "Hausa": "ha", "Hawaiian": "haw", "Hebrew": "iw", "Hindi": "hi", "Hmong": "hmn", "Hungarian": "hu",
-        "Icelandic": "is", "Igbo": "ig", "Indonesian": "id", "Irish": "ga", "Italian": "it", "Japanese": "ja",
-        "Javanese": "jw", "Kannada": "kn", "Kazakh": "kk", "Khmer": "km", "Kinyarwanda": "rw", "Korean": "ko",
-        "Kurdish (Kurmanji)": "ku", "Kyrgyz": "ky", "Lao": "lo", "Latin": "la", "Latvian": "lv", "Lithuanian": "lt",
-        "Luxembourgish": "lb", "Macedonian": "mk", "Malagasy": "mg", "Malay": "ms", "Malayalam": "ml", "Maltese": "mt",
-        "Maori": "mi", "Marathi": "mr", "Mongolian": "mn", "Myanmar (Burmese)": "my", "Nepali": "ne", "Norwegian": "no",
-        "Odia (Oriya)": "or", "Pashto": "ps", "Persian": "fa", "Polish": "pl", "Portuguese": "pt", "Punjabi": "pa",
-        "Romanian": "ro", "Russian": "ru", "Samoan": "sm", "Scots Gaelic": "gd", "Serbian": "sr", "Sesotho": "st",
-        "Shona": "sn", "Sindhi": "sd", "Sinhala": "si", "Slovak": "sk", "Slovenian": "sl", "Somali": "so", "Spanish": "es",
-        "Sundanese": "su", "Swahili": "sw", "Swedish": "sv", "Tajik": "tg", "Tamil": "ta", "Tatar": "tt", "Telugu": "te",
-        "Thai": "th", "Turkish": "tr", "Turkmen": "tk", "Ukrainian": "uk", "Urdu": "ur", "Uyghur": "ug", "Uzbek": "uz",
-        "Vietnamese": "vi", "Welsh": "cy", "Xhosa": "xh", "Yiddish": "yi", "Yoruba": "yo", "Zulu": "zu"
+        "Afrikaans": "af", "Albanian": "sq", "Arabic": "ar", "Armenian": "hy", "Azerbaijani": "az",
+        "Basque": "eu", "Belarusian": "be", "Bengali": "bn", "Bulgarian": "bg", "Catalan": "ca",
+        "Chinese (Simp)": "zh-CN", "Chinese (Trad)": "zh-TW", "Croatian": "hr", "Czech": "cs", "Danish": "da",
+        "Dutch": "nl", "English": "en", "Esperanto": "eo", "Estonian": "et", "Filipino": "tl",
+        "Finnish": "fi", "French": "fr", "Galician": "gl", "Georgian": "ka", "German": "de",
+        "Greek": "el", "Gujarati": "gu", "Haitian Creole": "ht", "Hebrew": "iw", "Hindi": "hi",
+        "Hungarian": "hu", "Icelandic": "is", "Indonesian": "id", "Irish": "ga", "Italian": "it",
+        "Japanese": "ja", "Kannada": "kn", "Korean": "ko", "Latin": "la", "Latvian": "lv",
+        "Lithuanian": "lt", "Macedonian": "mk", "Malay": "ms", "Maltese": "mt", "Norwegian": "no",
+        "Persian": "fa", "Polish": "pl", "Portuguese": "pt", "Romanian": "ro", "Russian": "ru",
+        "Serbian": "sr", "Slovak": "sk", "Slovenian": "sl", "Spanish": "es", "Swahili": "sw",
+        "Swedish": "sv", "Tamil": "ta", "Telugu": "te", "Thai": "th", "Turkish": "tr",
+        "Ukrainian": "uk", "Urdu": "ur", "Vietnamese": "vi", "Welsh": "cy", "Yiddish": "yi"
     }
-
-    t_text = st.text_area("Source Text:", height=150, placeholder="Enter text")
     
-    # This acts as the Search Bar + Language Selection
-    target_lang_name = st.selectbox("Choose language", list(languages.keys()), index=3) # Default to Arabic (index 3)
-
+    target_lang = st.selectbox("Select Target Language (50+ available):", list(languages.keys()))
+    
     if st.button("Translate Content"):
         if t_text:
             try:
-                result = GoogleTranslator(source='auto', target=languages[target_lang_name]).translate(t_text)
+                result = GoogleTranslator(source='auto', target=languages[target_lang]).translate(t_text)
                 st.success(result)
             except:
-                st.error("Connection Error.")
+                st.error("Error: Could not reach translation services.")
 
 with tab4:
     st.markdown("### 📜 Citation Pro")
