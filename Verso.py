@@ -1,6 +1,7 @@
 import streamlit as st
 
 # --- Page Configuration ---
+# Keeping your z.png as the tab logo
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
 
 # --- Custom Styles ---
@@ -80,20 +81,15 @@ elif choice == "⚙️ Settings":
             
     with col2:
         st.subheader("Preferences")
-        # Expanded list covering all major academic citation types
         st.selectbox("Default Citation Style", [
-            "APA 7th Edition", 
-            "MLA 9th Edition", 
-            "Chicago Manual of Style (17th)", 
-            "Harvard", 
-            "Vancouver", 
-            "IEEE", 
-            "Oxford", 
-            "Bluebook"
+            "APA 7th Edition", "MLA 9th Edition", "Chicago Manual of Style (17th)", 
+            "Harvard", "Vancouver", "IEEE", "Oxford", "Bluebook"
         ])
-        st.toggle("Enable Advanced Analytics")
-        st.toggle("High Contrast UI")
-        st.toggle("Auto-save Progress")
+        
+        # --- These are now ON by default using value=True ---
+        st.toggle("Enable Advanced Analytics", value=True)
+        st.toggle("High Contrast UI", value=True)
+        st.toggle("Auto-save Progress", value=True)
 
     st.divider()
     st.write("App Version: 2.5.0 (Enterprise)")
