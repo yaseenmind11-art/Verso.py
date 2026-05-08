@@ -1,10 +1,8 @@
 import streamlit as st
 
 # --- Page Configuration ---
-# Updated to "z.png" to match your file name!
 st.set_page_config(
     page_title="Verso Research Pro", 
-    page_icon="z.png", 
     layout="centered"
 )
 
@@ -43,11 +41,10 @@ if choice == "🏠 Home":
 elif choice == "✍️ Thesis Generator":
     st.title("Thesis Generator")
     st.markdown('<div class="instruction-box">"A strong thesis statement should be a one-line argument that guides your entire research paper."</div>', unsafe_allow_html=True)
-    # General placeholder
-    topic = st.text_input("Enter your research topic:", placeholder="e.g., The global impact of renewable energy")
+    topic = st.text_input("Enter your research topic:", placeholder="e.g., The impact of technology on modern education")
     if st.button("Generate Thesis"):
         if topic:
-            st.success(f"**Draft Thesis:** Although various perspectives exist, {topic} serves as a critical factor in understanding modern global sustainability.")
+            st.success(f"**Draft Thesis:** Although various perspectives exist on the matter, {topic} serves as a pivotal element in understanding contemporary global trends.")
         else:
             st.warning("Please enter a topic to continue.")
 
