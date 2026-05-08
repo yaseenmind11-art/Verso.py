@@ -35,7 +35,7 @@ def inject_analytics():
     """
     components.html(ga_code, height=0)
 
-# --- Page Configuration (Restoring Original z.png Logo) ---
+# --- Page Configuration ---
 st.set_page_config(
     page_title="Verso Research Pro", 
     page_icon="z.png", 
@@ -43,9 +43,14 @@ st.set_page_config(
 )
 inject_analytics()
 
-# --- Custom Styles ---
+# --- FORCE DARK MODE STYLING ---
 st.markdown("""
     <style>
+    /* Force dark background for the whole app */
+    .stApp {
+        background-color: #0e1117;
+        color: #FFFFFF;
+    }
     .instruction-box {
         background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 20px; border-radius: 15px; margin-bottom: 25px; color: #cbd5e1; font-style: italic;
@@ -72,7 +77,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Language Dictionary (50+ Full Names) ---
+# --- Language Dictionary ---
 LANGUAGES = {
     'Afrikaans': 'af', 'Albanian': 'sq', 'Arabic': 'ar', 'Armenian': 'hy', 'Bengali': 'bn',
     'Bosnian': 'bs', 'Bulgarian': 'bg', 'Catalan': 'ca', 'Chinese (Simplified)': 'zh-CN',
@@ -99,7 +104,7 @@ with st.sidebar:
         "🔍 Smart Analysis", "⚙️ Settings"
     ])
 
-# --- MODULE 1: HOME (In-App Search) ---
+# --- MODULE 1: HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.subheader("Welcome, Yaseen Amr")
@@ -112,17 +117,16 @@ if choice == "🏠 Home":
         search_url = f"https://www.google.com/search?q={q}&igu=1"
         st.info(f"Displaying professional results for: {search_query}")
         
-        # Displaying Google with the header and footer clipped
         st.markdown(f"""
             <div class="search-container">
                 <iframe src="{search_url}" class="search-frame"></iframe>
             </div>
         """, unsafe_allow_html=True)
 
-# --- MODULE 2: CITATION HELPER (Scribbr Style - URL Only) ---
+# --- MODULE 2: CITATION HELPER ---
 elif choice == "📚 Citation Helper":
     st.title("Verso Citation Generator")
-    st.markdown('<div class="instruction-box">"Enter a URL to automatically generate an APA 7th Edition citation (or change from settings)."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="instruction-box">"Enter a URL to automatically generate an APA 7th Edition citation."</div>', unsafe_allow_html=True)
     
     source_url = st.text_input("🔗 Enter source URL:", placeholder="Paste your link here...")
     
@@ -132,10 +136,7 @@ elif choice == "📚 Citation Helper":
                 try:
                     response = requests.get(source_url, timeout=5)
                     soup = BeautifulSoup(response.text, 'html.parser')
-                    
-                    # Automated Scrape
                     title = soup.find('title').text.strip() if soup.find('title') else "Untitled Source"
-                    
                     meta_site = soup.find("meta", property="og:site_name")
                     site_name = meta_site['content'] if meta_site else source_url.split('//')[-1].split('/')[0].replace('www.', '')
 
@@ -143,19 +144,19 @@ elif choice == "📚 Citation Helper":
                     full_cit = f"Editor. ({year}). *{title}*. {site_name.title()}. {source_url}"
                     
                     st.markdown("### Your APA Citation:")
+                    # Note: Using dark background for the citation box itself for readability
                     st.markdown(f"""
-                        <div style="background-color: black; padding: 25px; border-radius: 5px; border-left: 12px solid #000000; color: #FFFFFF; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="background-color: #1e293b; padding: 25px; border-radius: 5px; border-left: 12px solid #3b82f6; color: #FFFFFF; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             {full_cit}
                         </div>
                     """, unsafe_allow_html=True)
                     st.success("Citation generated successfully!")
-                    
                 except Exception as e:
                     st.error(f"Could not retrieve data from this URL: {e}")
         else:
             st.warning("Please paste a URL first.")
 
-# --- MODULE 3: GLOBAL RESEARCH (Translator) ---
+# --- MODULE 3: GLOBAL RESEARCH ---
 elif choice == "🌍 Global Research":
     st.title("Global Source Translator")
     source_text = st.text_area("Paste foreign text here:", height=200)
