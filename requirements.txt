@@ -1,5 +1,5 @@
 streamlit
 textblob
-deep-translator
+deep_translator
 pandas
 nltk
