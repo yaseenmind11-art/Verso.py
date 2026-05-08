@@ -1,4 +1,5 @@
 streamlit
-deep-translator
 textblob
-Pillow
+deep-translator
+pandas
+nltk
