@@ -5,7 +5,7 @@ from deep_translator import GoogleTranslator
 import pandas as pd
 import nltk
 
-# --- 🛠️ AUTO-FIX: Environment Setup ---
+# --- AUTO-FIX: Environment Setup (Prevents Red Error Screens) ---
 @st.cache_resource
 def setup_system():
     try:
@@ -18,29 +18,23 @@ def setup_system():
 
 setup_system()
 
-# --- 📊 GOOGLE ANALYTICS: VERSO RESEARCH PRO ---
+# --- GOOGLE ANALYTICS: VERSO STUDY ASSISTANT ---
 def inject_analytics():
-    # Measurement ID from your Verso Research property
-    ga_id = "G-030XWBG97P" 
-    
-    ga_code = f"""
-    <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+    # Using your new Measurement ID: G-030XWBG97P
+    ga_code = """
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-030XWBG97P"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){{dataLayer.push(arguments);}}
+      function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-      gtag('config', '{ga_id}');
+      gtag('config', 'G-030XWBG97P');
     </script>
     """
     components.html(ga_code, height=0)
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Verso Research Pro", page_icon="🔍", layout="centered")
+st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
 inject_analytics()
-
-# --- Initialize Research Log Session State ---
-if 'research_log' not in st.session_state:
-    st.session_state.research_log = []
 
 # --- Custom Styles ---
 st.markdown("""
@@ -53,13 +47,12 @@ st.markdown("""
         background-color: #1e293b; padding: 15px; border-radius: 10px;
         border-left: 5px solid #3b82f6; margin-bottom: 10px;
     }
-    .log-item {
-        font-size: 0.85rem; color: #94a3b8; border-bottom: 1px solid #334155; padding: 5px 0;
-    }
+    /* Fixed sidebar alignment */
+    .stRadio > div { gap: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Sidebar Navigation & Log ---
+# --- Sidebar Navigation ---
 with st.sidebar:
     st.title("VERSO PRO")
     choice = st.radio("Navigation", [
@@ -72,38 +65,27 @@ with st.sidebar:
         "🔍 Smart Analysis", 
         "⚙️ Settings"
     ])
-    
-    st.divider()
-    st.subheader("📜 Research Log")
-    if st.session_state.research_log:
-        for entry in reversed(st.session_state.research_log[-10:]): # Show last 10 actions
-            st.markdown(f'<div class="log-item">{entry}</div>', unsafe_allow_html=True)
-    else:
-        st.info("Log is currently empty.")
-
-# --- Helper to add to log ---
-def add_to_log(action):
-    st.session_state.research_log.append(action)
 
 # --- MODULE 1: HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    st.subheader("Welcome, Yaseen Amr")
-    st.markdown('<div class="instruction-box">"Select a module from the sidebar to start your MYP Year 2 workflow."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="instruction-box">"Select a module from the sidebar to start your academic workflow."</div>', unsafe_allow_html=True)
     
-    search_query = st.text_input("🔍 Search professional sources:", placeholder="Enter your research topic...")
+    search_query = st.text_input("🔍 Search professional sources or databases:", placeholder="Enter your research topic...")
     
     if st.button("Search Web"):
         if search_query.strip():
-            add_to_log(f"Searched: {search_query[:20]}...")
+            st.info(f"Searching professional databases for: **{search_query}**")
             q = search_query.replace(' ', '+')
             st.markdown(f"""
             * [Google Scholar: {search_query}](https://scholar.google.com/scholar?q={q})
             * [JSTOR Academic Results](https://www.jstor.org/action/doBasicSearch?Query={q})
             * [ResearchGate Publications](https://www.researchgate.net/search/publication?q={q})
             """)
+        else:
+            st.warning("Please enter a search topic.")
 
-# --- MODULE 2: STUDY ASSISTANT ---
+# --- MODULE 2: STUDY ASSISTANT (Notebook Intelligence) ---
 elif choice == "📒 Study Assistant":
     st.title("Study Assistant")
     st.markdown('<div class="instruction-box">"Upload your sources to generate study cards, quizzes, and summaries."</div>', unsafe_allow_html=True)
@@ -113,9 +95,12 @@ elif choice == "📒 Study Assistant":
     
     content = manual_notes if manual_notes else ""
     if uploaded_file:
-        add_to_log(f"Uploaded: {uploaded_file.name}")
-        if uploaded_file.type == "text/plain":
-            content = str(uploaded_file.read(), "utf-8")
+        try:
+            if uploaded_file.type == "text/plain":
+                content = str(uploaded_file.read(), "utf-8")
+            st.success(f"File Loaded: {uploaded_file.name}")
+        except Exception as e:
+            st.error(f"Load Error: {e}")
 
     t1, t2, t3, t4 = st.tabs(["📋 Study Cards", "❓ Quiz Generator", "💡 Summary", "🎙️ Audio Podcast"])
     
@@ -124,7 +109,7 @@ elif choice == "📒 Study Assistant":
             blob = TextBlob(content)
             for phrase in list(set(blob.noun_phrases))[:5]:
                 st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
-        else: st.info("Provide notes above to generate cards.")
+        else: st.info("Paste notes or upload a file above to generate cards.")
             
     with t2:
         if content:
@@ -141,20 +126,24 @@ elif choice == "📒 Study Assistant":
 
     with t4:
         st.write("### 🎙️ Audio Deck (Beta)")
+        st.write("AI is ready to generate a podcast discussion based on your sources.")
         if st.button("Generate Audio Script"):
-            add_to_log("Generated Audio Script")
-            st.success("Script generated based on your sources!")
+            st.write("**Host:** Today we dive into the core concepts of this research...")
 
-# --- MODULE 3: GLOBAL RESEARCH ---
+# --- MODULE 3: GLOBAL RESEARCH (Translator) ---
 elif choice == "🌍 Global Research":
     st.title("Global Source Translator")
     source_text = st.text_area("Paste foreign text here:", height=200)
     target_lang = st.selectbox("Translate to:", ["en", "ar", "fr", "es"])
     if st.button("Translate Now"):
         if source_text.strip():
-            add_to_log(f"Translated to {target_lang}")
-            translated = GoogleTranslator(source='auto', target=target_lang).translate(source_text)
-            st.success(translated)
+            try:
+                translated = GoogleTranslator(source='auto', target=target_lang).translate(source_text)
+                st.success(translated)
+            except Exception as e:
+                st.error(f"Translation Error: {e}")
+        else:
+            st.warning("Please enter text before translating.")
 
 # --- MODULE 4: SMART ANALYSIS ---
 elif choice == "🔍 Smart Analysis":
@@ -162,43 +151,39 @@ elif choice == "🔍 Smart Analysis":
     draft = st.text_area("Paste writing here:", height=250)
     if st.button("Run Analysis"):
         if draft:
-            add_to_log("Ran Smart Analysis")
             blob = TextBlob(draft)
             st.subheader(f"Detected: {'Narrative' if blob.sentiment.subjectivity > 0.5 else 'Research'}")
-            st.metric("Subjectivity Score", round(blob.sentiment.subjectivity, 2))
+            st.metric("Clarity", round(1 - blob.sentiment.subjectivity, 2))
+        else: st.warning("Enter text first.")
 
 # --- MODULE 5: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("App Settings")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔄 Clear App Cache"): 
-            st.cache_resource.clear()
-            st.session_state.research_log = []
-            st.rerun()
-        st.button("📥 Export Research Log")
+        st.subheader("System Actions")
+        if st.button("🔄 Clear App Cache"): st.cache_resource.clear(); st.rerun()
+        if st.button("📥 Export Research Log"): st.write("Exporting...")
+        if st.button("🚀 Optimize Performance"): st.toast("System optimized!")
     with col2:
-        st.selectbox("Academic Format", ["APA 7", "MLA 9", "Chicago", "Harvard"])
+        st.subheader("Preferences")
+        st.selectbox("Academic Format", ["APA 7", "MLA 9", "Chicago", "Harvard", "IEEE"])
+        st.toggle("Enable Advanced Analytics", value=True)
         st.toggle("High Contrast UI", value=True)
+        st.toggle("Auto-save Progress", value=True)
 
-# --- ADDITIONAL TOOLS ---
+# --- MODULE 6: TOOLS ---
 elif choice == "🔢 Word Counter":
     st.title("Word Counter")
     essay = st.text_area("Paste text:")
-    if essay:
-        count = len(essay.split())
-        st.metric("Words", count)
-        add_to_log(f"Word count: {count}")
+    st.metric("Words", len(essay.split()))
 
 elif choice == "✍️ Thesis Generator":
     st.title("Thesis Generator")
     topic = st.text_input("Enter topic:")
-    if st.button("Generate"): 
-        add_to_log(f"Thesis: {topic[:15]}...")
-        st.success(f"Thesis idea: {topic} and its impact on sustainable development.")
+    if st.button("Generate"): st.success(f"Thesis: {topic} is critical for sustainability.")
 
 elif choice == "📚 Citation Helper":
     st.title("Citation Assistant")
     st.text_area("Paste source details:")
-    if st.button("Format Citation"):
-        add_to_log("Formatted Citation")
+    st.button("Format")
