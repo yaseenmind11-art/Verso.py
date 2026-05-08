@@ -144,7 +144,7 @@ elif choice == "📚 Citation Helper":
                     
                     st.markdown("### Your APA Citation:")
                     st.markdown(f"""
-                        <div style="background-color: black; padding: 25px; border-radius: 5px; border-left: 12px solid #3b82f6; color: #1e293b; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="background-color: black; padding: 25px; border-radius: 5px; border-left: 12px solid #000000; color: #FFFFFF; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             {full_cit}
                         </div>
                     """, unsafe_allow_html=True)
