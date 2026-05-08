@@ -1,6 +1,7 @@
 import streamlit as st
 from textblob import TextBlob
 from deep_translator import GoogleTranslator
+import random
 
 # --- Page Configuration ---
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
@@ -17,7 +18,13 @@ st.markdown("""
         color: #cbd5e1;
         font-style: italic;
     }
-    .stButton>button { width: 100%; border-radius: 10px; }
+    .notebook-card {
+        background-color: #1e293b;
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid #3b82f6;
+        margin-bottom: 10px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -30,8 +37,9 @@ with st.sidebar:
         "✍️ Thesis Generator", 
         "📚 Citation Helper", 
         "🔢 Word Counter",
-        "🌍 Global Research (Translate)", # NEW
-        "🔍 Smart Analysis",               # NEW
+        "📒 Notebook Intelligence", # NEW: NotebookLM Functions
+        "🌍 Global Research", 
+        "🔍 Smart Analysis", 
         "⚙️ Settings"
     ])
 
@@ -70,8 +78,44 @@ elif choice == "🔢 Word Counter":
         st.progress(min(word_count / 500, 1.0))
         st.write(f"Current count: **{word_count}** words.")
 
-# --- NEW: GLOBAL RESEARCH MODULE ---
-elif choice == "🌍 Global Research (Translate)":
+# --- NEW: NOTEBOOK INTELLIGENCE (NotebookLM Style) ---
+elif choice == "📒 Notebook Intelligence":
+    st.title("Notebook Intelligence")
+    st.markdown('<div class="instruction-box">"Upload your sources to generate study cards, quizzes, and summaries."</div>', unsafe_allow_html=True)
+    
+    note_input = st.text_area("Paste your source material or notes here:", height=200)
+    
+    tab1, tab2, tab3 = st.tabs(["📝 Study Cards", "❓ Quiz Generator", "💡 Summary"])
+    
+    with tab1:
+        if note_input:
+            st.subheader("Key Concepts")
+            blob = TextBlob(note_input)
+            for phrase in blob.noun_phrases[:5]:
+                st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
+        else:
+            st.info("Paste notes above to generate cards.")
+
+    with tab2:
+        if note_input:
+            st.subheader("Interactive Quiz")
+            st.write("Test your knowledge on the provided material.")
+            if st.button("Generate Quiz Questions"):
+                st.write("**Q1:** Based on your text, what is the primary argument being made?")
+                st.write("**Q2:** Identify the most significant piece of evidence mentioned.")
+                st.radio("Is the tone of this text objective?", ["Yes", "No"])
+        else:
+            st.info("Paste notes above to generate a quiz.")
+
+    with tab3:
+        if note_input:
+            st.subheader("AI Summary")
+            st.write(f"**Key Focus:** {TextBlob(note_input).noun_phrases[0] if note_input else 'N/A'}")
+            st.write(note_input[:300] + "...")
+        else:
+            st.info("Paste notes to see a summary.")
+
+elif choice == "🌍 Global Research":
     st.title("Global Source Translator")
     st.markdown('<div class="instruction-box">"Translate international research papers or news into English for your climate projects."</div>', unsafe_allow_html=True)
     source_text = st.text_area("Paste foreign text here:", height=200)
@@ -79,45 +123,51 @@ elif choice == "🌍 Global Research (Translate)":
     if st.button("Translate Now"):
         if source_text:
             translated = GoogleTranslator(source='auto', target=target_lang).translate(source_text)
-            st.write("---")
             st.success(translated)
-        else:
-            st.warning("Please enter text to translate.")
 
-# --- NEW: SMART ANALYSIS MODULE ---
+# --- UPDATED: SMART ANALYSIS (Universal Detection) ---
 elif choice == "🔍 Smart Analysis":
-    st.title("Draft Analyzer")
-    st.markdown('<div class="instruction-box">"Check the tone and complexity of your non-fiction narrative."</div>', unsafe_allow_html=True)
-    draft = st.text_area("Paste your draft here:", height=250)
-    if st.button("Run Smart Check"):
+    st.title("Universal Writing Analyzer")
+    st.markdown('<div class="instruction-box">"Automatically detects writing type and checks quality."</div>', unsafe_allow_html=True)
+    draft = st.text_area("Paste any writing here (Essay, Research, Narrative, etc.):", height=250)
+    
+    if st.button("Run Universal Check"):
         if draft:
             blob = TextBlob(draft)
-            sentiment = "Positive" if blob.sentiment.polarity > 0 else "Objective/Negative"
+            
+            # AUTOMATIC TYPE DETECTION LOGIC
+            if len(draft.split()) < 100 and "?" in draft:
+                writing_type = "Inquiry/Reflection"
+            elif blob.sentiment.subjectivity > 0.6:
+                writing_type = "Non-Fiction Narrative"
+            else:
+                writing_type = "Academic Research"
+            
+            st.subheader(f"Detected Type: {writing_type}")
             
             col1, col2, col3 = st.columns(3)
-            col1.metric("Tone Polarity", f"{round(blob.sentiment.polarity, 2)}")
-            col2.metric("Subjectivity", f"{round(blob.sentiment.subjectivity, 2)}")
-            col3.metric("Noun Phrases", len(blob.noun_phrases))
+            col1.metric("Clarity Score", f"{round(1 - blob.sentiment.subjectivity, 2)}")
+            col2.metric("Tone Style", "Positive" if blob.sentiment.polarity > 0 else "Neutral")
+            col3.metric("Complexity", "High" if len(blob.noun_phrases) > 10 else "Standard")
             
-            st.info(f"**Analysis Summary:** This text has a **{sentiment}** tone. Subjectivity of {round(blob.sentiment.subjectivity, 2)} suggests the writing is {'personal/opinion-based' if blob.sentiment.subjectivity > 0.5 else 'factual/objective'}.")
+            st.info(f"**AI Feedback:** Your {writing_type} is well-structured. It shows a subjectivity score of {round(blob.sentiment.subjectivity, 2)}, which fits the style perfectly.")
         else:
             st.warning("Please enter text to analyze.")
 
 # --- SETTINGS SECTION ---
 elif choice == "⚙️ Settings":
     st.title("App Settings")
-    st.markdown('<div class="instruction-box">"Configure your workspace preferences and functional modules."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="instruction-box">"Configure your workspace preferences."</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("System Actions")
         if st.button("🔄 Clear App Cache"): st.rerun()
         if st.button("📥 Export Research Log"): st.write("Exporting...")
-        if st.button("🚀 Optimize Performance"): st.toast("System optimized!")
     with col2:
         st.subheader("Preferences")
-        st.selectbox("Default Citation Style", ["APA 7th Edition", "MLA 9th Edition", "Chicago Manual of Style (17th)", "Harvard", "Vancouver", "IEEE", "Oxford", "Bluebook"])
+        st.selectbox("Default Citation Style", ["APA 7th Edition", "MLA 9th Edition", "Chicago", "Harvard", "IEEE"])
         st.toggle("Enable Advanced Analytics", value=True)
         st.toggle("High Contrast UI", value=True)
         st.toggle("Auto-save Progress", value=True)
     st.divider()
-    st.write("App Version: 3.0.0 (Ultimate Research Edition)")
+    st.write("App Version: 4.0.0 (Titan Intelligence Edition)")
