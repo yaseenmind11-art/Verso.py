@@ -1,7 +1,7 @@
 import streamlit as st
 
 # --- Page Configuration ---
-# This links to your z.png file for the browser tab logo
+# This line adds z.png to your browser tab
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
 
 # --- Custom Styles (The "White Box" Look) ---
@@ -29,7 +29,7 @@ with st.sidebar:
 
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    st.subheader("Welcome, Yaseen Amr")
+    # "Welcome, Yaseen Amr" has been removed as requested
     st.markdown('<div class="instruction-box">"Select a module from the sidebar to start your MYP Year 2 workflow."</div>', unsafe_allow_html=True)
     st.write("This assistant is optimized for climate activism research and academic non-fiction narratives.")
 
@@ -59,6 +59,7 @@ elif choice == "🔢 Word Counter":
     words = essay_text.split()
     word_count = len(words)
     
+    # Keeping this part exactly as it was:
     st.metric(label="Word Count", value=word_count)
     
     if word_count > 0:
