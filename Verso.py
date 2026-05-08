@@ -21,7 +21,7 @@ setup_system()
 
 # --- GOOGLE ANALYTICS: VERSO STUDY ASSISTANT ---
 def inject_analytics():
-    # Measurement ID from your verified Verso Research property
+    # Using your verified Measurement ID: G-030XWBG97P
     ga_id = "G-030XWBG97P" 
     ga_code = f"""
     <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
@@ -35,7 +35,8 @@ def inject_analytics():
     components.html(ga_code, height=0)
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Verso Research Pro", page_icon="🔍", layout="wide")
+# Restored the original icon file "z.png" as requested
+st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_analytics()
 
 # --- Custom Styles ---
@@ -50,11 +51,25 @@ st.markdown("""
         border-left: 5px solid #3b82f6; margin-bottom: 10px;
     }
     .stRadio > div { gap: 10px; }
-    iframe { border-radius: 15px; border: 1px solid #334155; }
+    
+    /* Search Container to clip Google Header/Footer */
+    .search-container {
+        overflow: hidden; 
+        border-radius: 15px; 
+        border: 1px solid #334155; 
+        height: 800px; 
+        width: 100%;
+    }
+    .search-frame {
+        width: 100%; 
+        height: 1000px; 
+        border: none; 
+        margin-top: -120px; /* Hides Google Header */
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Language Dictionary (50+ Languages) ---
+# --- Language Dictionary (50+ Full Names) ---
 LANGUAGES = {
     'Afrikaans': 'af', 'Albanian': 'sq', 'Arabic': 'ar', 'Armenian': 'hy', 'Bengali': 'bn',
     'Bosnian': 'bs', 'Bulgarian': 'bg', 'Catalan': 'ca', 'Chinese (Simplified)': 'zh-CN',
@@ -86,30 +101,33 @@ if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown('<div class="instruction-box">"Search professional academic results directly within the dashboard."</div>', unsafe_allow_html=True)
     
-    search_query = st.text_input("🔍 Professional Academic Search:", placeholder="e.g., Sustainability in Egypt")
+    search_query = st.text_input("🔍 Professional Academic Search:", placeholder="Enter your research topic...")
     
     if search_query:
-        # Professional filter: targets .edu, .gov, and .org for high-authority results
+        # Filter for high-authority domains
         q = f"{search_query} site:.edu OR site:.gov OR site:.org".replace(' ', '+')
         search_url = f"https://www.google.com/search?q={q}&igu=1"
         
         st.info(f"Displaying professional results for: {search_query}")
-        # 'igu=1' allows Google to be embedded in some frames, but some corporate/security policies may block it.
-        # This is the standard way to show the engine "In-App".
-        components.iframe(search_url, height=800, scrolling=True)
+        
+        # Displaying Google with the header clipped off
+        st.markdown(f"""
+            <div class="search-container">
+                <iframe src="{search_url}" class="search-frame"></iframe>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- MODULE 2: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
     st.title("Study Assistant")
     st.markdown('<div class="instruction-box">"Upload sources to generate study cards, quizzes, and summaries."</div>', unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("Upload sources", type=["pdf", "csv", "txt", "pptx"])
+    uploaded_file = st.file_uploader("Upload sources (PDF, CSV, TXT)", type=["pdf", "csv", "txt"])
     manual_notes = st.text_area("Paste material here:", height=150)
     
     content = manual_notes if manual_notes else ""
-    if uploaded_file:
-        if uploaded_file.type == "text/plain":
-            content = str(uploaded_file.read(), "utf-8")
+    if uploaded_file and uploaded_file.type == "text/plain":
+        content = str(uploaded_file.read(), "utf-8")
 
     t1, t2, t3, t4 = st.tabs(["📋 Study Cards", "❓ Quiz Generator", "💡 Summary", "🎙️ Audio Podcast"])
     
@@ -120,12 +138,12 @@ elif choice == "📒 Study Assistant":
                 st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
         else: st.info("Provide notes to generate cards.")
 
-# --- MODULE 3: GLOBAL RESEARCH (Expanded 50+ Languages) ---
+# --- MODULE 3: GLOBAL RESEARCH (Translator) ---
 elif choice == "🌍 Global Research":
     st.title("Global Source Translator")
     source_text = st.text_area("Paste foreign text here:", height=200)
     
-    target_lang_name = st.selectbox("Select Target Language:", sorted(LANGUAGES.keys()))
+    target_lang_name = st.selectbox("Translate to:", sorted(LANGUAGES.keys()))
     target_code = LANGUAGES[target_lang_name]
     
     if st.button("Translate Now"):
@@ -139,21 +157,40 @@ elif choice == "🌍 Global Research":
         else:
             st.warning("Please enter text first.")
 
-# --- MODULE 4: CITATION HELPER (Fixed Format Logic) ---
+# --- MODULE 4: SMART ANALYSIS ---
+elif choice == "🔍 Smart Analysis":
+    st.title("Universal Writing Analyzer")
+    draft = st.text_area("Paste writing here:", height=250)
+    if st.button("Run Analysis"):
+        if draft:
+            blob = TextBlob(draft)
+            st.subheader(f"Detected: {'Narrative' if blob.sentiment.subjectivity > 0.5 else 'Research'}")
+            st.metric("Clarity", round(1 - blob.sentiment.subjectivity, 2))
+        else: st.warning("Enter text first.")
+
+# --- MODULE 5: CITATION HELPER ---
 elif choice == "📚 Citation Helper":
     st.title("Citation Assistant")
-    source_url = st.text_area("Paste source URL or details:", placeholder="https://www.britannica.com/...")
-    
+    source_details = st.text_area("Paste source details or URL:")
     if st.button("Format"):
-        if source_url.strip():
-            st.subheader("Formatted Citation (APA 7th)")
+        if source_details:
             today = datetime.date.today().strftime("%Y, %B %d")
-            citation = f"Source Material. ({today}). Retrieved from {source_url}"
-            st.code(citation, language="text")
-            st.success("Citation generated!")
-        else:
-            st.error("Please paste a URL first.")
+            st.code(f"Source. ({today}). Retrieved from {source_details}", language="text")
+            st.success("Citation formatted.")
 
-# --- OTHER MODULES (Omitted for brevity, same as previous version) ---
-else:
-    st.write("Module under construction or select from sidebar.")
+# --- OTHER TOOLS ---
+elif choice == "🔢 Word Counter":
+    st.title("Word Counter")
+    essay = st.text_area("Paste text:")
+    st.metric("Words", len(essay.split()))
+
+elif choice == "✍️ Thesis Generator":
+    st.title("Thesis Generator")
+    topic = st.text_input("Enter topic:")
+    if st.button("Generate"): 
+        st.success(f"Thesis: {topic} is critical for sustainability in modern research.")
+
+elif choice == "⚙️ Settings":
+    st.title("App Settings")
+    if st.button("🔄 Clear App Cache"): st.cache_resource.clear(); st.rerun()
+    st.toggle("Auto-save Progress", value=True)
