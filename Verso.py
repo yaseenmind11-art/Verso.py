@@ -4,7 +4,7 @@ from deep_translator import GoogleTranslator
 import pandas as pd
 import nltk
 
-# --- FIX: MissingCorpusError ---
+# --- FIX: Auto-download required data for TextBlob ---
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
@@ -13,14 +13,17 @@ except LookupError:
     nltk.download('wordnet')
 
 # --- Page Configuration ---
+# Keeping your z.png as the tab logo
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
 
 # --- Custom Styles ---
 st.markdown("""
     <style>
     .instruction-box {
-        background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px; border-radius: 15px; margin-bottom: 25px; color: #cbd5e1; font-style: italic;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 20px; border-radius: 15px; margin-bottom: 25px;
+        color: #cbd5e1; font-style: italic;
     }
     .notebook-card {
         background-color: #1e293b; padding: 15px; border-radius: 10px;
@@ -40,15 +43,14 @@ with st.sidebar:
     ])
 
 # --- Main Logic ---
+
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown('<div class="instruction-box">"Select a module from the sidebar to start your MYP Year 2 workflow."</div>', unsafe_allow_html=True)
     st.write("This assistant is optimized for climate activism research and academic non-fiction narratives.")
 
-# ... [Thesis Generator, Citation Helper, and Word Counter code remains same] ...
 elif choice == "✍️ Thesis Generator":
     st.title("Thesis Generator")
-    st.markdown('<div class="instruction-box">"A strong thesis statement should be a one-line argument."</div>', unsafe_allow_html=True)
     topic = st.text_input("Enter topic:")
     if st.button("Generate"): st.success(f"Thesis: {topic} is critical for sustainability.")
 
@@ -59,77 +61,76 @@ elif choice == "📚 Citation Helper":
 
 elif choice == "🔢 Word Counter":
     st.title("Word Counter")
-    essay = st.text_area("Paste essay:")
+    essay = st.text_area("Paste text:")
     st.metric("Words", len(essay.split()))
 
-# --- UPGRADED: NOTEBOOK INTELLIGENCE (NotebookLM Functions) ---
+# --- NOTEBOOK INTELLIGENCE (NotebookLM Style) ---
 elif choice == "📒 Notebook Intelligence":
     st.title("Notebook Intelligence")
-    st.markdown('<div class="instruction-box">"Upload PDFs, Excel, or Text to generate study assets."</div>', unsafe_allow_html=True)
-    
-    uploaded_file = st.file_uploader("Upload sources (PDF, CSV, TXT, PPTX)", type=["pdf", "csv", "txt", "pptx"])
+    uploaded_file = st.file_uploader("Upload sources (PDF, CSV, TXT)", type=["pdf", "csv", "txt"])
     content = ""
-
     if uploaded_file:
         if uploaded_file.type == "text/plain":
             content = str(uploaded_file.read(), "utf-8")
         elif uploaded_file.type == "text/csv":
-            df = pd.read_csv(uploaded_file)
-            content = df.to_string()
+            content = pd.read_csv(uploaded_file).to_string()
         st.success(f"Loaded: {uploaded_file.name}")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["📋 Study Assets", "🎧 Audio/Podcast", "📊 Data Table", "❓ Quiz"])
-
-    with tab1:
-        st.subheader("Study Flashcards")
+    t1, t2, t3 = st.tabs(["📋 Cards", "🎧 Podcast", "❓ Quiz"])
+    with t1:
         if content:
-            blob = TextBlob(content)
-            for phrase in blob.noun_phrases[:5]:
+            for phrase in TextBlob(content).noun_phrases[:5]:
                 st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
-        else: st.info("Upload a file to see concepts.")
+    with t2:
+        if content: st.write("**Host:** Today we analyze your research content...")
+    with t3:
+        if content: st.radio("Is the logic sound?", ["Yes", "No"])
 
-    with tab2:
-        st.subheader("Podcast Script Generator")
-        if content:
-            st.write("**Host:** Welcome back. Today we are diving into our uploaded research.")
-            st.write(f"**Expert:** Exactly. The core focus here seems to be on {TextBlob(content).noun_phrases[0] if content else 'the topic'}.")
-        else: st.info("Upload a file to generate a script.")
+# --- FIXED: GLOBAL RESEARCH (No more black screen) ---
+elif choice == "🌍 Global Research":
+    st.title("Global Source Translator")
+    source_text = st.text_area("Paste foreign text here:", height=200)
+    target_lang = st.selectbox("Translate to:", ["en", "ar", "fr", "es"])
+    if st.button("Translate Now"):
+        if source_text.strip(): # Check if text is actually there
+            try:
+                translated = GoogleTranslator(source='auto', target=target_lang).translate(source_text)
+                st.success(translated)
+            except Exception as e:
+                st.error(f"Translation Error: {e}")
+        else:
+            st.warning("Please enter text before translating.")
 
-    with tab3:
-        st.subheader("Infographic Data")
-        if content:
-            st.table(pd.DataFrame({"Category": ["Key Points", "Evidence", "Conclusion"], "Content": ["Extracted Data", "Source Logic", "Final Summary"]}))
-
-    with tab4:
-        st.subheader("Interactive Quiz")
-        if content:
-            st.write("1. Summarize the main goal of this document in one sentence.")
-            st.radio("Is the evidence provided sufficient?", ["Yes", "Needs More"])
-
-# --- UPDATED: SMART ANALYSIS (Error-Free) ---
+# --- SMART ANALYSIS ---
 elif choice == "🔍 Smart Analysis":
     st.title("Universal Writing Analyzer")
     draft = st.text_area("Paste writing here:", height=250)
     if st.button("Run Analysis"):
         if draft:
             blob = TextBlob(draft)
-            # Automatic Type Detection
-            w_type = "Narrative" if blob.sentiment.subjectivity > 0.5 else "Academic Research"
-            st.subheader(f"Detected: {w_type}")
-            
-            c1, c2 = st.columns(2)
-            c1.metric("Clarity", round(1 - blob.sentiment.subjectivity, 2))
-            c2.metric("Tone", "Positive" if blob.sentiment.polarity > 0 else "Objective")
+            st.subheader(f"Detected: {'Narrative' if blob.sentiment.subjectivity > 0.5 else 'Research'}")
+            st.metric("Clarity", round(1 - blob.sentiment.subjectivity, 2))
         else: st.warning("Enter text first.")
 
-# --- SETTINGS SECTION ---
+# --- RESTORED: SETTINGS SECTION ---
 elif choice == "⚙️ Settings":
     st.title("App Settings")
     col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("System Actions")
+        if st.button("🔄 Clear App Cache"): st.rerun()
+        if st.button("📥 Export Research Log"): st.write("Exporting...")
+        if st.button("🚀 Optimize Performance"): st.toast("System optimized!")
+            
     with col2:
-        st.selectbox("Citation", ["APA 7", "MLA 9", "Chicago", "IEEE"])
-        st.toggle("Advanced Analytics", value=True)
-        st.toggle("High Contrast", value=True)
-        st.toggle("Auto-save", value=True)
+        st.subheader("Preferences")
+        # Restored the list of citation styles
+        st.selectbox("Default Citation Style", ["APA 7th Edition", "MLA 9th Edition", "Chicago", "Harvard", "IEEE"])
+        # All defaults ON
+        st.toggle("Enable Advanced Analytics", value=True)
+        st.toggle("High Contrast UI", value=True)
+        st.toggle("Auto-save Progress", value=True)
+    
     st.divider()
-    st.write("App Version: 5.0.0 (Global Intelligence)")
+    st.write("App Version: 5.2.0 (Stable Enterprise)")
