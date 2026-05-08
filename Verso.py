@@ -121,7 +121,7 @@ if choice == "🏠 Home":
 
 # --- MODULE 2: CITATION HELPER (Scribbr Style - URL Only) ---
 elif choice == "📚 Citation Helper":
-    st.title("Scribbr-Style Citation Generator")
+    st.title("Verso Citation Generator")
     st.markdown('<div class="instruction-box">"Enter a URL to automatically generate an APA 7th Edition citation (or change from settings)."</div>', unsafe_allow_html=True)
     
     source_url = st.text_input("🔗 Enter source URL:", placeholder="Paste your link here...")
