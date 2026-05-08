@@ -1,10 +1,9 @@
 import streamlit as st
 
 # --- Page Configuration ---
-# This line adds z.png to your browser tab
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
 
-# --- Custom Styles (The "White Box" Look) ---
+# --- Custom Styles ---
 st.markdown("""
     <style>
     .instruction-box {
@@ -23,13 +22,13 @@ st.markdown("""
 with st.sidebar:
     st.title("VERSO PRO")
     st.write("Academic Command Center")
-    choice = st.radio("Navigation", ["🏠 Home", "✍️ Thesis Generator", "📚 Citation Helper", "🔢 Word Counter"])
+    # Added the gear icon here
+    choice = st.radio("Navigation", ["🏠 Home", "✍️ Thesis Generator", "📚 Citation Helper", "🔢 Word Counter", "⚙️ Settings"])
 
 # --- Main Logic ---
 
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    # "Welcome, Yaseen Amr" has been removed as requested
     st.markdown('<div class="instruction-box">"Select a module from the sidebar to start your MYP Year 2 workflow."</div>', unsafe_allow_html=True)
     st.write("This assistant is optimized for climate activism research and academic non-fiction narratives.")
 
@@ -55,13 +54,34 @@ elif choice == "🔢 Word Counter":
     st.markdown('<div class="instruction-box">"Keep track of your word limits for your non-fiction narratives and research tasks."</div>', unsafe_allow_html=True)
     essay_text = st.text_area("Paste your essay or research paragraph here:", height=300)
     
-    # Logic for word count
     words = essay_text.split()
     word_count = len(words)
     
-    # Keeping this part exactly as it was:
     st.metric(label="Word Count", value=word_count)
     
     if word_count > 0:
-        st.progress(min(word_count / 500, 1.0)) # Progress bar based on a 500-word limit
+        st.progress(min(word_count / 500, 1.0))
         st.write(f"Current count: **{word_count}** words.")
+
+# --- NEW SETTINGS SECTION ---
+elif choice == "⚙️ Settings":
+    st.title("App Settings")
+    st.markdown('<div class="instruction-box">"Configure your workspace preferences and functional modules."</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("System Actions")
+        if st.button("Clear Cache"):
+            st.rerun()
+        if st.button("Export Research Log"):
+            st.write("Exporting...")
+            
+    with col2:
+        st.subheader("Preferences")
+        st.checkbox("High Contrast Mode")
+        st.checkbox("Auto-save Drafts")
+        st.selectbox("Academic Format", ["APA 7", "MLA 9", "Chicago"])
+
+    st.divider()
+    st.write("App Version: 2.1.0 (Pro)")
