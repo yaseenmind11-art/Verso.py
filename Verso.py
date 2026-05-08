@@ -92,4 +92,4 @@ elif choice == "⚙️ Settings":
         st.toggle("Auto-save Progress", value=True)
 
     st.divider()
-    st.write("App Version: 2.5.0 (Enterprise)")
+    st.write("App Version: 2.5.0 (Pro)")
