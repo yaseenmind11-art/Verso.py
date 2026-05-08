@@ -122,7 +122,7 @@ if choice == "🏠 Home":
 # --- MODULE 2: CITATION HELPER (Scribbr Style - URL Only) ---
 elif choice == "📚 Citation Helper":
     st.title("Scribbr-Style Citation Generator")
-    st.markdown('<div class="instruction-box">"Enter a URL to automatically generate an APA 7th Edition citation."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="instruction-box">"Enter a URL to automatically generate an APA 7th Edition citation (or change from settings)."</div>', unsafe_allow_html=True)
     
     source_url = st.text_input("🔗 Enter source URL:", placeholder="Paste your link here...")
     
@@ -144,7 +144,7 @@ elif choice == "📚 Citation Helper":
                     
                     st.markdown("### Your APA Citation:")
                     st.markdown(f"""
-                        <div style="background-color: white; padding: 25px; border-radius: 5px; border-left: 12px solid #3b82f6; color: #1e293b; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <div style="background-color: black; padding: 25px; border-radius: 5px; border-left: 12px solid #3b82f6; color: #1e293b; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             {full_cit}
                         </div>
                     """, unsafe_allow_html=True)
