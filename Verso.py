@@ -22,7 +22,6 @@ st.markdown("""
 with st.sidebar:
     st.title("VERSO PRO")
     st.write("Academic Command Center")
-    # Added the gear icon here
     choice = st.radio("Navigation", ["🏠 Home", "✍️ Thesis Generator", "📚 Citation Helper", "🔢 Word Counter", "⚙️ Settings"])
 
 # --- Main Logic ---
@@ -44,10 +43,10 @@ elif choice == "✍️ Thesis Generator":
 
 elif choice == "📚 Citation Helper":
     st.title("Citation Assistant")
-    st.markdown('<div class="instruction-box">"Ensure all sources follow APA 7th edition guidelines to maintain academic integrity in your Humanities projects."</div>', unsafe_allow_html=True)
+    st.markdown('<div class="instruction-box">"Ensure all sources follow academic guidelines to maintain integrity in your Humanities projects."</div>', unsafe_allow_html=True)
     source_data = st.text_area("Paste source details (URL, Author, Year):", height=150)
-    if st.button("Format to APA"):
-        st.info("APA Formatting tool active. Reviewing source data...")
+    if st.button("Format Citation"):
+        st.info("Formatting tool active. Reviewing source data...")
 
 elif choice == "🔢 Word Counter":
     st.title("Word Counter")
@@ -63,7 +62,7 @@ elif choice == "🔢 Word Counter":
         st.progress(min(word_count / 500, 1.0))
         st.write(f"Current count: **{word_count}** words.")
 
-# --- NEW SETTINGS SECTION ---
+# --- SETTINGS SECTION ---
 elif choice == "⚙️ Settings":
     st.title("App Settings")
     st.markdown('<div class="instruction-box">"Configure your workspace preferences and functional modules."</div>', unsafe_allow_html=True)
@@ -72,16 +71,29 @@ elif choice == "⚙️ Settings":
     
     with col1:
         st.subheader("System Actions")
-        if st.button("Clear Cache"):
+        if st.button("🔄 Clear App Cache"):
             st.rerun()
-        if st.button("Export Research Log"):
+        if st.button("📥 Export Research Log"):
             st.write("Exporting...")
+        if st.button("🚀 Optimize Performance"):
+            st.toast("System optimized!")
             
     with col2:
         st.subheader("Preferences")
-        st.checkbox("High Contrast Mode")
-        st.checkbox("Auto-save Drafts")
-        st.selectbox("Academic Format", ["APA 7", "MLA 9", "Chicago"])
+        # Expanded list covering all major academic citation types
+        st.selectbox("Default Citation Style", [
+            "APA 7th Edition", 
+            "MLA 9th Edition", 
+            "Chicago Manual of Style (17th)", 
+            "Harvard", 
+            "Vancouver", 
+            "IEEE", 
+            "Oxford", 
+            "Bluebook"
+        ])
+        st.toggle("Enable Advanced Analytics")
+        st.toggle("High Contrast UI")
+        st.toggle("Auto-save Progress")
 
     st.divider()
-    st.write("App Version: 2.1.0 (Pro)")
+    st.write("App Version: 2.5.0 (Enterprise)")
