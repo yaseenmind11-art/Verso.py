@@ -1,7 +1,8 @@
 import streamlit as st
 
 # --- Page Configuration ---
-st.set_page_config(page_title="Verso Research Pro", page_icon="📝", layout="centered")
+# This links to your z.png file for the browser tab logo
+st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="centered")
 
 # --- Custom Styles (The "White Box" Look) ---
 st.markdown("""
