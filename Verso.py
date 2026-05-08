@@ -64,8 +64,8 @@ if choice == "🏠 Home":
             st.warning("Please enter a search topic to continue.")
 
 # --- 📒 NOTEBOOK INTELLIGENCE: MULTI-FUNCTION ---
-elif choice == "📒 Study Assistant":
-    st.title("Notebook Intelligence")
+elif choice == "📒 Notebook Intelligence":
+    st.title("Study Assistant")
     uploaded_file = st.file_uploader("Upload sources (PDF, CSV, TXT, PPTX)", type=["pdf", "csv", "txt", "pptx"])
     
     # Secure Content Loading
