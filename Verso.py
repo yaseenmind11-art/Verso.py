@@ -6,7 +6,7 @@ import random
 import re
 import streamlit.components.v1 as components
 
-# --- 🛰️ GOOGLE ANALYTICS INTEGRATION (ADDITION ONLY) ---
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
     ga_id = "G-030XWBG97P"
     ga_code = f"""
@@ -84,9 +84,9 @@ with st.sidebar:
 
 # --- MODULE: STUDY ASSISTANT ---
 if choice == "📒 Study Assistant":
-    st.title("Veso Writing Teacher")
+    st.title("Verso Writing Teacher")
 
-    # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
+    # --- 📂 UNIVERSAL RESOURCE HUB ---
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -126,7 +126,7 @@ if choice == "📒 Study Assistant":
                 opts = [target] + random.sample([w for w in words if w != target], 2)
                 random.seed(i); random.shuffle(opts)
                 st.write(f"**Question {i+1}:** Analyze the role of: **{target.upper()}**")
-                ans = st.radio("Select best fit:", opts, key=f"qz_{i}_{st.session_state.reset_counter}", index=None)
+                ans = st.radio("Select the best fit:", opts, key=f"qz_{i}_{st.session_state.reset_counter}", index=None)
                 if ans == target: score += 1
             if st.button("Submit Assessment"): st.metric("Score", f"{score}/10")
 
@@ -147,11 +147,11 @@ if choice == "📒 Study Assistant":
                     <hr style="border: 0.5px solid #334155;">
                     <p><b>I. Foundational Analysis</b><br>Welcome. We are reviewing your findings on <b>{words[0]}</b>. This theme acts as the core catalyst for the data patterns observed.</p>
                     <p><b>II. Cross-Correlation</b><br>The link between <b>{words[1]}</b> and <b>{words[2]}</b> is significant. Based on your input: <i>"{sentences[0] if sentences else 'N/A'}"</i>, we see clear academic evidence that supports <b>{words[3]}</b>.</p>
-                    <p><b>III. Structural conclusion</b><br>Following <b>{cite_style}</b> guidelines, your research in <b>{words[4]}</b> is logically sound. Focus on refining the relationship between these variables for your final report.</p>
+                    <p><b>III. Structural Conclusion</b><br>Following <b>{cite_style}</b> guidelines, your research in <b>{words[4]}</b> is logically sound. Focus on refining the relationship between these variables for your final report.</p>
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (DYNAMIC RESET ENABLED) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
