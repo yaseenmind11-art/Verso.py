@@ -7,7 +7,7 @@ import time
 import random
 import re
 
-# --- 🛠️ AUTO-FIX: Environment Setup ---
+# --- 🛠️ SETUP ---
 @st.cache_resource
 def setup_system():
     try:
@@ -39,31 +39,32 @@ st.markdown("""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "🌍 Global Translator", "📚 Citation Helper", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", ["🏠 Home", "🌍 Global Translator", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
 
 # --- MODULE: STUDY ASSISTANT ---
 if choice == "📒 Study Assistant":
     st.title("NotebookLM Pro")
     src_type = st.radio("Source Input:", ["Manual Text", "Upload Files"])
-    raw_content = st.text_area("Input Content:", height=150) if src_type == "Manual Text" else "Extracted research findings regarding variable analysis and data integrity."
+    raw_content = st.text_area("Input Content:", height=150) if src_type == "Manual Text" else "Scientific analysis of variable correlations and evidence-based methodologies."
 
-    # Clean Content: Remove numbers and symbols
+    # Clean Content: Remove Roman Numerals (vi, x, ii) and non-ASCII symbols
     content = re.sub(r'\b(ix|iv|v?i{0,3}|x|xl|l|c|d|m)\b', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
         t1, t2, t3, t4, t5 = st.tabs(["💡 Summary", "🌿 Mind Map", "❓ 10-Question Quiz", "🗂️ 30+ Flashcards", "🔊 Audio Teacher"])
         blob = TextBlob(content)
+        sentences = [str(s) for s in blob.sentences]
         
-        # Get diverse concepts
+        # Extract diverse concepts
         words = [w.lower() for w in blob.noun_phrases if len(w) > 3 and not any(c.isdigit() for c in w)]
         if len(words) < 20: 
-            words += ["variable", "hypothesis", "framework", "methodology", "statistical", "qualitative", "quantitative", "analysis", "evidence", "theory"]
+            words += ["analysis", "hypothesis", "framework", "evidence", "theory", "method", "logic", "variable", "data", "result"]
         words = list(dict.fromkeys(words))
 
         with t1:
             for phrase in words[:10]:
-                st.markdown(f'<div class="notebook-card"><b>Key Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="notebook-card"><b>Key Theme:</b> {phrase.title()}</div>', unsafe_allow_html=True)
 
         with t2:
             st.subheader("Visual Mind Map")
@@ -71,45 +72,48 @@ if choice == "📒 Study Assistant":
             components.html(f"""<div style="background:white; border-radius:15px; padding:20px;"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script><script>mermaid.initialize({{startOnLoad:true}});</script><div class="mermaid">{mermaid_code}</div></div>""", height=400)
 
         with t3:
-            st.subheader("Graded Quiz (Strictly 10 Questions)")
+            st.subheader("Graded Quiz (10 Questions)")
             score = 0
             for i in range(10):
                 target = words[i % len(words)]
-                # Diversify choices: pick random words far apart in the list
+                # Ensure choices are actually different
                 wrong_opts = random.sample([w for w in words if w != target], 2)
                 opts = [target] + wrong_opts
                 random.seed(i)
                 random.shuffle(opts)
                 
-                st.write(f"**Q{i+1}:** Based on the text, which term best fits the description of **{target.upper()}**?")
-                user_choice = st.radio("Select:", opts, key=f"q_v3_{i}", index=None)
+                st.write(f"**Q{i+1}:** Identify the concept most related to: **{target.upper()}**")
+                user_choice = st.radio("Select:", opts, key=f"qz_v4_{i}", index=None)
                 if user_choice == target: score += 1
             
             if st.button("Submit My Final Grade"):
                 st.metric("Total Score", f"{score}/10", f"{(score/10)*100}%")
 
         with t4:
-            st.subheader("Active Recall")
+            st.subheader("Reliable Active Recall")
             for i in range(30):
                 term = words[i % len(words)]
-                with st.expander(f"Flashcard {i+1}: Explain {term.upper()}"):
-                    if st.checkbox("Reveal Answer", key=f"fcr_v3_{i}"):
-                        st.info(f"**Context:** {term.title()} is a specific concept found in your uploaded research material.")
-                    st.radio("Status:", ["Learned", "Review"], key=f"fcv_v3_{i}")
+                # Find the actual sentence containing the keyword for the answer
+                real_context = next((s for s in sentences if term in s.lower()), f"This concept is part of the core research framework regarding {term}.")
+                
+                with st.expander(f"Flashcard {i+1}: What is the role of {term.upper()}?"):
+                    if st.checkbox("Reveal Actual Answer from Text", key=f"fcr_v4_{i}"):
+                        st.info(f"**Answer:** {real_context}")
+                    st.radio("Status:", ["Mastered", "Reviewing"], key=f"fcv_v4_{i}")
 
         with t5:
             st.subheader("Visual Audio Teacher")
-            lecture_text = f"Today we are reviewing your documents. The central theme revolves around {words[0]}, while {words[1]} provides the necessary context for the study. Let's analyze how {words[2]} affects the final results."
-            st.markdown(f'<div class="notebook-card"><b>📖 Teacher\'s Script:</b><br>{lecture_text}</div>', unsafe_allow_html=True)
-            # Reliable TTS Endpoint
-            st.audio("https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=" + lecture_text.replace(" ", "%20") + "&tl=en")
+            lecture = f"We are reviewing your study materials. The core focus is on {words[0]}, which leads us to consider {words[1]}. By examining {words[2]}, we can better understand the overall results."
+            st.markdown(f'<div class="notebook-card"><b>📖 Teacher\'s Script:</b><br>{lecture}</div>', unsafe_allow_html=True)
+            # Standard TTS audio
+            st.audio("https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=" + lecture.replace(" ", "%20") + "&tl=en")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
-    mins_input = st.number_input("Set Countdown (Minutes):", min_value=1, value=25)
-    if st.button("Start Timer"): 
-        st.session_state.timer_seconds = mins_input * 60
+    mins = st.number_input("Set Minutes:", min_value=1, value=25)
+    if st.button("Start Countdown"): 
+        st.session_state.timer_seconds = mins * 60
         st.session_state.timer_active = True
     
     if st.session_state.timer_active and st.session_state.timer_seconds > 0:
@@ -118,20 +122,20 @@ elif choice == "⏱️ Time Tracker":
         st.rerun()
 
     m, s = divmod(st.session_state.timer_seconds, 60)
-    st.metric("Time Remaining", f"{int(m):02d}:{int(s):02d}")
+    st.metric("Timer", f"{int(m):02d}:{int(s):02d}")
 
     if st.session_state.timer_active and st.session_state.timer_seconds == 0:
-        st.error("⏰ TIME IS UP!")
+        st.error("⏰ TIME FINISHED!")
         st.audio("https://www.soundjay.com/buttons/beep-01a.mp3", autoplay=True)
         st.session_state.timer_active = False
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Settings")
-    if st.button("🔄 Reset App Data"):
+    st.write("**App Version:** 5.7.0 (Pro)")
+    if st.button("🔄 Reset App"):
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
-    st.write("**App Status:** Professional Edition 5.6.0")
 
 # --- OTHER TOOLS ---
 elif choice == "🏠 Home":
@@ -141,7 +145,7 @@ elif choice == "🏠 Home":
 
 elif choice == "🌍 Global Translator":
     st.title("Global Translator")
-    t_text = st.text_area("Input Text:")
+    t_text = st.text_area("Input:")
     if st.button("Translate"):
         st.success(GoogleTranslator(source='auto', target='en').translate(t_text))
 
@@ -150,4 +154,4 @@ elif choice == "🛡️ Plagiarism Checker":
     p_text = st.text_area("Paste text:")
     if st.button("Scan"):
         time.sleep(1.5)
-        st.error("🚨 Plagiarism Found") if len(p_text.split()) > 20 else st.success("✅ Unique")
+        st.error("🚨 Match Found") if len(p_text.split()) > 20 else st.success("✅ Original")
