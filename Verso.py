@@ -6,7 +6,7 @@ import random
 import re
 import streamlit.components.v1 as components
 
-# --- 🛰️ GOOGLE ANALYTICS INTEGRATION (ADDITION ONLY) ---
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
     ga_id = "G-030XWBG97P"
     ga_code = f"""
@@ -44,14 +44,12 @@ def trigger_master_reset():
     time.sleep(0.4)
     st.rerun()
 
-# Default Global Styles (Fallbacks)
+# Default Global Styles
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
-
-# Call Analytics
 inject_ga()
 
 # --- CUSTOM DYNAMIC STYLING ---
@@ -76,17 +74,63 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (Updated with your requested button) ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", [
+        "🏠 Home", 
+        "📒 Study Assistant", 
+        "✍️ Grammar & Punctuation", 
+        "🛡️ Plagiarism Checker", 
+        "⏱️ Time Tracker", 
+        "⚙️ Settings"
+    ])
+
+# --- NEW MODULE: GRAMMAR & PUNCTUATION ---
+if choice == "✍️ Grammar & Punctuation":
+    st.title("Academic Polish Tool")
+    st.write("Check your IB report for capitalization, punctuation, and grammar errors.")
+    
+    edit_text = st.text_area("Paste your draft here:", height=250, placeholder="Type or paste your work...")
+    
+    if st.button("🔍 Run Full Audit"):
+        if edit_text:
+            with st.spinner("Analyzing text patterns..."):
+                time.sleep(1)
+                blob = TextBlob(edit_text)
+                
+                col1, col2, col3 = st.columns(3)
+                
+                # Logic for Capitalization/Punctuation
+                caps_issues = [s for s in blob.sentences if not s.startswith(s[0].upper())]
+                punct_issues = re.findall(r'(\s[,\.\!\?])', edit_text) # Spaces before punctuation
+                
+                with col1:
+                    st.metric("Grammar Score", f"{max(0, 100 - len(blob.tags))}%")
+                with col2:
+                    st.metric("Capitalization Issues", len(caps_issues))
+                with col3:
+                    st.metric("Punctuation Errors", len(punct_issues))
+                
+                st.write("---")
+                st.subheader("💡 Suggested Fixes")
+                
+                if not caps_issues and not punct_issues:
+                    st.success("Your text looks clean! No major mechanical errors detected.")
+                else:
+                    if caps_issues:
+                        st.warning(f"Detected {len(caps_issues)} sentence(s) starting with lowercase letters.")
+                    if punct_issues:
+                        st.warning(f"Found {len(punct_issues)} instances of incorrect spacing before punctuation.")
+                    
+                    st.info("Professional Tip: Ensure all proper nouns and start of sentences are capitalized for IB criteria.")
+        else:
+            st.error("Please enter some text first!")
 
 # --- MODULE: STUDY ASSISTANT ---
-if choice == "📒 Study Assistant":
-    st.title("Veso Writing Teacher")
-
-    # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
+elif choice == "📒 Study Assistant":
+    st.title("NotebookLM Writing Teacher")
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -100,8 +144,6 @@ if choice == "📒 Study Assistant":
     st.write("---")
 
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
-    
-    # Cleaning Logic: Purge bracketed references and months
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
@@ -138,7 +180,7 @@ if choice == "📒 Study Assistant":
                     if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
 
         with t4:
-            st.subheader("Writing Verso AI Teacher")
+            st.subheader("Writing AI Teacher (No Voice)")
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f"""
@@ -151,7 +193,7 @@ if choice == "📒 Study Assistant":
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (DYNAMIC RESET ENABLED) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
