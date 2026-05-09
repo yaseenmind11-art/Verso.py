@@ -113,7 +113,16 @@ if choice == "📒 Study Assistant":
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
+    # --- NEW UNIFIED CHECKER BUTTON (OUTSIDE TABS) ---
     if content:
+        if st.button("✨ Unified Grammar, Punctuation & Caps Check", use_container_width=True):
+            blob = TextBlob(content)
+            # TextBlob's correct() handles spelling, capitalization, and basic grammar
+            corrected_text = str(blob.correct())
+            st.markdown(f'<div class="notebook-card" style="border-left-color: #10b981;"><h4>✅ Corrected Version:</h4><p>{corrected_text}</p></div>', unsafe_allow_html=True)
+        
+        st.write("---")
+        
         t1, t2, t3, t4 = st.tabs(["🔑 20+ Keywords", "❓ 10-Question Quiz", "🗂️ 20+ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(content)
         sentences = [str(s) for s in blob.sentences]
@@ -141,15 +150,9 @@ if choice == "📒 Study Assistant":
                     if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
         with t4:
             st.subheader("Writing Verso AI Teacher")
-            col_teach1, col_teach2 = st.columns(2)
-            if col_teach1.button("🚀 Start Lesson Synthesis"):
+            if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Guidelines: {cite_style}</p></div>', unsafe_allow_html=True)
-            
-            if col_teach2.button("✍️ Check Grammar & Punctuation"):
-                corrected_text = str(blob.correct())
-                st.info("### 📝 Suggested Corrections:")
-                st.success(corrected_text)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -241,7 +244,7 @@ elif choice == "⚙️ Settings":
             st.session_state.last_tool = lab
             st.toast(f"Running: {lab}")
     
-    c5.checkbox("50. Enable AI Humor", key=f"set_humor_{v_id}")
+    c5.checkbox("50. Enable AI Humor", key=f"set_hum humor_{v_id}")
     if 'last_tool' in st.session_state:
         st.success(f"Output for: {st.session_state.last_tool}")
     st.success("51. System Optimized")
@@ -249,13 +252,13 @@ elif choice == "⚙️ Settings":
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    st.text_area("Paste text:", placeholder="Paste your research text here...")
+    st.text_area("Paste text:", placeholder="Paste your text here...")
     if st.button("Deep Scan"):
         with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Paste your research text here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Paste your research question here...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- FINAL AUTOMATIC TRIGGER ---
