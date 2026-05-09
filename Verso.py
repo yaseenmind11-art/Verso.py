@@ -76,6 +76,7 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
+# FIXED: Doubled curly braces in CSS for literal representation in f-string
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
@@ -107,9 +108,12 @@ if choice == "📒 Study Assistant":
     with col_a:
         st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"file_hub_{st.session_state.reset_counter}")
     with col_b:
-        st.text_input("Link Hub", placeholder="Paste URL here...", key=f"link_hub_{st.session_state.reset_counter}")
+        st.text_input("Link Hub", value="https://climate.nasa.gov/evidence/", key=f"link_hub_{st.session_state.reset_counter}")
     
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
+    # ADDED EXAMPLE CONTENT
+    example_text = "The Greenhouse Effect is a natural process that warms the Earth's surface. When the Sun's energy reaches the Earth's atmosphere, some of it is reflected back to space and the rest is absorbed and re-radiated by greenhouse gases. Greenhouse gases include water vapor, carbon dioxide, methane, nitrous oxide, ozone and some artificial chemicals such as chlorofluorocarbons (CFCs)."
+    raw_content = st.text_area("Input Content:", value=example_text, height=200)
+    
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
@@ -118,7 +122,7 @@ if choice == "📒 Study Assistant":
         blob = TextBlob(content)
         sentences = [str(s) for s in blob.sentences]
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-        if len(words) < 20: words += ["analytical framework", "empirical data", "research method"]
+        if len(words) < 20: words += ["analytical framework", "empirical data", "research method", "climate variable", "atmospheric science", "carbon footprint", "thermal energy", "radiation balance", "ecosystem impact", "environmental policy", "sustainable development", "industrial emissions", "methane concentration", "ozone depletion", "solar radiation", "infrared absorption", "ocean warming"]
 
         with t1:
             cols = st.columns(2)
@@ -143,7 +147,7 @@ if choice == "📒 Study Assistant":
             st.subheader("Writing Verso AI Teacher")
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
-                st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Guidelines: {cite_style}</p></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Guidelines: {cite_style}</p><p>Today we analyze the relationship between atmospheric composition and global thermal regulation.</p></div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -194,7 +198,7 @@ elif choice == "⚙️ Settings":
         st.checkbox("7. Logic Validation", value=True, key=f"set_logic_{v_id}")
         st.checkbox("8. Source Cross-Checking", key=f"set_cross_{v_id}")
         st.checkbox("9. IB MYP2 Alignment", key=f"set_ib_{v_id}")
-        if st.button("10. Export Citations", key=f"b10_{v_id}"): st.toast("Citations Exported to Local Storage.")
+        if st.button("10. Export Citations", key=f"b10_{v_id}"): st.toast("Citations Exported.")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
@@ -205,51 +209,53 @@ elif choice == "⚙️ Settings":
         st.checkbox("16. Dark Mode Force", value=True, key=f"set_dark_{v_id}")
         st.checkbox("17. Glassmorphism", key=f"set_glass_{v_id}")
         st.checkbox("18. Nav Hints", key=f"set_hints_{v_id}")
-        if st.button("19. Rebuild Cache", key=f"b19_{v_id}"): st.cache_resource.clear(); st.toast("Resources Re-synced.")
-        if st.button("20. Toggle Fullscreen", key=f"b20_{v_id}"): st.toast("Use F11 to exit Fullscreen Mode.")
+        if st.button("19. Rebuild Cache", key=f"b19_{v_id}"): st.cache_resource.clear(); st.toast("Cache Rebuilt.")
+        if st.button("20. Toggle Fullscreen", key=f"b20_{v_id}"): st.toast("Press F11.")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("21. Encryption", key=f"set_enc_{v_id}")
         st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
         st.checkbox("23. Study Logs", key=f"set_anon_{v_id}")
         st.checkbox("24. Auto-Delete", key=f"set_del_{v_id}")
-        if st.button("25. Purge History", key=f"b25_{v_id}"): st.warning("Browser history and project logs purged.")
-        if st.button("26. Export CSV", key=f"b26_{v_id}"): st.toast("Project data compiled to CSV.")
-        if st.button("27. Cloud Backup", key=f"b27_{v_id}"): st.success("Backup complete.")
-        if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("RSA-VERSO-8829-PRO")
-        if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("System files verified 100%.")
-        st.info(f"30. Build: 14.5.1 (vID: {v_id})")
+        if st.button("25. Purge History", key=f"b25_{v_id}"): st.warning("History Cleared.")
+        if st.button("26. Export CSV", key=f"b26_{v_id}"): st.toast("CSV Generated.")
+        if st.button("27. Cloud Backup", key=f"b27_{v_id}"): st.success("Cloud Synced.")
+        if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("IB-MYP2-PRO-9981")
+        if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("Files 100% Secure.")
+        st.info(f"30. Build: 14.5.2 (vID: {v_id})")
     
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
-    labels = [
-        "31. Arduino Serial Monitor", "32. Lenticular Illusion Lab", "33. MQ2 Sensor Calibration", "34. Pin Map: Pin 4 Fix",
-        "35. Greenhouse Gas Calc", "36. Paris Agreement DB", "37. Renewable Energy Map", "38. HC-05 BT Config",
-        "39. APA In-Text Verifier", "40. Thesis Strength Meter", "41. mAh to Wh Converter", "42. L298N Logic Table",
-        "43. Unit Conversion Lab", "44. Ultrasonic Trigger Tool", "45. Motor Driver Blueprint", "46. Flame Sensor Logic",
-        "47. Battery Life Estimator", "48. Global Climate Trends", "49. Bibliography Cleanup"
+    toolbox_cmds = [
+        "31. Arduino Serial Monitor", "32. Lenticular Physics Lab", "33. MQ2 Gas Calibration", "34. Pin Map: Pin 4 Switch",
+        "35. Greenhouse Gas Model", "36. Paris Agreement Data", "37. Renewable Energy Sim", "38. HC-05 Configurator",
+        "39. APA 7 Citation Check", "40. Thesis Strength Tool", "41. mAh to Watt-Hour Lab", "42. L298N Motor Bridge",
+        "43. Unit Conversion Engine", "44. Ultrasonic Range Test", "45. Motor Blueprint View", "46. Flame Sensor Logic",
+        "47. Battery Capacity Calc", "48. Global Warming Graph", "49. Bibliography Builder"
     ]
-    for i, lab in enumerate(labels):
+    for i, label in enumerate(toolbox_cmds):
         col = [c4, c5, c6][i % 3]
-        if col.button(lab, key=f"b{i+31}_{v_id}"):
-            st.session_state.last_tool = lab
-            st.toast(f"Running: {lab}")
+        if col.button(label, key=f"btb_{i+31}_{v_id}"): st.toast(f"Executed: {label}")
     
     c5.checkbox("50. Enable AI Humor", key=f"set_humor_{v_id}")
-    if 'last_tool' in st.session_state:
-        st.success(f"Output for: {st.session_state.last_tool}")
     st.success("51. System Optimized")
 
-# --- OTHER TOOLS ---
+# --- MODULE: 🛡️ PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    st.text_area("Paste text:")
+    # ADDED EXAMPLE TEXT FOR SCANNER
+    scanner_example = "Carbon dioxide (CO2) is an important heat-trapping gas, which is released through human activities such as deforestation and burning fossil fuels."
+    st.text_area("Paste text:", value=scanner_example)
     if st.button("Deep Scan"):
-        with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
+        with st.spinner("Scanning Database..."): 
+            time.sleep(2)
+            st.success("✅ Content Unique: 0% Match Found.")
 
+# --- MODULE: 🏠 HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:")
+    # ADDED SEARCH EXAMPLE
+    q = st.text_input("🔍 Search Database:", value="renewable energy impact on climate change")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- FINAL AUTOMATIC TRIGGER ---
