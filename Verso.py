@@ -84,7 +84,7 @@ with st.sidebar:
 
 # --- MODULE: STUDY ASSISTANT ---
 if choice == "📒 Study Assistant":
-    st.title("NotebookLM Writing Teacher")
+    st.title("Veso Writing Teacher")
 
     # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
     st.markdown("### 📥 Universal Resource Hub")
@@ -138,7 +138,7 @@ if choice == "📒 Study Assistant":
                     if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
 
         with t4:
-            st.subheader("Writing AI Teacher (No Voice)")
+            st.subheader("Writing Verso AI Teacher")
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f"""
