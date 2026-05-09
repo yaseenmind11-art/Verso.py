@@ -37,8 +37,7 @@ f_scale = st.session_state.get('set_font', 1.1)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 
-# --- 🛰️ GOOGLE ANALYTICS LIVE TRACKING ---
-# IMPORTANT: Replace G-XXXXXXXXXX with your actual ID to see yourself live!
+# --- 🛰️ GOOGLE ANALYTICS LIVE TRACKING (UPDATED ID) ---
 ga_id = "G-030XWBG97P" 
 ga_code = f"""
 <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
@@ -134,27 +133,33 @@ if choice == "📒 Study Assistant":
                     if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
 
         with t4:
-            st.subheader("Writing AI Teacher (No Voice)")
+            st.subheader("Writing AI Teacher (Deep Lesson)")
             if st.button("🚀 Start Lesson Synthesis"):
-                st.markdown(f"""
+                # Fixed HTML rendering for the Lesson
+                lesson_html = f"""
                 <div class="teacher-board">
-                    <h2 style="text-align:center; color:{accent};">MASTERCLASS: {words[0].upper()}</h2>
+                    <h2 style="text-align:center; color:{accent};">🎓 MASTERCLASS: {words[0].upper()}</h2>
                     <hr style="border: 0.5px solid #334155;">
-                    <h3>📖 Concept Explanation</h3>
-                    <p>Today, we are diving deep into <b>{words[0]}</b>. This is not just a term; it is the foundation of your entire study. 
-                    When we look at the data, <b>{words[0]}</b> acts as a primary driver, influencing how we interpret every other result.</p>
                     
-                    <h3>🔍 Detailed Correlation</h3>
-                    <p>Notice the relationship between <b>{words[1]}</b> and <b>{words[2]}</b>. In a high-level academic environment, 
-                    we must understand that <b>{words[1]}</b> creates a ripple effect. Your text mentions: <i>"{sentences[0] if sentences else 'the core findings'}"</i>. 
-                    This proves that without a firm grasp of <b>{words[2]}</b>, the logic of the project would collapse.</p>
+                    <h3>📖 1. Foundational Concept Exploration</h3>
+                    <p>Welcome. To truly master your research, we must start with <b>{words[0]}</b>. This is the structural heartbeat of your study. 
+                    Rather than just a data point, think of <b>{words[0]}</b> as the lens through which we view all your findings. 
+                    Without this foundation, the research lacks the necessary academic weight required for high-level analysis.</p>
                     
-                    <h3>💡 Critical Insights</h3>
-                    <p>Furthermore, <b>{words[3]}</b> and <b>{words[4]}</b> should be viewed as your two most important variables. 
-                    A great researcher doesn't just list these—they analyze how <b>{words[3]}</b> provides the evidence needed to support the claims of <b>{words[4]}</b>. 
-                    Keep this structure in mind for your final IB report to ensure total clarity and depth.</p>
+                    <h3>🔍 2. Advanced Multi-Variable Correlation</h3>
+                    <p>Now, let's analyze the intricate dance between <b>{words[1]}</b> and <b>{words[2]}</b>. 
+                    Your documentation states: <i>"{sentences[0] if sentences else 'the primary evidence'}"</i>. 
+                    As your teacher, I want you to notice how <b>{words[1]}</b> creates a direct causal link to <b>{words[2]}</b>. 
+                    In a professional report, you shouldn't just mention them—you should explain that <b>{words[1]}</b> is the catalyst that makes <b>{words[2]}</b> significant.</p>
+                    
+                    <h3>💡 3. Critical Analytical Insights</h3>
+                    <p>Finally, we look at <b>{words[3]}</b> and <b>{words[4]}</b>. These are your "power variables." 
+                    A top-tier researcher understands that <b>{words[3]}</b> provides the empirical proof for <b>{words[4]}</b>. 
+                    When writing your final conclusion, ensure you emphasize that the success of <b>{words[4]}</b> depends entirely on the logic established by <b>{words[3]}</b>. 
+                    This depth of connection is what separates a basic report from a master-level inquiry.</p>
                 </div>
-                """, unsafe_allow_html=True)
+                """
+                st.markdown(lesson_html, unsafe_allow_html=True)
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
@@ -203,7 +208,7 @@ elif choice == "⚙️ Settings":
         st.button("27. Backup to Cloud", key=f"b27_{v_id}")
         st.button("28. Generate Key", key=f"b28_{v_id}")
         st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 16.0.0 (vID: {v_id})")
+        st.info(f"30. Build: 16.5.0 (vID: {v_id})")
 
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
@@ -213,7 +218,7 @@ elif choice == "⚙️ Settings":
             col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
         else:
             col.button(f"{i}. Advanced Command {i}", key=f"b{i}_{v_id}")
-    st.success("51. Status: 🟢 Live Tracking Enabled")
+    st.success("51. Status: 🟢 Analytics Live & Teacher Calibrated")
 
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
