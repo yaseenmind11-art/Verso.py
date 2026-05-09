@@ -54,6 +54,7 @@ if 'timer_active' not in st.session_state:
 if 'remaining_at_pause' not in st.session_state:
     st.session_state.remaining_at_pause = 0
 
+# Logic to keep the timer "ticking" even when navigating away
 if st.session_state.timer_active and st.session_state.timer_end_time:
     now = time.time()
     diff = st.session_state.timer_end_time - now
@@ -71,6 +72,13 @@ f_scale = st.session_state.get('set_font', 1.1)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
+
+# Persistent Audio Element (Hidden)
+st.markdown("""
+    <audio id="alarm-sound" preload="auto">
+        <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg" type="audio/ogg">
+    </audio>
+""", unsafe_allow_html=True)
 
 st.markdown(f"""
     <style>
@@ -142,7 +150,7 @@ if choice == "📒 Study Assistant":
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS ---
+# --- MODULE: SETTINGS (RESTORED ALL 51 CONTROLS) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
@@ -194,7 +202,7 @@ elif choice == "⚙️ Settings":
         else: col.button(f"{i}. Advanced Command {i}", key=f"b{i}_{v_id}")
     st.success("51. Status: 🟢 System Fully Optimized")
 
-# --- OTHER TOOLS ---
+# --- MODULE: PLAGIARISM ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
     p_text = st.text_area("Paste text:")
@@ -202,18 +210,25 @@ elif choice == "🛡️ Plagiarism Checker":
         with st.spinner("Checking..."):
             time.sleep(2); st.success("✅ Content is 100% Unique.")
 
+# --- MODULE: HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
+# --- MODULE: TIME TRACKER (WITH PERSISTENT SOUND FIX) ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     
-    # SOUND PERMISSION FIX
-    if st.button("🔊 CLICK HERE TO ENABLE SOUND (REQUIRED BY BROWSER)"):
-        components.html("""<script>var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'); audio.play();</script>""", height=0)
-        st.toast("Sound Unlocked!")
+    # Sound Unlock Button
+    if st.button("🔊 CLICK TO ENABLE ALARM SOUND"):
+        components.html("""
+            <script>
+                var audio = window.parent.document.getElementById('alarm-sound');
+                audio.play().then(() => { audio.pause(); audio.currentTime = 0; });
+            </script>
+        """, height=0)
+        st.toast("Sound Engine Ready!")
 
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
@@ -242,20 +257,17 @@ elif choice == "⏱️ Time Tracker":
         time.sleep(1)
         st.rerun()
 
-# --- RE-ENGINEERED SOUND TRIGGER ---
+# --- GLOBAL SOUND TRIGGER ---
 if st.session_state.get('timer_finished_trigger'):
     st.session_state.timer_finished_trigger = False
     st.balloons()
-    # Using a direct JS injection that creates and plays an audio object
     components.html("""
         <script>
-            function playAlarm() {
-                var audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg');
-                audio.play().catch(function(error) {
-                    console.log("Audio play failed: " + error);
-                });
+            var audio = window.parent.document.getElementById('alarm-sound');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play();
             }
-            playAlarm();
         </script>
     """, height=0)
     st.toast("⏰ Time's Up!")
