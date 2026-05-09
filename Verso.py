@@ -243,13 +243,13 @@ elif choice == "⚙️ Settings":
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    st.text_area("Paste text:", placeholder="Paste your research text here...")
+    st.text_area("Paste text:", placeholder="Paste your text here...")
     if st.button("Deep Scan"):
         with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Paste your research text here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Paste your research question here...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- FINAL AUTOMATIC TRIGGER ---
