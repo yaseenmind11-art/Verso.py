@@ -76,7 +76,6 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# FIXED: Doubled curly braces for @keyframes to resolve SyntaxError
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
@@ -84,7 +83,6 @@ st.markdown(f"""
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
-    .timer-display {{ font-family: 'Courier New', monospace; background: #1e293b; color: {accent}; padding: 30px; border-radius: 15px; text-align: center; font-size: 5rem; font-weight: bold; border: 2px solid #334155; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }}
     @keyframes blinker {{ 50% {{ opacity: 0.2; }} }}
     </style>
 """, unsafe_allow_html=True)
@@ -111,7 +109,6 @@ if choice == "📒 Study Assistant":
     with col_b:
         st.text_input("Link Hub", placeholder="Paste URL here...", key=f"link_hub_{st.session_state.reset_counter}")
     
-    # Placeholder added as per user request
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
@@ -159,26 +156,23 @@ elif choice == "⏱️ Time Tracker":
     else:
         st.success(f"✅ Active Tone: {selected_tone_name}")
 
-    # Professional Timer Interface
     mins = st.number_input("Minutes:", 1, 120, 25)
-    
-    m, s = divmod(st.session_state.remaining_at_pause, 60)
-    st.markdown(f'<div class="timer-display">{int(m):02d}:{int(s):02d}</div>', unsafe_allow_html=True)
-    st.write("")
-
     c1, c2, c3, c4 = st.columns(4)
-    if c1.button("Start New", use_container_width=True): 
+    if c1.button("Start New"): 
         st.session_state.timer_end_time = time.time() + (mins * 60)
         st.session_state.timer_active = True
         st.rerun()
-    if c2.button("Pause", use_container_width=True): st.session_state.timer_active = False; st.rerun()
-    if c3.button("Resume", use_container_width=True):
+    if c2.button("Pause"): st.session_state.timer_active = False; st.rerun()
+    if c3.button("Resume"):
         if st.session_state.remaining_at_pause > 0:
             st.session_state.timer_end_time = time.time() + st.session_state.remaining_at_pause
             st.session_state.timer_active = True
             st.rerun()
-    if c4.button("Reset", use_container_width=True): st.session_state.timer_active = False; st.session_state.timer_end_time = None; st.rerun()
+    if c4.button("Reset"): st.session_state.timer_active = False; st.session_state.timer_end_time = None; st.rerun()
     
+    timer_display = st.empty()
+    m, s = divmod(st.session_state.remaining_at_pause, 60)
+    timer_display.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
 # --- MODULE: SETTINGS ---
@@ -249,8 +243,7 @@ elif choice == "⚙️ Settings":
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    # Placeholder added as per user request
-    st.text_area("Paste text:", placeholder="Paste your research text here...")
+    st.text_area("Paste text:")
     if st.button("Deep Scan"):
         with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
 
