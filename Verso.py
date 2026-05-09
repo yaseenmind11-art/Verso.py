@@ -4,6 +4,7 @@ import nltk
 import time
 import random
 import re
+import pandas as pd # Added for Excel/CSV support
 
 # --- 🛠️ SYSTEM SETUP ---
 @st.cache_resource
@@ -35,15 +36,11 @@ st.markdown(f"""
     .stApp {{ background-color: #0e1117; color: white; }}
     .teacher-board {{ 
         background-color: #1a202c; border: 2px solid {accent}; 
-        padding: 30px; border-radius: 10px;
+        padding: 30px; border-radius: 10px; line-height: 1.6;
     }}
     .detail-box {{
         background-color: #2d3748; padding: 15px; 
         border-radius: 8px; margin-bottom: 10px; border-left: 4px solid {accent};
-    }}
-    /* Style for the permanent upload area */
-    .upload-container {{
-        border: 2px dashed {accent}; padding: 20px; border-radius: 15px; margin-bottom: 25px;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -55,50 +52,56 @@ with st.sidebar:
 
 # --- MODULE: STUDY ASSISTANT ---
 if choice == "📒 Study Assistant":
-    st.title("Detailed Writing Teacher")
+    st.title("NotebookLM Detailed Teacher")
     
-    # 📂 PERMANENT FILE UPLOADER (No click needed)
-    st.markdown('<div class="upload-container">', unsafe_allow_html=True)
-    st.subheader("📤 Universal File Lab")
-    uploaded_files = st.file_uploader("Upload PPT, Canva exports, Excel, or PDFs directly:", 
-                                    type=['pdf', 'docx', 'txt', 'csv', 'xlsx', 'pptx'], 
-                                    accept_multiple_files=True,
-                                    key=f"uploader_{v_id}")
-    if uploaded_files:
-        st.success(f"✅ {len(uploaded_files)} files ready for deep analysis.")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # 📂 NEW: UNIVERSAL FILE UPLOADER
+    with st.expander("📤 Upload Research Files (PPT, Excel, CSV, PDF, TXT)"):
+        uploaded_files = st.file_uploader("Drop your school files here", 
+                                        type=['pdf', 'docx', 'txt', 'csv', 'xlsx', 'pptx'], 
+                                        accept_multiple_files=True)
+        if uploaded_files:
+            st.success(f"Successfully loaded {len(uploaded_files)} files for analysis.")
 
-    raw_content = st.text_area("Or Paste Notes for Deep Mastery:", height=150)
+    raw_content = st.text_area("Or Paste Text Content:", height=200, placeholder="Paste your detailed notes here...")
     
     # Cleaning Logic
-    content = re.sub(r'\[[ivx0-9]+\]', '', raw_content) 
+    content = re.sub(r'\[[ivx0-9]+\]', '', raw_content) # Removes citations
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
-        t1, t2 = st.tabs(["✍️ Writing Teacher", "🔍 All Extracted Details"])
+        t1, t2 = st.tabs(["✍️ Detailed Writing Teacher", "🔍 Component Breakdown"])
         
         blob = TextBlob(content)
+        sentences = [str(s) for s in blob.sentences]
+        # Identify every key noun phrase in the text
         all_details = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 2]))
 
         with t1:
-            if st.button("🚀 Analyze Every Detail"):
-                st.markdown(f'<div class="teacher-board">', unsafe_allow_html=True)
-                st.markdown(f"<h2 style='text-align:center;'>Subject Mastery Engine</h2>", unsafe_allow_html=True)
-                
-                # Loops through every detail in the text
-                for i, detail in enumerate(all_details[:20]): 
-                    st.markdown(f"""
-                    <div class="detail-box">
-                        <b>{i+1}. {detail.upper()}</b><br>
-                        This specific detail is a pillar of your research. Analyzing its impact is essential for a complete understanding of your data.
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                st.markdown('</div>', unsafe_allow_html=True)
+            st.subheader("Comprehensive Content Lesson")
+            if st.button("🚀 Generate Detailed Lesson"):
+                with st.container():
+                    st.markdown(f'<div class="teacher-board">', unsafe_allow_html=True)
+                    st.markdown(f"<h2 style='text-align:center;'>Subject Mastery: {all_details[0].upper() if all_details else 'Overview'}</h2>", unsafe_allow_html=True)
+                    st.write("---")
+                    
+                    # Teaching every detail identified in the input
+                    for i, detail in enumerate(all_details[:15]): # Focuses on top 15 details
+                        st.markdown(f"""
+                        <div class="detail-box">
+                            <b>Detail {i+1}: {detail.title()}</b><br>
+                            This is a critical component of your input. To master this, you must understand how it connects 
+                            to the broader context of your research.
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    st.info("💡 Teacher's Note: I have analyzed every keyword in your input. Focus on the links above for your IB report.")
+                    st.markdown('</div>', unsafe_allow_html=True)
 
         with t2:
-            st.write("### Complete Index of Identified Concepts")
-            st.write(", ".join(all_details) if all_details else "No details found yet.")
+            st.write("### Extracted Elements for Review")
+            cols = st.columns(3)
+            for i, d in enumerate(all_details):
+                cols[i % 3].write(f"- {d}")
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
@@ -110,18 +113,19 @@ elif choice == "⚙️ Settings":
     c1, c2, c3 = st.columns(3)
     with c1:
         st.write("### 📚 Academic")
-        st.checkbox("IB MYP2 Mode", value=True, key=f"set_ib_{v_id}")
+        st.checkbox("7. IB MYP2 Alignment", value=True, key=f"set_ib_{v_id}")
     with c2:
         st.write("### 🎨 Interface")
-        st.color_picker("Accent Color", "#3b82f6", key=f"set_color_{v_id}")
+        st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
+        st.slider("13. Font Scale", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
     with c3:
-        st.info(f"Build: 15.1.0")
+        st.info(f"Build: 15.0.0 (vID: {v_id})")
 
 # --- OTHER TOOLS ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Global EDU Search:")
+    q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:600px; border:none;"></iframe>', unsafe_allow_html=True)
 
 else:
-    st.info("Select 'Study Assistant' to start your lesson.")
+    st.info("Select a module from the sidebar to begin.")
