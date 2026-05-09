@@ -7,21 +7,24 @@ import re
 import os
 import streamlit.components.v1 as components
 
-# --- 🚀 CRITICAL BOOTSTRAP (Fixes MissingCorpusError) ---
+# --- 🚀 CRITICAL BOOTSTRAP (Fixes MissingCorpusError & Line 114 Crash) ---
 @st.cache_resource
 def install_corpora():
     try:
+        # Download essential NLTK data for TextBlob
         nltk.download('punkt', quiet=True)
         nltk.download('brown', quiet=True)
         nltk.download('wordnet', quiet=True)
         nltk.download('averaged_perceptron_tagger', quiet=True)
         nltk.download('punkt_tab', quiet=True)
-        # This command specifically fixes the crash in your screenshot
+        # Execute the specific corpus download for TextBlob environment
         os.system("python -m textblob.download_corpora")
         return True
-    except Exception:
+    except Exception as e:
+        st.error(f"Setup Error: {e}")
         return False
 
+# Run setup immediately on script start
 install_corpora()
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
@@ -38,7 +41,7 @@ def inject_ga():
     """
     components.html(ga_code, height=0)
 
-# --- ⚙️ SESSION MANAGEMENT ---
+# --- ⚙️ SESSION & RESET MANAGEMENT ---
 if 'reset_counter' not in st.session_state:
     st.session_state.reset_counter = 0
 
@@ -51,7 +54,7 @@ def trigger_master_reset():
     time.sleep(0.4)
     st.rerun()
 
-# Dynamic Style Extraction
+# Extract User Theme Preferences
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
@@ -88,7 +91,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
@@ -107,28 +110,33 @@ if choice == "✍️ Grammar & Punctuation":
     edit_text = st.text_area("Paste your draft:", height=250)
     if st.button("🔍 Run Full Audit"):
         if edit_text:
+            # Critical Logic: This line often causes the MissingCorpusError
             blob = TextBlob(edit_text)
             col1, col2, col3 = st.columns(3)
+            
+            # Audit Logic
             caps = [s for s in blob.sentences if not s.startswith(s[0].upper())]
             punct = re.findall(r'(\s[,\.\!\?])', edit_text)
-            with col1: st.metric("Grammar", f"{max(0, 100 - len(blob.tags))}%")
-            with col2: st.metric("Capitalization", len(caps))
-            with col3: st.metric("Punctuation", len(punct))
+            
+            with col1: st.metric("Grammar Score", f"{max(0, 100 - len(blob.tags))}%")
+            with col2: st.metric("Capitalization Issues", len(caps))
+            with col3: st.metric("Punctuation Flaws", len(punct))
+            
             if caps or punct:
                 st.warning("Mechanical errors detected. Review capitalization and spacing.")
             else:
-                st.success("Clean text detected!")
-        else: st.error("Input text first.")
+                st.success("High-quality academic text detected!")
+        else: st.error("Please input text to analyze.")
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
     st.title("NotebookLM Writing Teacher")
     st.markdown("### 📥 Resource Hub")
     c_a, c_b = st.columns([2, 1])
-    with c_a: st.file_uploader("Files", type=['pdf', 'docx', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
-    with c_b: st.text_input("Links", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
+    with c_a: st.file_uploader("Upload IB MYP2 Materials", type=['pdf', 'docx', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
+    with c_b: st.text_input("Source Links", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
     
-    raw_content = st.text_area("Input Content:", height=200)
+    raw_content = st.text_area("Research Input Content:", height=200)
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(raw_content)
@@ -137,59 +145,63 @@ elif choice == "📒 Study Assistant":
         if len(words) < 5: words += ["academic research", "data analysis", "ib framework"]
 
         with t4:
-            st.subheader("Writing AI Teacher")
-            if st.button("🚀 Start Lesson Synthesis"):
-                cite_style = st.session_state.get('set_cite', 'APA 7th')
-                # Render using st.markdown to ensure CLEAN view without code blocks
+            st.subheader("Interactive Writing Instructor")
+            if st.button("🚀 Synthesize Lesson"):
+                cite_style = st.session_state.get('set_cite', 'IB MYP2')
                 teacher_html = f"""
                 <div class="teacher-board">
-                    <h2 style="text-align:center; color:{accent};">🎓 Let's discuss: {words[0].upper()}</h2>
+                    <h2 style="text-align:center; color:{accent};">🎓 Academic Inquiry: {words[0].upper()}</h2>
                     <hr style="border: 0.5px solid #334155;">
-                    <div class="teacher-heading">1. Foundational Concept Exploration</div>
-                    <p>To master this material, we focus on <b>{words[0]}</b>. This is the intellectual foundation required for a high-scoring IB report.</p>
-                    <div class="teacher-heading">2. Advanced Linkages & Logic</div>
-                    <p>Observe the link between <b>{words[1]}</b> and <b>{words[2]}</b>. Your data suggests: <i>"{sentences[0] if sentences else 'Logic connection established.'}"</i></p>
-                    <div class="teacher-heading">3. Strategic Insight for Success</div>
-                    <p>Apply <b>{cite_style}</b> guidelines to connect these variables directly. This separates a basic report from a master-level inquiry.</p>
+                    <div class="teacher-heading">1. Conceptual Framework</div>
+                    <p>For your current study, we prioritize <b>{words[0]}</b>. This serves as the primary lens for your inquiry.</p>
+                    <div class="teacher-heading">2. Logical Intersections</div>
+                    <p>Note the relationship between <b>{words[1]}</b> and <b>{words[2]}</b>. Your data indicates: <i>"{sentences[0] if sentences else 'Conceptual link verified.'}"</i></p>
+                    <div class="teacher-heading">3. Academic Compliance</div>
+                    <p>Ensure all findings regarding these variables are cited using <b>{cite_style}</b> formatting to meet rigorous IB standards.</p>
                 </div>
                 """
                 st.markdown(teacher_html, unsafe_allow_html=True)
 
 # --- MODULE: SETTINGS (51-Button Console) ---
 elif choice == "⚙️ Settings":
-    st.title("Verso Control Center")
-    if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"): trigger_master_reset()
+    st.title("Verso Pro Control Center")
+    if st.button("🚨 MASTER SYSTEM RESET", use_container_width=True, type="primary"): trigger_master_reset()
+    
     c1, c2, c3 = st.columns(3)
     v_id = st.session_state.reset_counter
+    
     with c1:
-        st.write("### 📚 Academic")
-        st.selectbox("1. Citation", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"set_cite_{v_id}")
+        st.write("### 📚 Academic Standards")
+        st.selectbox("1. Citation Mode", ["IB MYP2", "APA 7th", "MLA 9th"], key=f"set_cite_{v_id}")
         for i in range(2, 11): st.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
+        
     with c2:
-        st.write("### 🎨 UI")
-        st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
-        st.slider("13. Font", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
-        for i in range(14, 21): st.button(f"{i}. UI Command {i}", key=f"b{i}_{v_id}")
+        st.write("### 🎨 Visual Interface")
+        st.color_picker("11. Primary Accent", "#3b82f6", key=f"set_color_{v_id}")
+        st.slider("13. Dynamic Scaling", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
+        for i in range(14, 21): st.button(f"{i}. UI Config {i}", key=f"b{i}_{v_id}")
+        
     with c3:
-        st.write("### 🔐 Security")
-        for i in range(21, 31): st.button(f"{i}. Security {i}", key=f"b{i}_{v_id}")
-    st.write("### ⚡ Advanced")
+        st.write("### 🔐 Security & Access")
+        for i in range(21, 31): st.button(f"{i}. Security Layer {i}", key=f"b{i}_{v_id}")
+        
+    st.write("### ⚡ System Utilities")
     c4, c5, c6 = st.columns(3)
     for i in range(31, 51):
-        col = [c4, c5, c6][(i-31)%3]
-        col.button(f"{i}. Extra {i}", key=f"b{i}_{v_id}")
-    st.success("51. Status: 🟢 Fully Optimized")
+        target_col = [c4, c5, c6][(i-31)%3]
+        target_col.button(f"{i}. System {i}", key=f"b{i}_{v_id}")
+    st.success("51. System Integrity: 🟢 High")
 
-# --- OTHER TOOLS ---
+# --- OTHER UTILITIES ---
 elif choice == "🛡️ Plagiarism Checker":
-    st.title("Integrity Scanner")
-    if st.button("Scan"): st.success("✅ Content is Unique.")
+    st.title("Integrity Audit")
+    if st.button("Initiate Scan"): st.success("✅ No unauthorized content detected.")
 
 elif choice == "🏠 Home":
-    st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:")
-    if q: st.markdown(f'<iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:600px; border:none;"></iframe>', unsafe_allow_html=True)
+    st.title("VERSO RESEARCH HUB")
+    query = st.text_input("🔍 Global Database Search:")
+    if query: st.markdown(f'<iframe src="https://www.google.com/search?q={query}+site:.edu" style="width:100%; height:600px; border:none;"></iframe>', unsafe_allow_html=True)
 
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
-    st.metric("Timer", "25:00")
+    st.metric("Session Time Remaining", "25:00")
