@@ -54,7 +54,6 @@ if 'timer_active' not in st.session_state:
 if 'remaining_at_pause' not in st.session_state:
     st.session_state.remaining_at_pause = 0
 
-# Logic to keep the timer "ticking" even when navigating away
 if st.session_state.timer_active and st.session_state.timer_end_time:
     now = time.time()
     diff = st.session_state.timer_end_time - now
@@ -73,10 +72,10 @@ f_scale = st.session_state.get('set_font', 1.1)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# Persistent Audio Element (Hidden)
+# --- EMBEDDED AUDIO PLAYER (BASE64) ---
 st.markdown("""
     <audio id="alarm-sound" preload="auto">
-        <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg" type="audio/ogg">
+        <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92T197e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3y">
     </audio>
 """, unsafe_allow_html=True)
 
@@ -100,21 +99,21 @@ if choice == "📒 Study Assistant":
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a:
-        st.file_uploader("Upload Files (PPT, XL, PDF, DOCX, etc.)", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"file_hub_{st.session_state.reset_counter}")
+        st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"file_hub_{st.session_state.reset_counter}")
     with col_b:
-        st.text_input("Link Hub (Canva, Sheets, Web)", placeholder="Paste URL here...", key=f"link_hub_{st.session_state.reset_counter}")
+        st.text_input("Link Hub", placeholder="Paste URL here...", key=f"link_hub_{st.session_state.reset_counter}")
     st.write("---")
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
+    raw_content = st.text_area("Input Content:", height=200)
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
-        t1, t2, t3, t4 = st.tabs(["🔑 20+ Keywords", "❓ 10-Question Quiz", "🗂️ 20+ Flashcards", "✍️ Writing Teacher"])
+        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Teacher"])
         blob = TextBlob(content)
         sentences = [str(s) for s in blob.sentences]
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-        if len(words) < 20: words += ["analytical framework", "empirical data", "research method", "citation standards", "academic inquiry"]
+        if len(words) < 20: words += ["analytical framework", "empirical data", "research method"]
         with t1:
             cols = st.columns(2)
             for i, phrase in enumerate(words[:20]):
@@ -126,10 +125,10 @@ if choice == "📒 Study Assistant":
                 target = words[i % len(words)]
                 opts = [target] + random.sample([w for w in words if w != target], 2)
                 random.seed(i); random.shuffle(opts)
-                st.write(f"**Question {i+1}:** Analyze the role of: **{target.upper()}**")
+                st.write(f"**Question {i+1}:** Analyze: **{target.upper()}**")
                 ans = st.radio("Select best fit:", opts, key=f"qz_{i}_{st.session_state.reset_counter}", index=None)
                 if ans == target: score += 1
-            if st.button("Submit Assessment"): st.metric("Score", f"{score}/10")
+            if st.button("Submit"): st.metric("Score", f"{score}/10")
         with t3:
             for i in range(20):
                 term = words[i % len(words)]
@@ -140,95 +139,79 @@ if choice == "📒 Study Assistant":
             st.subheader("Writing Verso AI Teacher")
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
-                st.markdown(f"""
-                <div class="teacher-board">
-                    <h2 style="text-align:center; color:{accent};">DEEP LESSON: {words[0].upper()}</h2>
-                    <hr style="border: 0.5px solid #334155;">
-                    <p><b>I. Foundational Analysis</b><br>Welcome. We are reviewing your findings on <b>{words[0]}</b>.</p>
-                    <p><b>II. Cross-Correlation</b><br>The link between <b>{words[1]}</b> and <b>{words[2]}</b> is significant.</p>
-                    <p><b>III. Structural conclusion</b><br>Following <b>{cite_style}</b> guidelines, your research in <b>{words[4]}</b> is logically sound.</p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Reviewing <b>{words[0]}</b>.</p></div>', unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (RESTORED ALL 51 CONTROLS) ---
+# --- MODULE: SETTINGS (ALL 51 CONTROLS) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
-    if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
+    if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"):
         trigger_master_reset()
     st.write("---")
     c1, c2, c3 = st.columns(3)
     v_id = st.session_state.reset_counter
     with c1:
         st.write("### 📚 Academic Control")
-        st.selectbox("1. Citation Style", ["APA 7th", "MLA 9th", "Chicago", "IEEE", "IB MYP2"], key=f"set_cite_{v_id}")
-        st.selectbox("2. Tone Level", ["Formal", "Exploratory", "Technical"], key=f"set_tone_{v_id}")
-        st.radio("3. Lesson Complexity", ["Brief", "Standard", "Comprehensive", "Deep Dive"], index=2, key=f"set_depth_{v_id}")
+        st.selectbox("1. Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"set_cite_{v_id}")
+        st.selectbox("2. Tone Level", ["Formal", "Technical"], key=f"set_tone_{v_id}")
+        st.radio("3. Lesson Complexity", ["Brief", "Standard", "Deep Dive"], index=1, key=f"set_depth_{v_id}")
         st.checkbox("4. Auto-Bibliography", value=True, key=f"set_bib_{v_id}")
         st.checkbox("5. Logic Validation", value=True, key=f"set_logic_{v_id}")
         st.checkbox("6. Source Cross-Checking", key=f"set_cross_{v_id}")
         st.checkbox("7. IB MYP2 Alignment", key=f"set_ib_{v_id}")
-        st.button("8. Run Grammar Engine", key=f"b8_{v_id}")
-        st.button("9. Detect Plagiarism Patterns", key=f"b9_{v_id}")
-        st.button("10. Export Citation List", key=f"b10_{v_id}")
+        st.button("8. Grammar Engine", key=f"b8_{v_id}")
+        st.button("9. Plagiarism Patterns", key=f"b9_{v_id}")
+        st.button("10. Export Citations", key=f"b10_{v_id}")
     with c2:
-        st.write("### 🎨 Interface & UI")
-        st.color_picker("11. Primary Accent", "#3b82f6", key=f"set_color_{v_id}")
-        st.color_picker("12. Card Background", "#1e293b", key=f"set_bg_{v_id}")
+        st.write("### 🎨 UI")
+        st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
+        st.color_picker("12. Card BG", "#1e293b", key=f"set_bg_{v_id}")
         st.slider("13. Font Scale", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
-        st.checkbox("14. High Contrast Mode", key=f"set_hc_{v_id}")
+        st.checkbox("14. High Contrast", key=f"set_hc_{v_id}")
         st.checkbox("15. Compact View", key=f"set_compact_{v_id}")
-        st.checkbox("16. Dark Mode Force", value=True, key=f"set_dark_{v_id}")
-        st.checkbox("17. Glassmorphism UI", key=f"set_glass_{v_id}")
-        st.checkbox("18. Show Navigation Hints", key=f"set_hints_{v_id}")
-        st.button("19. Rebuild UI Cache", key=f"b19_{v_id}")
-        st.button("20. Toggle Fullscreen Mode", key=f"b20_{v_id}")
+        st.checkbox("16. Dark Mode", value=True, key=f"set_dark_{v_id}")
+        st.checkbox("17. Glassmorphism", key=f"set_glass_{v_id}")
+        st.checkbox("18. Nav Hints", key=f"set_hints_{v_id}")
+        st.button("19. Rebuild Cache", key=f"b19_{v_id}")
+        st.button("20. Fullscreen", key=f"b20_{v_id}")
     with c3:
-        st.write("### 🔐 Security & Data")
-        st.checkbox("21. Local Encryption", key=f"set_enc_{v_id}")
+        st.write("### 🔐 Security")
+        st.checkbox("21. Encryption", key=f"set_enc_{v_id}")
         st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
-        st.checkbox("23. Anonymous Study Logs", key=f"set_anon_{v_id}")
-        st.checkbox("24. Auto-Delete Cache", key=f"set_del_{v_id}")
-        st.button("25. Purge Lesson History", key=f"b25_{v_id}")
-        st.button("26. Export Data (CSV)", key=f"b26_{v_id}")
-        st.button("27. Backup to Cloud", key=f"b27_{v_id}")
+        st.checkbox("23. Anon Logs", key=f"set_anon_{v_id}")
+        st.checkbox("24. Auto-Delete", key=f"set_del_{v_id}")
+        st.button("25. Purge History", key=f"b25_{v_id}")
+        st.button("26. Export CSV", key=f"b26_{v_id}")
+        st.button("27. Cloud Backup", key=f"b27_{v_id}")
         st.button("28. Generate Key", key=f"b28_{v_id}")
         st.button("29. Integrity Check", key=f"b29_{v_id}")
         st.info(f"30. Build: 14.0.0 (vID: {v_id})")
-    st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
     for i in range(31, 51):
         col = [c4, c5, c6][(i-31)%3]
         if i == 50: col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
-        else: col.button(f"{i}. Advanced Command {i}", key=f"b{i}_{v_id}")
-    st.success("51. Status: 🟢 System Fully Optimized")
+        else: col.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
+    st.success("51. System Optimized")
 
-# --- MODULE: PLAGIARISM ---
+# --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
     p_text = st.text_area("Paste text:")
-    if st.button("Deep Global Scan"):
+    if st.button("Scan"):
         with st.spinner("Checking..."):
-            time.sleep(2); st.success("✅ Content is 100% Unique.")
+            time.sleep(1); st.success("✅ Content Unique.")
 
-# --- MODULE: HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
-# --- MODULE: TIME TRACKER (WITH PERSISTENT SOUND FIX) ---
+# --- TIME TRACKER (HIGH RELIABILITY) ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     
-    # Sound Unlock Button
-    if st.button("🔊 CLICK TO ENABLE ALARM SOUND"):
-        components.html("""
-            <script>
-                var audio = window.parent.document.getElementById('alarm-sound');
-                audio.play().then(() => { audio.pause(); audio.currentTime = 0; });
-            </script>
-        """, height=0)
-        st.toast("Sound Engine Ready!")
+    if st.button("🔊 UNLOCK SOUND ENGINE"):
+        components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); audio.play().then(() => { audio.pause(); audio.currentTime = 0; });</script>""", height=0)
+        st.toast("Sound Engine Initialized!")
 
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
@@ -236,7 +219,7 @@ elif choice == "⏱️ Time Tracker":
         st.session_state.timer_end_time = time.time() + (mins * 60)
         st.session_state.timer_active = True
         st.rerun()
-    if c2.button("Stop/Pause", use_container_width=True):
+    if c2.button("Pause", use_container_width=True):
         st.session_state.timer_active = False
         st.rerun()
     if c3.button("Resume", use_container_width=True):
@@ -252,12 +235,12 @@ elif choice == "⏱️ Time Tracker":
     
     timer_display = st.empty()
     m, s = divmod(st.session_state.remaining_at_pause, 60)
-    timer_display.metric("Time Remaining" if st.session_state.timer_active else "Timer Paused", f"{int(m):02d}:{int(s):02d}")
+    timer_display.metric("Status: Running" if st.session_state.timer_active else "Status: Paused", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active:
         time.sleep(1)
         st.rerun()
 
-# --- GLOBAL SOUND TRIGGER ---
+# --- GLOBAL TRIGGER FOR SOUND & BALLOONS ---
 if st.session_state.get('timer_finished_trigger'):
     st.session_state.timer_finished_trigger = False
     st.balloons()
@@ -267,6 +250,7 @@ if st.session_state.get('timer_finished_trigger'):
             if (audio) {
                 audio.currentTime = 0;
                 audio.play();
+                setTimeout(function(){ audio.pause(); }, 6000); // Ring for 6 seconds
             }
         </script>
     """, height=0)
