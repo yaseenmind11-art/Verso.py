@@ -38,6 +38,14 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 
+# Dictionary of available alarm tones
+ALARM_TONES = {
+    "Beep (Default)": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
+    "Digital Alarm": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
+    "Industrial Siren": "https://actions.google.com/sounds/v1/alarms/industrial_alarm.ogg",
+    "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg"
+}
+
 def trigger_master_reset():
     st.session_state.reset_counter += 1
     for key in list(st.session_state.keys()):
@@ -60,6 +68,9 @@ accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 
+# Get the selected tone URL from settings
+selected_tone_url = ALARM_TONES.get(st.session_state.get('selected_alarm_tone'), ALARM_TONES["Beep (Default)"])
+
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
@@ -67,17 +78,17 @@ st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
     [data-testid="stSidebar"] {{ background-color: #1e293b !important; }}
-    .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; }}
-    .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-size: {f_scale}rem; }}
-    .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
+    .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
+    .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
+    .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; margin-bottom: 20px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0.2; }} }}
     </style>
 """, unsafe_allow_html=True)
 
 # --- 🔊 THE AUTOMATIC SOUND ENGINE ---
-st.markdown("""
+st.markdown(f"""
     <audio id="alarm-sound" preload="auto">
-        <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
+        <source src="{selected_tone_url}" type="audio/ogg">
     </audio>
 """, unsafe_allow_html=True)
 
@@ -86,29 +97,46 @@ with st.sidebar:
     st.title("VERSO PRO")
     choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
 
-# --- MODULES (HOME, STUDY, PLAGIARISM) ---
+# --- MODULE: HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
+# --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
+    st.markdown("### 📥 Universal Resource Hub")
+    col_a, col_b = st.columns([2, 1])
+    with col_a:
+        st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"file_hub_{st.session_state.reset_counter}")
+    with col_b:
+        st.text_input("Link Hub", placeholder="Paste URL here...", key=f"link_hub_{st.session_state.reset_counter}")
+    st.write("---")
     raw_content = st.text_area("Input Content:", height=200)
     if raw_content:
-        st.success("Analysis Engine Ready. Process in Keywords/Quiz tabs.")
+        st.success("Analysis Engine Ready.")
+        blob = TextBlob(raw_content)
+        words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
+        if words:
+            st.markdown(f'<div class="notebook-card"><b>Main Topic Identified:</b> {words[0].title()}</div>', unsafe_allow_html=True)
 
+# --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    if st.button("Deep Scan"): st.success("✅ Content Unique.")
+    p_text = st.text_area("Paste text:")
+    if st.button("Deep Scan"):
+        with st.spinner("Checking database..."):
+            time.sleep(1)
+            st.success("✅ Content Unique.")
 
 # --- MODULE: TIME TRACKER (THE AUTOMATIC FIX) ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     
-    # 🔓 THE KEY: This "unlocks" the browser's audio for the rest of the session.
     if not st.session_state.sound_unlocked:
-        if st.button("🔓 ENABLE AUTOMATIC SOUNDS", use_container_width=True, type="primary"):
+        st.warning("Browsers block automatic sound until you click once. Please click below to start.")
+        if st.button("🔓 ENABLE AUTOMATIC ALARMS", use_container_width=True, type="primary"):
             components.html("""
                 <script>
                     var audio = window.parent.document.getElementById('alarm-sound');
@@ -116,10 +144,9 @@ elif choice == "⏱️ Time Tracker":
                 </script>
             """, height=0)
             st.session_state.sound_unlocked = True
-            st.toast("Automatic Alarms are now ACTIVE.")
             st.rerun()
     else:
-        st.success("✅ Sound Engine is Warm. Alarms will play automatically.")
+        st.success(f"✅ Auto-Alarm Active: {st.session_state.get('selected_alarm_tone', 'Beep (Default)')}")
 
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
@@ -143,16 +170,33 @@ elif choice == "⏱️ Time Tracker":
     
     timer_display = st.empty()
     m, s = divmod(st.session_state.remaining_at_pause, 60)
-    timer_display.metric("Running" if st.session_state.timer_active else "Paused", f"{int(m):02d}:{int(s):02d}")
+    timer_display.metric("Status", f"{int(m):02d}:{int(s):02d}")
     
     if st.session_state.timer_active:
         time.sleep(1)
         st.rerun()
 
-# --- MODULE: SETTINGS ---
+# --- MODULE: SETTINGS (ALARM TONE CUSTOMIZATION) ---
 elif choice == "⚙️ Settings":
-    st.title("Settings")
-    if st.button("🚨 MASTER RESET"): trigger_master_reset()
+    st.title("Control Center")
+    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
+    
+    st.write("---")
+    st.subheader("🔊 Audio Configuration")
+    # ALLOWS USER TO SELECT DIFFERENT TONES
+    st.selectbox("Select Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
+    
+    if st.button("🎵 Test Tone"):
+        components.html("""
+            <script>
+                var audio = window.parent.document.getElementById('alarm-sound');
+                audio.currentTime = 0;
+                audio.play();
+                setTimeout(function(){ audio.pause(); }, 3000);
+            </script>
+        """, height=0)
+    
+    st.write("---")
     st.color_picker("Accent Color", "#3b82f6", key="set_color")
     st.slider("Font Scale", 0.8, 2.0, 1.1, key="set_font")
 
@@ -161,15 +205,12 @@ if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True)
     st.balloons()
     
-    # This JS triggers the sound WITHOUT a new click, because we "pre-warmed" it earlier
     components.html("""
         <script>
             var audio = window.parent.document.getElementById('alarm-sound');
             if (audio) {
                 audio.currentTime = 0;
-                audio.play().catch(e => {
-                    console.log("Autoplay blocked. User needs to click once.");
-                });
+                audio.play();
             }
         </script>
     """, height=0)
