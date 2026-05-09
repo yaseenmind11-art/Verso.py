@@ -142,7 +142,7 @@ if choice == "📒 Study Assistant":
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (RESTORED ALL 51 BUTTONS) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
@@ -209,6 +209,12 @@ elif choice == "🏠 Home":
 
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
+    
+    # SOUND PERMISSION FIX
+    if st.button("🔊 CLICK HERE TO ENABLE SOUND (REQUIRED BY BROWSER)"):
+        components.html("""<script>var audio = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'); audio.play();</script>""", height=0)
+        st.toast("Sound Unlocked!")
+
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
     if c1.button("Start New", use_container_width=True): 
@@ -228,6 +234,7 @@ elif choice == "⏱️ Time Tracker":
         st.session_state.timer_end_time = None
         st.session_state.remaining_at_pause = 0
         st.rerun()
+    
     timer_display = st.empty()
     m, s = divmod(st.session_state.remaining_at_pause, 60)
     timer_display.metric("Time Remaining" if st.session_state.timer_active else "Timer Paused", f"{int(m):02d}:{int(s):02d}")
@@ -235,13 +242,20 @@ elif choice == "⏱️ Time Tracker":
         time.sleep(1)
         st.rerun()
 
-# --- SOUND TRIGGER ---
+# --- RE-ENGINEERED SOUND TRIGGER ---
 if st.session_state.get('timer_finished_trigger'):
     st.session_state.timer_finished_trigger = False
     st.balloons()
+    # Using a direct JS injection that creates and plays an audio object
     components.html("""
         <script>
-            var audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg');
-            audio.play();
+            function playAlarm() {
+                var audio = new Audio('https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg');
+                audio.play().catch(function(error) {
+                    console.log("Audio play failed: " + error);
+                });
+            }
+            playAlarm();
         </script>
     """, height=0)
+    st.toast("⏰ Time's Up!")
