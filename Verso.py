@@ -4,7 +4,7 @@ import nltk
 import time
 import random
 import re
-import os
+import difflib
 import streamlit.components.v1 as components
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
@@ -76,7 +76,6 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# SyntaxError Fixed: Using double curly braces {{ }} for CSS properties
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
@@ -85,6 +84,8 @@ st.markdown(f"""
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
+    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; font-weight: bold; }}
+    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; border-radius: 4px; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -94,41 +95,54 @@ st.markdown(f"""
     </audio>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Updated with Grammar Checker Navigation) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
     choice = st.radio("Navigation", [
         "🏠 Home", 
         "📒 Study Assistant", 
-        "✍️ Grammar Checker",  # New Navigation Item
+        "✍️ Grammar Checker", 
         "🛡️ Plagiarism Checker", 
         "⏱️ Time Tracker", 
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (New Dedicated Section) ---
+# --- MODULE: GRAMMAR CHECKER (WITH HIGHLIGHTS) ---
 if choice == "✍️ Grammar Checker":
     st.title("Grammar, Punctuation & Caps")
-    st.write("Professional writing enhancement tool.")
+    st.write("Professional writing enhancement with visual highlighting.")
     
-    text_to_check = st.text_area("Paste text to improve:", height=300, placeholder="Type or paste your content here...")
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="type your text here...")
     
-    if st.button("✨ Run Unified Check", use_container_width=True):
+    if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
-            with st.spinner("Analyzing text..."):
+            with st.spinner("Analyzing changes..."):
                 blob = TextBlob(text_to_check)
-                # Corrects spelling, basic grammar, and capitalization
-                corrected = str(blob.correct())
+                corrected_text = str(blob.correct())
                 
+                # Generate visual diff
+                diff_html = ""
+                s = difflib.SequenceMatcher(None, text_to_check, corrected_text)
+                for tag, i1, i2, j1, j2 in s.get_opcodes():
+                    if tag == 'equal':
+                        diff_html += text_to_check[i1:i2]
+                    elif tag == 'replace':
+                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                        diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
+                    elif tag == 'delete':
+                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                    elif tag == 'insert':
+                        diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
+
                 st.success("Analysis Complete!")
-                st.markdown("### 📝 Improved Version")
-                st.markdown(f'<div class="notebook-card" style="border-left-color: #10b981;">{corrected}</div>', unsafe_allow_html=True)
+                st.markdown("### 📝 Highlighting Changes")
+                st.markdown(f'<div class="notebook-card" style="line-height: 1.6;">{diff_html}</div>', unsafe_allow_html=True)
                 
-                # Small Metrics
-                col1, col2 = st.columns(2)
-                col1.metric("Sentence Count", len(blob.sentences))
-                col2.metric("Word Count", len(blob.words))
+                st.info("💡 **Legend:** Green = Corrected/Added | Red = Error/Removed")
+                
+                with st.expander("Final Clean Version (Ready to copy)"):
+                    st.code(corrected_text)
         else:
             st.warning("Please enter some text first.")
 
