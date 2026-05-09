@@ -79,14 +79,15 @@ st.markdown("""
     </audio>
 """, unsafe_allow_html=True)
 
+# THE FIX IS HERE: Double {{ }} for the CSS animation
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
     [data-testid="stSidebar"] {{ background-color: #1e293b !important; }}
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
-    .time-up-banner { background-color: red; color: white; padding: 20px; text-align: center; font-weight: bold; border-radius: 10px; font-size: 24px; animation: blinker 1s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0; } }
+    .time-up-banner {{ background-color: red; color: white; padding: 20px; text-align: center; font-weight: bold; border-radius: 10px; font-size: 24px; animation: blinker 1s linear infinite; }}
+    @keyframes blinker {{ 50% {{ opacity: 0; }} }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -206,15 +207,16 @@ elif choice == "🏠 Home":
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
-# --- MODULE: TIME TRACKER (RELIABLE VERSION) ---
+# --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     
+    # 🔊 Button to interact and enable browser sound
     if st.button("🔊 ACTIVATE SOUND ENGINE (Required for alarm)"):
         components.html("""
             <script>
                 var audio = window.parent.document.getElementById('alarm-sound');
-                audio.play(); // Play 0.1s beep to prove it works
+                audio.play().then(() => { audio.pause(); audio.currentTime = 0; });
             </script>
         """, height=0)
         st.toast("Sound Engine Online!")
@@ -259,7 +261,6 @@ if st.session_state.get('timer_finished_trigger'):
                 audio.currentTime = 0;
                 audio.loop = true;
                 audio.play();
-                // Stops automatically after 10 seconds so it doesn't annoy you forever
                 setTimeout(function(){ audio.pause(); }, 10000); 
             }
         </script>
