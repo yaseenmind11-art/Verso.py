@@ -1,7 +1,7 @@
 streamlit
 textblob
-deep_translator
 nltk
+deep_translator
 requests
 beautifulsoup4
 pandas
