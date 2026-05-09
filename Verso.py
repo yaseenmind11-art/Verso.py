@@ -4,6 +4,7 @@ import nltk
 import time
 import random
 import re
+import streamlit.components.v1 as components
 
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
@@ -14,6 +15,21 @@ def setup_system():
     except Exception: pass
 
 setup_system()
+
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
+# This ensures you see yourself "Live" in the Google Analytics Dashboard
+ga_id = "G-030XWBG97P" 
+ga_code = f"""
+<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{ga_id}', {{ 'debug_mode': true }});
+</script>
+"""
+# Injecting the component at the top of the app
+components.html(ga_code, height=0)
 
 # --- ⚙️ DYNAMIC RESET LOGIC ---
 if 'reset_counter' not in st.session_state:
@@ -49,11 +65,12 @@ st.markdown(f"""
     }}
     .teacher-board {{ 
         background-color: #1a202c; 
-        border: 2px solid {accent}; 
-        padding: 40px; border-radius: 10px; 
-        font-family: 'Inter', sans-serif; min-height: 500px; 
+        border-left: 10px solid {accent}; 
+        padding: 40px; border-radius: 15px; 
+        font-family: 'Inter', sans-serif; 
         color: #e2e8f0; line-height: 1.8; 
         font-size: {f_scale}rem; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -68,7 +85,7 @@ with st.sidebar:
 if choice == "📒 Study Assistant":
     st.title("NotebookLM Writing Teacher")
 
-    # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
+    # --- 📂 UNIVERSAL RESOURCE HUB ---
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -83,7 +100,7 @@ if choice == "📒 Study Assistant":
 
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
     
-    # Cleaning Logic: Purge bracketed references and months
+    # Cleaning Logic
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
@@ -91,9 +108,12 @@ if choice == "📒 Study Assistant":
     if content:
         t1, t2, t3, t4 = st.tabs(["🔑 20+ Keywords", "❓ 10-Question Quiz", "🗂️ 20+ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(content)
-        sentences = [str(s) for s in blob.sentences]
+        sentences = [str(s) for s in blob.sentences if len(str(s)) > 30]
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-        if len(words) < 20: words += ["analytical framework", "empirical data", "research method", "citation standards", "academic inquiry"]
+        
+        # Fallbacks for short texts
+        if len(words) < 5: words += ["academic rigor", "data synthesis", "structural analysis", "logic", "context"]
+        if not sentences: sentences = ["Your research provides a foundation for detailed inquiry."]
 
         with t1:
             cols = st.columns(2)
@@ -120,20 +140,41 @@ if choice == "📒 Study Assistant":
                     if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
 
         with t4:
-            st.subheader("Writing AI Teacher (No Voice)")
+            st.subheader("Writing AI Teacher (Deep Learning)")
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
+                
+                # Dynamic detailed content variables
+                topic = words[0].upper()
+                v1, v2 = words[1].title(), words[2].title()
+                v3, v4 = words[3].title(), words[4].title()
+                quote = sentences[0] if sentences else "the core evidence provided in the text"
+
                 st.markdown(f"""
                 <div class="teacher-board">
-                    <h2 style="text-align:center; color:{accent};">DEEP LESSON: {words[0].upper()}</h2>
+                    <h2 style="text-align:center; color:{accent}; margin-top:0;">🎓 MASTERCLASS: {topic}</h2>
+                    <p style="text-align:center; font-size:0.8rem; opacity:0.7;">FORMAT: {cite_style} • IB MYP2 ALIGNMENT</p>
                     <hr style="border: 0.5px solid #334155;">
-                    <p><b>I. Foundational Analysis</b><br>Welcome. We are reviewing your findings on <b>{words[0]}</b>. This theme acts as the core catalyst for the data patterns observed.</p>
-                    <p><b>II. Cross-Correlation</b><br>The link between <b>{words[1]}</b> and <b>{words[2]}</b> is significant. Based on your input: <i>"{sentences[0] if sentences else 'N/A'}"</i>, we see clear academic evidence that supports <b>{words[3]}</b>.</p>
-                    <p><b>III. Structural conclusion</b><br>Following <b>{cite_style}</b> guidelines, your research in <b>{words[4]}</b> is logically sound. Focus on refining the relationship between these variables for your final report.</p>
+                    
+                    <h3>I. Core Concept Deep-Dive</h3>
+                    <p>Welcome. To truly master this subject, we must first dissect <b>{topic}</b>. 
+                    This isn't just a term; it acts as the <b>intellectual anchor</b> of your study. 
+                    Think of it this way: without a firm grasp of {topic}, your entire research lacks the academic weight needed for a high-level report.</p>
+                    
+                    <h3>II. The "Ripple Effect" (Advanced Logic)</h3>
+                    <p>Observe the relationship between <b>{v1}</b> and <b>{v2}</b>. Your data notes: <i>"{quote}"</i>.</p>
+                    <p>As your teacher, I want you to notice that <b>{v1}</b> is the catalyst here. 
+                    When {v1} changes, it forces <b>{v2}</b> to react. In your final writing, you shouldn't just list these points; 
+                    you must explain that the success of {v2} depends entirely on the logic established by {v1}.</p>
+                    
+                    <h3>III. Strategic Writing & Conclusion</h3>
+                    <p>Finally, look at <b>{v3}</b> and <b>{v4}</b>. These are your "Pillars of Truth." 
+                    A common mistake is treating {v3} as an isolated fact. Instead, use it as the empirical proof that confirms <b>{v4}</b> is correct. 
+                    Focus on this connection for your final summary to show that you have reached a <b>Deep Dive</b> level of understanding.</p>
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (DYNAMIC RESET ENABLED) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
@@ -148,51 +189,20 @@ elif choice == "⚙️ Settings":
         st.selectbox("1. Citation Style", ["APA 7th", "MLA 9th", "Chicago", "IEEE", "IB MYP2"], key=f"set_cite_{v_id}")
         st.selectbox("2. Tone Level", ["Formal", "Exploratory", "Technical"], key=f"set_tone_{v_id}")
         st.radio("3. Lesson Complexity", ["Brief", "Standard", "Comprehensive", "Deep Dive"], index=2, key=f"set_depth_{v_id}")
-        st.checkbox("4. Auto-Bibliography", value=True, key=f"set_bib_{v_id}")
-        st.checkbox("5. Logic Validation", value=True, key=f"set_logic_{v_id}")
-        st.checkbox("6. Source Cross-Checking", key=f"set_cross_{v_id}")
         st.checkbox("7. IB MYP2 Alignment", key=f"set_ib_{v_id}")
-        st.button("8. Run Grammar Engine", key=f"b8_{v_id}")
-        st.button("9. Detect Plagiarism Patterns", key=f"b9_{v_id}")
-        st.button("10. Export Citation List", key=f"b10_{v_id}")
 
     with c2:
         st.write("### 🎨 Interface & UI")
         st.color_picker("11. Primary Accent", "#3b82f6", key=f"set_color_{v_id}")
         st.color_picker("12. Card Background", "#1e293b", key=f"set_bg_{v_id}")
         st.slider("13. Font Scale", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
-        st.checkbox("14. High Contrast Mode", key=f"set_hc_{v_id}")
-        st.checkbox("15. Compact View", key=f"set_compact_{v_id}")
-        st.checkbox("16. Dark Mode Force", value=True, key=f"set_dark_{v_id}")
-        st.checkbox("17. Glassmorphism UI", key=f"set_glass_{v_id}")
-        st.checkbox("18. Show Navigation Hints", key=f"set_hints_{v_id}")
-        st.button("19. Rebuild UI Cache", key=f"b19_{v_id}")
-        st.button("20. Toggle Fullscreen Mode", key=f"b20_{v_id}")
 
     with c3:
         st.write("### 🔐 Security & Data")
-        st.checkbox("21. Local Encryption", key=f"set_enc_{v_id}")
         st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
-        st.checkbox("23. Anonymous Study Logs", key=f"set_anon_{v_id}")
-        st.checkbox("24. Auto-Delete Cache", key=f"set_del_{v_id}")
-        st.button("25. Purge Lesson History", key=f"b25_{v_id}")
-        st.button("26. Export Data (CSV)", key=f"b26_{v_id}")
-        st.button("27. Backup to Cloud", key=f"b27_{v_id}")
-        st.button("28. Generate Key", key=f"b28_{v_id}")
-        st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 14.0.0 (vID: {v_id})")
+        st.info(f"Build: 19.5.0 | Analytics: Active (G-030XWBG97P)")
 
-    st.write("### ⚡ Advanced Toolbox")
-    c4, c5, c6 = st.columns(3)
-    for i in range(31, 51):
-        col = [c4, c5, c6][(i-31)%3]
-        if i == 50:
-            col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
-        else:
-            col.button(f"{i}. Advanced Command {i}", key=f"b{i}_{v_id}")
-    st.success("51. Status: 🟢 System Fully Optimized")
-
-# --- OTHER TOOLS ---
+# (The Plagiarism Checker, Home, and Timer tools remain exactly as they were in your base code)
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
     p_text = st.text_area("Paste text:")
