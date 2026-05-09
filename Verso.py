@@ -4,6 +4,7 @@ import nltk
 import time
 import random
 import re
+import os
 import streamlit.components.v1 as components
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION (ADDITION ONLY) ---
@@ -24,8 +25,10 @@ def inject_ga():
 @st.cache_resource
 def setup_system():
     try:
-        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
+        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger', 'maxent_treebank_pos_tagger']:
             nltk.download(res, quiet=True)
+        # Fix for MissingCorpusError seen in logs
+        os.system("python -m textblob.download_corpora")
     except Exception: pass
 
 setup_system()
@@ -226,10 +229,28 @@ elif choice == "🏠 Home":
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     mins = st.number_input("Minutes:", 1, 120, 25)
+    
+    if 'timer_seconds' not in st.session_state:
+        st.session_state.timer_seconds = 0
+    if 'timer_active' not in st.session_state:
+        st.session_state.timer_active = False
+
     if st.button("Start Timer"): 
         st.session_state.timer_seconds = mins * 60
         st.session_state.timer_active = True
-    if st.session_state.get('timer_active') and st.session_state.get('timer_seconds', 0) > 0:
-        time.sleep(1); st.session_state.timer_seconds -= 1; st.rerun()
-    m, s = divmod(st.session_state.get('timer_seconds', 0), 60)
-    st.metric("Timer", f"{int(m):02d}:{int(s):02d}")
+        st.rerun()
+
+    timer_display = st.empty()
+
+    if st.session_state.timer_active and st.session_state.timer_seconds > 0:
+        m, s = divmod(st.session_state.timer_seconds, 60)
+        timer_display.metric("Time Remaining", f"{int(m):02d}:{int(s):02d}")
+        time.sleep(1)
+        st.session_state.timer_seconds -= 1
+        if st.session_state.timer_seconds <= 0:
+            st.session_state.timer_active = False
+            st.balloons()
+        st.rerun()
+    else:
+        m, s = divmod(st.session_state.timer_seconds, 60)
+        timer_display.metric("Timer", f"{int(m):02d}:{int(s):02d}")
