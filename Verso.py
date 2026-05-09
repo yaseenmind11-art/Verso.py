@@ -235,9 +235,19 @@ elif choice == "⏱️ Time Tracker":
     if 'timer_active' not in st.session_state:
         st.session_state.timer_active = False
 
-    if st.button("Start Timer"): 
+    c1, c2, c3 = st.columns(3)
+    if c1.button("Start Timer", use_container_width=True): 
         st.session_state.timer_seconds = mins * 60
         st.session_state.timer_active = True
+        st.rerun()
+    
+    if c2.button("Stop Timer", use_container_width=True):
+        st.session_state.timer_active = False
+        st.rerun()
+
+    if c3.button("Reset Timer", use_container_width=True):
+        st.session_state.timer_active = False
+        st.session_state.timer_seconds = 0
         st.rerun()
 
     timer_display = st.empty()
@@ -247,8 +257,15 @@ elif choice == "⏱️ Time Tracker":
         timer_display.metric("Time Remaining", f"{int(m):02d}:{int(s):02d}")
         time.sleep(1)
         st.session_state.timer_seconds -= 1
+        
         if st.session_state.timer_seconds <= 0:
             st.session_state.timer_active = False
+            # Sound notification injection
+            st.markdown("""
+                <audio autoplay>
+                    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg" type="audio/ogg">
+                </audio>
+            """, unsafe_allow_html=True)
             st.balloons()
         st.rerun()
     else:
