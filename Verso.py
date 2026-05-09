@@ -141,9 +141,15 @@ if choice == "📒 Study Assistant":
                     if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
         with t4:
             st.subheader("Writing Verso AI Teacher")
-            if st.button("🚀 Start Lesson Synthesis"):
+            col_teach1, col_teach2 = st.columns(2)
+            if col_teach1.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Guidelines: {cite_style}</p></div>', unsafe_allow_html=True)
+            
+            if col_teach2.button("✍️ Check Grammar & Punctuation"):
+                corrected_text = str(blob.correct())
+                st.info("### 📝 Suggested Corrections:")
+                st.success(corrected_text)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -243,13 +249,13 @@ elif choice == "⚙️ Settings":
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    st.text_area("Paste text:", placeholder="Paste your text here...")
+    st.text_area("Paste text:", placeholder="Paste your research text here...")
     if st.button("Deep Scan"):
         with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Paste your research question here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Paste your research text here...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- FINAL AUTOMATIC TRIGGER ---
