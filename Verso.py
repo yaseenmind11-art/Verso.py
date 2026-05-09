@@ -79,15 +79,14 @@ st.markdown("""
     </audio>
 """, unsafe_allow_html=True)
 
-# THE FIX IS HERE: Double {{ }} for the CSS animation
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
     [data-testid="stSidebar"] {{ background-color: #1e293b !important; }}
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
-    .time-up-banner {{ background-color: red; color: white; padding: 20px; text-align: center; font-weight: bold; border-radius: 10px; font-size: 24px; animation: blinker 1s linear infinite; }}
-    @keyframes blinker {{ 50% {{ opacity: 0; }} }}
+    .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; margin-bottom: 20px; animation: blinker 0.8s linear infinite; }}
+    @keyframes blinker {{ 50% {{ opacity: 0.2; }} }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -141,10 +140,9 @@ if choice == "📒 Study Assistant":
         with t4:
             st.subheader("Writing Verso AI Teacher")
             if st.button("🚀 Start Lesson Synthesis"):
-                cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Reviewing <b>{words[0]}</b>.</p></div>', unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (ALL 51 CONTROLS) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"):
@@ -157,10 +155,7 @@ elif choice == "⚙️ Settings":
         st.selectbox("1. Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"set_cite_{v_id}")
         st.selectbox("2. Tone Level", ["Formal", "Technical"], key=f"set_tone_{v_id}")
         st.radio("3. Lesson Complexity", ["Brief", "Standard", "Deep Dive"], index=1, key=f"set_depth_{v_id}")
-        st.checkbox("4. Auto-Bibliography", value=True, key=f"set_bib_{v_id}")
-        st.checkbox("5. Logic Validation", value=True, key=f"set_logic_{v_id}")
-        st.checkbox("6. Source Cross-Checking", key=f"set_cross_{v_id}")
-        st.checkbox("7. IB MYP2 Alignment", key=f"set_ib_{v_id}")
+        for i in range(4, 8): st.checkbox(f"{i}. Active Protocol {i}", key=f"check_{i}_{v_id}")
         st.button("8. Grammar Engine", key=f"b8_{v_id}")
         st.button("9. Plagiarism Patterns", key=f"b9_{v_id}")
         st.button("10. Export Citations", key=f"b10_{v_id}")
@@ -169,30 +164,23 @@ elif choice == "⚙️ Settings":
         st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
         st.color_picker("12. Card BG", "#1e293b", key=f"set_bg_{v_id}")
         st.slider("13. Font Scale", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
-        st.checkbox("14. High Contrast", key=f"set_hc_{v_id}")
-        st.checkbox("15. Compact View", key=f"set_compact_{v_id}")
-        st.checkbox("16. Dark Mode", value=True, key=f"set_dark_{v_id}")
-        st.checkbox("17. Glassmorphism", key=f"set_glass_{v_id}")
-        st.checkbox("18. Nav Hints", key=f"set_hints_{v_id}")
+        for i in range(14, 19): st.checkbox(f"{i}. UI Mod {i}", key=f"ui_{i}_{v_id}")
         st.button("19. Rebuild Cache", key=f"b19_{v_id}")
         st.button("20. Fullscreen", key=f"b20_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        st.checkbox("21. Encryption", key=f"set_enc_{v_id}")
-        st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
-        st.checkbox("23. Anon Logs", key=f"set_anon_{v_id}")
-        st.checkbox("24. Auto-Delete", key=f"set_del_{v_id}")
+        for i in range(21, 25): st.checkbox(f"{i}. Security Prot {i}", key=f"sec_{i}_{v_id}")
         st.button("25. Purge History", key=f"b25_{v_id}")
         st.button("26. Export CSV", key=f"b26_{v_id}")
         st.button("27. Cloud Backup", key=f"b27_{v_id}")
         st.button("28. Generate Key", key=f"b28_{v_id}")
         st.button("29. Integrity Check", key=f"b29_{v_id}")
         st.info(f"30. Build: 14.0.0 (vID: {v_id})")
+    
     c4, c5, c6 = st.columns(3)
     for i in range(31, 51):
         col = [c4, c5, c6][(i-31)%3]
-        if i == 50: col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
-        else: col.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
+        col.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
     st.success("51. System Optimized")
 
 elif choice == "🛡️ Plagiarism Checker":
@@ -211,16 +199,6 @@ elif choice == "🏠 Home":
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     
-    # 🔊 Button to interact and enable browser sound
-    if st.button("🔊 ACTIVATE SOUND ENGINE (Required for alarm)"):
-        components.html("""
-            <script>
-                var audio = window.parent.document.getElementById('alarm-sound');
-                audio.play().then(() => { audio.pause(); audio.currentTime = 0; });
-            </script>
-        """, height=0)
-        st.toast("Sound Engine Online!")
-
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
     if c1.button("Start New", use_container_width=True): 
@@ -249,20 +227,21 @@ elif choice == "⏱️ Time Tracker":
         time.sleep(1)
         st.rerun()
 
-# --- FINAL GLOBAL SOUND TRIGGER ---
+# --- FINAL GLOBAL SOUND TRIGGER (FORCED INTERACTION) ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True)
-    st.session_state.timer_finished_trigger = False
-    st.balloons()
-    components.html("""
-        <script>
-            var audio = window.parent.document.getElementById('alarm-sound');
-            if (audio) {
-                audio.currentTime = 0;
-                audio.loop = true;
-                audio.play();
-                setTimeout(function(){ audio.pause(); }, 10000); 
-            }
-        </script>
-    """, height=0)
-    st.toast("⏰ Timer Finished!")
+    
+    if st.button("🚨 STOP ALARM & PLAY SOUND", use_container_width=True, type="primary"):
+        st.session_state.timer_finished_trigger = False
+        st.balloons()
+        components.html("""
+            <script>
+                var audio = window.parent.document.getElementById('alarm-sound');
+                if (audio) {
+                    audio.currentTime = 0;
+                    audio.play();
+                }
+            </script>
+        """, height=0)
+        time.sleep(1)
+        st.rerun()
