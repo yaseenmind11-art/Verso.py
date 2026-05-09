@@ -4,6 +4,7 @@ import nltk
 import time
 import random
 import re
+import os
 import streamlit.components.v1 as components
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION (ADDITION ONLY) ---
@@ -20,13 +21,16 @@ def inject_ga():
     """
     components.html(ga_code, height=0)
 
-# --- 🛠️ ACADEMIC ENGINE SETUP ---
+# --- 🛠️ ACADEMIC ENGINE SETUP (SILENT REPAIR) ---
 @st.cache_resource
 def setup_system():
     try:
         for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
             nltk.download(res, quiet=True)
-    except Exception: pass
+        # Critical fix for TextBlob missing dictionaries on the server
+        os.system("python -m textblob.download_corpora")
+    except Exception: 
+        pass
 
 setup_system()
 
@@ -80,13 +84,47 @@ st.markdown(f"""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Audit", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+
+# --- NEW MODULE: GRAMMAR & PUNCTUATION AUDIT ---
+if choice == "✍️ Grammar Audit":
+    st.title("Academic Polish Tool")
+    st.write("Analyze your draft for capitalization, punctuation spacing, and grammar.")
+    
+    audit_text = st.text_area("Paste your research draft here:", height=300)
+    
+    if st.button("🔍 Run Full Audit"):
+        if audit_text:
+            with st.spinner("Analyzing text..."):
+                blob = TextBlob(audit_text)
+                
+                # Check for mechanical issues
+                caps_issues = [s for s in blob.sentences if not s.startswith(s[0].upper())]
+                punct_issues = re.findall(r'(\s[,\.\!\?])', audit_text) 
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Grammar Score", f"{max(0, 100 - len(blob.tags))}%")
+                with col2:
+                    st.metric("Case Errors", len(caps_issues))
+                with col3:
+                    st.metric("Punctuation Flaws", len(punct_issues))
+                
+                st.write("---")
+                if not caps_issues and not punct_issues:
+                    st.success("Draft Verified: No major mechanical flaws detected.")
+                else:
+                    if caps_issues:
+                        st.warning(f"Detected {len(caps_issues)} sentence(s) starting with lowercase letters.")
+                    if punct_issues:
+                        st.warning(f"Found {len(punct_issues)} instance(s) of incorrect spacing before punctuation.")
+        else:
+            st.error("Please input text first.")
 
 # --- MODULE: STUDY ASSISTANT ---
-if choice == "📒 Study Assistant":
+elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
 
-    # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -101,7 +139,6 @@ if choice == "📒 Study Assistant":
 
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
     
-    # Cleaning Logic: Purge bracketed references and months
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
@@ -151,7 +188,7 @@ if choice == "📒 Study Assistant":
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (DYNAMIC RESET ENABLED) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
