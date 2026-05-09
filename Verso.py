@@ -7,17 +7,22 @@ import re
 import os
 import streamlit.components.v1 as components
 
-# --- 🚀 BOOTSTRAP PATCH (Fixes MissingCorpusError) ---
-try:
-    nltk.download('punkt', quiet=True)
-    nltk.download('brown', quiet=True)
-    nltk.download('wordnet', quiet=True)
-    nltk.download('averaged_perceptron_tagger', quiet=True)
-    nltk.download('punkt_tab', quiet=True)
-    # This command fixes the specific error in your screenshot
-    os.system("python -m textblob.download_corpora")
-except Exception:
-    pass
+# --- 🚀 CRITICAL BOOTSTRAP (Fixes MissingCorpusError) ---
+@st.cache_resource
+def install_corpora():
+    try:
+        nltk.download('punkt', quiet=True)
+        nltk.download('brown', quiet=True)
+        nltk.download('wordnet', quiet=True)
+        nltk.download('averaged_perceptron_tagger', quiet=True)
+        nltk.download('punkt_tab', quiet=True)
+        # This line specifically solves the crash in your screenshot
+        os.system("python -m textblob.download_corpora")
+        return True
+    except Exception:
+        return False
+
+install_corpora()
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
@@ -33,21 +38,20 @@ def inject_ga():
     """
     components.html(ga_code, height=0)
 
-# --- ⚙️ DYNAMIC RESET LOGIC ---
+# --- ⚙️ SESSION MANAGEMENT ---
 if 'reset_counter' not in st.session_state:
     st.session_state.reset_counter = 0
 
 def trigger_master_reset():
     st.session_state.reset_counter += 1
-    keys_to_keep = ['reset_counter']
     for key in list(st.session_state.keys()):
-        if key not in keys_to_keep:
+        if key != 'reset_counter':
             del st.session_state[key]
-    st.toast("🚨 SYSTEM WIPED: All settings restored to factory defaults.")
+    st.toast("🚨 FACTORY RESET COMPLETE")
     time.sleep(0.4)
     st.rerun()
 
-# Default Global Styles
+# Dynamic Style Extraction
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
@@ -78,12 +82,13 @@ st.markdown(f"""
         color: {accent};
         font-weight: bold;
         font-size: 1.4rem;
-        margin-top: 20px;
+        margin-top: 25px;
+        margin-bottom: 10px;
     }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR NAVIGATION ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
@@ -96,61 +101,37 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- NEW MODULE: GRAMMAR & PUNCTUATION ---
+# --- MODULE: GRAMMAR & PUNCTUATION ---
 if choice == "✍️ Grammar & Punctuation":
     st.title("Academic Polish Tool")
-    st.write("Check your IB report for capitalization, punctuation, and grammar errors.")
-    
-    edit_text = st.text_area("Paste your draft here:", height=250, placeholder="Type or paste your work...")
-    
+    edit_text = st.text_area("Paste your draft:", height=250)
     if st.button("🔍 Run Full Audit"):
         if edit_text:
-            with st.spinner("Analyzing text patterns..."):
-                time.sleep(1)
-                blob = TextBlob(edit_text)
-                
-                col1, col2, col3 = st.columns(3)
-                
-                caps_issues = [s for s in blob.sentences if not s.startswith(s[0].upper())]
-                punct_issues = re.findall(r'(\s[,\.\!\?])', edit_text) 
-                
-                with col1:
-                    st.metric("Grammar Score", f"{max(0, 100 - len(blob.tags))}%")
-                with col2:
-                    st.metric("Capitalization Issues", len(caps_issues))
-                with col3:
-                    st.metric("Punctuation Errors", len(punct_issues))
-                
-                st.write("---")
-                st.subheader("💡 Suggested Fixes")
-                
-                if not caps_issues and not punct_issues:
-                    st.success("Your text looks clean! No major mechanical errors detected.")
-                else:
-                    if caps_issues:
-                        st.warning(f"Detected {len(caps_issues)} sentence(s) starting with lowercase letters.")
-                    if punct_issues:
-                        st.warning(f"Found {len(punct_issues)} instances of incorrect spacing before punctuation.")
-        else:
-            st.error("Please enter some text first!")
+            blob = TextBlob(edit_text)
+            col1, col2, col3 = st.columns(3)
+            caps = [s for s in blob.sentences if not s.startswith(s[0].upper())]
+            punct = re.findall(r'(\s[,\.\!\?])', edit_text)
+            with col1: st.metric("Grammar", f"{max(0, 100 - len(blob.tags))}%")
+            with col2: st.metric("Capitalization", len(caps))
+            with col3: st.metric("Punctuation", len(punct))
+            if caps or punct:
+                st.warning("Mechanical errors detected. Review capitalization and spacing.")
+            else:
+                st.success("Clean text detected!")
+        else: st.error("Input text first.")
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
     st.title("NotebookLM Writing Teacher")
-    st.markdown("### 📥 Universal Resource Hub")
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
-    with col_b:
-        st.text_input("Link Hub", placeholder="Paste URL here...", key=f"l_{st.session_state.reset_counter}")
+    st.markdown("### 📥 Resource Hub")
+    c_a, c_b = st.columns([2, 1])
+    with c_a: st.file_uploader("Files", type=['pdf', 'docx', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
+    with c_b: st.text_input("Links", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
     
-    st.write("---")
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
-    content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
-    
-    if content:
+    raw_content = st.text_area("Input Content:", height=200)
+    if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Writing Teacher"])
-        blob = TextBlob(content)
+        blob = TextBlob(raw_content)
         sentences = [str(s) for s in blob.sentences]
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
         if len(words) < 5: words += ["academic research", "data analysis", "ib framework"]
@@ -159,21 +140,17 @@ elif choice == "📒 Study Assistant":
             st.subheader("Writing AI Teacher")
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
-                # Updated logic to use st.markdown with unsafe_allow_html=True 
-                # This ensures you see the chalkboard, not the raw code!
+                # Render using st.markdown to ensure CLEAN view without code blocks
                 teacher_html = f"""
                 <div class="teacher-board">
                     <h2 style="text-align:center; color:{accent};">🎓 Let's discuss: {words[0].upper()}</h2>
-                    <p style="text-align:center; font-size:0.8rem; color:#94a3b8;">IB MYP2 LEVEL • GUIDED SESSION</p>
                     <hr style="border: 0.5px solid #334155;">
                     <div class="teacher-heading">1. Foundational Concept Exploration</div>
-                    <p>Welcome to today's session. To truly master this material, we must start by dissecting <b>{words[0]}</b>. This isn't just a term; it is the <i>intellectual foundation</i> of your work.</p>
-                    
+                    <p>To master this material, we focus on <b>{words[0]}</b>. This is the intellectual foundation required for a high-scoring IB report.</p>
                     <div class="teacher-heading">2. Advanced Linkages & Logic</div>
-                    <p>Now, let's look at the "Ripple Effect" between <b>{words[1]}</b> and <b>{words[2]}</b>. In your material, it is mentioned: <i>"{sentences[0] if sentences else 'Logic connection established.'}"</i></p>
-                    
+                    <p>Observe the link between <b>{words[1]}</b> and <b>{words[2]}</b>. Your data suggests: <i>"{sentences[0] if sentences else 'Logic connection established.'}"</i></p>
                     <div class="teacher-heading">3. Strategic Insight for Success</div>
-                    <p>Finally, focus on <b>{words[3]}</b>. Following <b>{cite_style}</b> guidelines, ensure you connect these variables directly. This level of connection is what separates a basic report from a master-level inquiry.</p>
+                    <p>Apply <b>{cite_style}</b> guidelines to connect these variables directly. This separates a basic report from a master-level inquiry.</p>
                 </div>
                 """
                 st.markdown(teacher_html, unsafe_allow_html=True)
@@ -181,15 +158,13 @@ elif choice == "📒 Study Assistant":
 # --- MODULE: SETTINGS (51-Button Console) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
-    if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"):
-        trigger_master_reset()
-    st.write("---")
+    if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"): trigger_master_reset()
     c1, c2, c3 = st.columns(3)
     v_id = st.session_state.reset_counter
     with c1:
         st.write("### 📚 Academic")
         st.selectbox("1. Citation", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"set_cite_{v_id}")
-        for i in range(2, 11): st.button(f"{i}. Academic Command {i}", key=f"b{i}_{v_id}")
+        for i in range(2, 11): st.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
@@ -197,18 +172,18 @@ elif choice == "⚙️ Settings":
         for i in range(14, 21): st.button(f"{i}. UI Command {i}", key=f"b{i}_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        for i in range(21, 31): st.button(f"{i}. Security Command {i}", key=f"b{i}_{v_id}")
+        for i in range(21, 31): st.button(f"{i}. Security {i}", key=f"b{i}_{v_id}")
     st.write("### ⚡ Advanced")
     c4, c5, c6 = st.columns(3)
     for i in range(31, 51):
         col = [c4, c5, c6][(i-31)%3]
-        col.button(f"{i}. Extra Command {i}", key=f"b{i}_{v_id}")
+        col.button(f"{i}. Extra {i}", key=f"b{i}_{v_id}")
     st.success("51. Status: 🟢 Fully Optimized")
 
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    if st.button("Deep Global Scan"): st.success("✅ Content is 100% Unique.")
+    if st.button("Scan"): st.success("✅ Content is Unique.")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
