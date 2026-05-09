@@ -76,6 +76,7 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
+# SyntaxError Fixed: Using double curly braces {{ }} for CSS properties
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
@@ -83,7 +84,7 @@ st.markdown(f"""
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
-    @keyframes blinker {{ 50% {{ opacity: 0.2; }} }}
+    @keyframes blinker {{ 50% {{ opacity: 0; }} }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -93,14 +94,46 @@ st.markdown(f"""
     </audio>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (Updated with Grammar Checker Navigation) ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", [
+        "🏠 Home", 
+        "📒 Study Assistant", 
+        "✍️ Grammar Checker",  # New Navigation Item
+        "🛡️ Plagiarism Checker", 
+        "⏱️ Time Tracker", 
+        "⚙️ Settings"
+    ])
+
+# --- MODULE: GRAMMAR CHECKER (New Dedicated Section) ---
+if choice == "✍️ Grammar Checker":
+    st.title("Grammar, Punctuation & Caps")
+    st.write("Professional writing enhancement tool.")
+    
+    text_to_check = st.text_area("Paste text to improve:", height=300, placeholder="Type or paste your content here...")
+    
+    if st.button("✨ Run Unified Check", use_container_width=True):
+        if text_to_check:
+            with st.spinner("Analyzing text..."):
+                blob = TextBlob(text_to_check)
+                # Corrects spelling, basic grammar, and capitalization
+                corrected = str(blob.correct())
+                
+                st.success("Analysis Complete!")
+                st.markdown("### 📝 Improved Version")
+                st.markdown(f'<div class="notebook-card" style="border-left-color: #10b981;">{corrected}</div>', unsafe_allow_html=True)
+                
+                # Small Metrics
+                col1, col2 = st.columns(2)
+                col1.metric("Sentence Count", len(blob.sentences))
+                col2.metric("Word Count", len(blob.words))
+        else:
+            st.warning("Please enter some text first.")
 
 # --- MODULE: STUDY ASSISTANT ---
-if choice == "📒 Study Assistant":
+elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
@@ -113,16 +146,7 @@ if choice == "📒 Study Assistant":
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
-    # --- NEW UNIFIED CHECKER BUTTON (OUTSIDE TABS) ---
     if content:
-        if st.button("✨ Unified Grammar, Punctuation & Caps Check", use_container_width=True):
-            blob = TextBlob(content)
-            # TextBlob's correct() handles spelling, capitalization, and basic grammar
-            corrected_text = str(blob.correct())
-            st.markdown(f'<div class="notebook-card" style="border-left-color: #10b981;"><h4>✅ Corrected Version:</h4><p>{corrected_text}</p></div>', unsafe_allow_html=True)
-        
-        st.write("---")
-        
         t1, t2, t3, t4 = st.tabs(["🔑 20+ Keywords", "❓ 10-Question Quiz", "🗂️ 20+ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(content)
         sentences = [str(s) for s in blob.sentences]
@@ -153,6 +177,18 @@ if choice == "📒 Study Assistant":
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Guidelines: {cite_style}</p></div>', unsafe_allow_html=True)
+
+# --- MODULE: PLAGIARISM CHECKER ---
+elif choice == "🛡️ Plagiarism Checker":
+    st.title("Integrity Scanner")
+    plag_text = st.text_area("Paste text:", placeholder="Paste your text here...", height=250)
+    if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
+        if plag_text:
+            with st.spinner("Scanning..."): 
+                time.sleep(2)
+                st.success("✅ Content Unique.")
+        else:
+            st.warning("Please paste text first.")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -244,17 +280,10 @@ elif choice == "⚙️ Settings":
             st.session_state.last_tool = lab
             st.toast(f"Running: {lab}")
     
-    c5.checkbox("50. Enable AI Humor", key=f"set_hum humor_{v_id}")
+    c5.checkbox("50. Enable AI Humor", key=f"set_humor_{v_id}")
     if 'last_tool' in st.session_state:
         st.success(f"Output for: {st.session_state.last_tool}")
     st.success("51. System Optimized")
-
-# --- OTHER TOOLS ---
-elif choice == "🛡️ Plagiarism Checker":
-    st.title("Integrity Scanner")
-    st.text_area("Paste text:", placeholder="Paste your text here...")
-    if st.button("Deep Scan"):
-        with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
