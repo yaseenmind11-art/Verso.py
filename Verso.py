@@ -18,7 +18,6 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ SESSION STATE ---
-if 'quiz_answers' not in st.session_state: st.session_state.quiz_answers = {}
 if 'timer_seconds' not in st.session_state: st.session_state.timer_seconds = 0
 if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 
@@ -29,8 +28,9 @@ st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: #FFFFFF; }
     [data-testid="stSidebar"] { background-color: #1e293b !important; }
-    .notebook-card { background-color: #1e293b; padding: 20px; border-radius: 12px; border-left: 5px solid #3b82f6; margin-bottom: 15px; color: #FFFFFF; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-    .settings-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 15px; color: white; }
+    .notebook-card { background-color: #1e293b; padding: 20px; border-radius: 12px; border-left: 5px solid #3b82f6; margin-bottom: 15px; color: #FFFFFF; }
+    .teacher-board { background-color: #2d3748; border: 2px solid #4a5568; padding: 25px; border-radius: 15px; font-family: 'Courier New', Courier, monospace; min-height: 200px; color: #63b3ed; }
+    .settings-panel { background: #1a202c; border: 1px solid #4a5568; padding: 30px; border-radius: 20px; color: white; }
     .search-container { overflow: hidden; border-radius: 15px; border: 1px solid #334155; height: 800px; width: 100%; }
     .search-frame { width: 100%; height: 1000px; border: none; margin-top: -120px; }
     </style>
@@ -53,11 +53,11 @@ if choice == "📒 Study Assistant":
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
-        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ 10-Question Quiz", "🗂️ 30+ Flashcards", "🔊 Audio Teacher"])
+        # TABS ORDER FIXED: Keywords -> Quiz -> Flashcards -> Teacher
+        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ 10-Question Quiz", "🗂️ 30+ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(content)
         sentences = [str(s) for s in blob.sentences]
         
-        # Keyword Extraction
         words = [w.lower() for w in blob.noun_phrases if len(w) > 3 and not any(c.isdigit() for c in w)]
         if len(words) < 20: 
             words += ["analysis", "hypothesis", "framework", "evidence", "theory", "method", "logic", "variable", "data", "result"]
@@ -73,36 +73,41 @@ if choice == "📒 Study Assistant":
             score = 0
             for i in range(10):
                 target = words[i % len(words)]
-                # Diversify choices
                 wrong_opts = random.sample([w for w in words if w != target], 2)
                 opts = [target] + wrong_opts
                 random.seed(i)
                 random.shuffle(opts)
-                
-                st.write(f"**Q{i+1}:** Based on your notes, which term relates most to: **{target.upper()}**?")
-                user_choice = st.radio("Select:", opts, key=f"qz_fin_{i}", index=None)
+                st.write(f"**Q{i+1}:** Which term relates most to: **{target.upper()}**?")
+                user_choice = st.radio("Select:", opts, key=f"qz_v5_{i}", index=None)
                 if user_choice == target: score += 1
-            
             if st.button("Submit Final Quiz"):
                 st.metric("Total Grade", f"{score}/10", f"{(score/10)*100}%")
 
-        with t4:
+        with t3:
             st.subheader("Reliable Flashcards")
             for i in range(30):
                 term = words[i % len(words)]
-                real_context = next((s for s in sentences if term in s.lower()), f"This concept refers to a key variable within your academic framework for {term}.")
-                with st.expander(f"Flashcard {i+1}: What is the significance of {term.upper()}?"):
-                    if st.checkbox("Reveal Answer from Content", key=f"fcr_fin_{i}"):
+                real_context = next((s for s in sentences if term in s.lower()), f"This key concept was identified in your research framework regarding {term}.")
+                with st.expander(f"Flashcard {i+1}: What is the role of {term.upper()}?"):
+                    if st.checkbox("Reveal Answer", key=f"fcr_v5_{i}"):
                         st.info(f"**Source Context:** {real_context}")
-                    st.radio("Status:", ["Mastered", "Needs Review"], key=f"fcv_fin_{i}")
+                    st.radio("Status:", ["Mastered", "Needs Review"], key=f"fcv_v5_{i}")
 
-        with t3: # Renumbered tab 4 as Audio Teacher
-            st.subheader("AI Audio Teacher")
-            lecture = f"Welcome. Today we review your study materials. The primary focus is {words[0]}, which relates deeply to {words[1]}. By looking at {words[2]}, we see a clear connection to your overall results."
-            st.markdown(f'<div class="notebook-card"><b>📖 Teacher\'s Lecture Script:</b><br>{lecture}</div>', unsafe_allow_html=True)
-            # Reliable TTS Audio Stream
-            audio_url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q={lecture.replace(' ', '%20')}&tl=en"
-            st.audio(audio_url)
+        with t4:
+            st.subheader("Writing Teacher")
+            lecture = f"Class is in session. Let's break down your notes. The central theme we've identified is {words[0]}. This is heavily supported by the data found in {words[1]}. If we look closer at {words[2]}, the conclusion becomes clear. Keep focusing on these links."
+            
+            # Writing Board with Animation
+            if st.button("✍️ Start Teacher's Writing"):
+                board = st.empty()
+                typed_text = ""
+                for char in lecture:
+                    typed_text += char
+                    board.markdown(f'<div class="teacher-board">{typed_text}▌</div>', unsafe_allow_html=True)
+                    time.sleep(0.04)
+                board.markdown(f'<div class="teacher-board">{lecture}</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="teacher-board">Click the button above to begin the lesson...</div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -121,27 +126,28 @@ elif choice == "⏱️ Time Tracker":
     st.metric("Countdown", f"{int(m):02d}:{int(s):02d}")
 
     if st.session_state.timer_active and st.session_state.timer_seconds == 0:
-        st.error("⏰ FOCUS SESSION FINISHED!")
+        st.error("⏰ SESSION COMPLETE!")
         st.audio("https://www.soundjay.com/buttons/beep-01a.mp3", autoplay=True)
         st.session_state.timer_active = False
 
 # --- MODULE: SETTINGS (FIXED BLACK SCREEN) ---
 elif choice == "⚙️ Settings":
-    st.title("System Settings")
+    st.title("Settings & Profile")
     st.markdown("""
-        <div class="settings-card">
-            <h3>Verso Pro Dashboard</h3>
-            <p><b>User:</b> Yaseen Amr</p>
-            <p><b>App Version:</b> 5.8.0 (Stable Release)</p>
-            <p><b>System Status:</b> All Modules Active</p>
+        <div class="settings-panel">
+            <h2 style='color:#63b3ed;'>Verso Pro Dashboard</h2>
+            <hr style='border-color:#4a5568;'>
+            <p><b>Current User:</b> Yaseen Amr</p>
+            <p><b>Academic Track:</b> International Baccalaureate (IB)</p>
+            <p><b>Software Version:</b> 6.0.0 (Custom Build)</p>
+            <p><b>Database:</b> Research Local Cloud</p>
         </div>
     """, unsafe_allow_html=True)
-    st.write("")
-    if st.button("🔄 Full System Reset"):
+    if st.button("🔄 Factory Reset Progress"):
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
 
-# --- REMAINING TOOLS ---
+# --- OTHER TOOLS ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
@@ -158,4 +164,4 @@ elif choice == "🛡️ Plagiarism Checker":
     p_text = st.text_area("Input Text:")
     if st.button("Analyze"):
         time.sleep(1)
-        st.error("🚨 Match Detected") if len(p_text.split()) > 20 else st.success("✅ Original")
+        st.error("🚨 Match Detected") if len(p_text.split()) > 20 else st.success("✅ Original Content")
