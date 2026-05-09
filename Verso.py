@@ -235,17 +235,27 @@ elif choice == "⏱️ Time Tracker":
     if 'timer_active' not in st.session_state:
         st.session_state.timer_active = False
 
-    c1, c2, c3 = st.columns(3)
-    if c1.button("Start Timer", use_container_width=True): 
+    c1, c2, c3, c4 = st.columns(4)
+    
+    # 1. START: Sets fresh time
+    if c1.button("Start New", use_container_width=True): 
         st.session_state.timer_seconds = mins * 60
         st.session_state.timer_active = True
         st.rerun()
     
-    if c2.button("Stop Timer", use_container_width=True):
+    # 2. STOP: Pauses the countdown but keeps the value
+    if c2.button("Stop/Pause", use_container_width=True):
         st.session_state.timer_active = False
         st.rerun()
 
-    if c3.button("Reset Timer", use_container_width=True):
+    # 3. RESUME: Restarts from current value
+    if c3.button("Resume", use_container_width=True):
+        if st.session_state.timer_seconds > 0:
+            st.session_state.timer_active = True
+            st.rerun()
+
+    # 4. RESET: Clears everything
+    if c4.button("Reset", use_container_width=True):
         st.session_state.timer_active = False
         st.session_state.timer_seconds = 0
         st.rerun()
@@ -260,7 +270,7 @@ elif choice == "⏱️ Time Tracker":
         
         if st.session_state.timer_seconds <= 0:
             st.session_state.timer_active = False
-            # Sound notification injection
+            # Sound notification
             st.markdown("""
                 <audio autoplay>
                     <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_short.ogg" type="audio/ogg">
@@ -270,4 +280,4 @@ elif choice == "⏱️ Time Tracker":
         st.rerun()
     else:
         m, s = divmod(st.session_state.timer_seconds, 60)
-        timer_display.metric("Timer", f"{int(m):02d}:{int(s):02d}")
+        timer_display.metric("Current Timer Status", f"{int(m):02d}:{int(s):02d}")
