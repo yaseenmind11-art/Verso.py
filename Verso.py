@@ -16,7 +16,7 @@ def install_corpora():
         nltk.download('wordnet', quiet=True)
         nltk.download('averaged_perceptron_tagger', quiet=True)
         nltk.download('punkt_tab', quiet=True)
-        # This line specifically solves the crash in your screenshot
+        # This command specifically fixes the crash in your screenshot
         os.system("python -m textblob.download_corpora")
         return True
     except Exception:
