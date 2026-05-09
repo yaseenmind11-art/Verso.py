@@ -4,6 +4,7 @@ import nltk
 import time
 import random
 import re
+import streamlit.components.v1 as components
 
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
@@ -29,12 +30,26 @@ def trigger_master_reset():
     time.sleep(0.4)
     st.rerun()
 
-# Default Global Styles (Fallbacks)
+# Default Global Styles
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
+
+# --- 🛰️ GOOGLE ANALYTICS LIVE TRACKING ---
+# IMPORTANT: Replace G-XXXXXXXXXX with your actual ID to see yourself live!
+ga_id = "G-030XWBG97P" 
+ga_code = f"""
+<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{ga_id}');
+</script>
+"""
+components.html(ga_code, height=0)
 
 # --- CUSTOM DYNAMIC STYLING ---
 st.markdown(f"""
@@ -68,7 +83,7 @@ with st.sidebar:
 if choice == "📒 Study Assistant":
     st.title("NotebookLM Writing Teacher")
 
-    # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
+    # 📥 UNIVERSAL RESOURCE HUB
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -83,7 +98,6 @@ if choice == "📒 Study Assistant":
 
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
     
-    # Cleaning Logic: Purge bracketed references and months
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
@@ -122,18 +136,27 @@ if choice == "📒 Study Assistant":
         with t4:
             st.subheader("Writing AI Teacher (No Voice)")
             if st.button("🚀 Start Lesson Synthesis"):
-                cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f"""
                 <div class="teacher-board">
-                    <h2 style="text-align:center; color:{accent};">DEEP LESSON: {words[0].upper()}</h2>
+                    <h2 style="text-align:center; color:{accent};">MASTERCLASS: {words[0].upper()}</h2>
                     <hr style="border: 0.5px solid #334155;">
-                    <p><b>I. Foundational Analysis</b><br>Welcome. We are reviewing your findings on <b>{words[0]}</b>. This theme acts as the core catalyst for the data patterns observed.</p>
-                    <p><b>II. Cross-Correlation</b><br>The link between <b>{words[1]}</b> and <b>{words[2]}</b> is significant. Based on your input: <i>"{sentences[0] if sentences else 'N/A'}"</i>, we see clear academic evidence that supports <b>{words[3]}</b>.</p>
-                    <p><b>III. Structural conclusion</b><br>Following <b>{cite_style}</b> guidelines, your research in <b>{words[4]}</b> is logically sound. Focus on refining the relationship between these variables for your final report.</p>
+                    <h3>📖 Concept Explanation</h3>
+                    <p>Today, we are diving deep into <b>{words[0]}</b>. This is not just a term; it is the foundation of your entire study. 
+                    When we look at the data, <b>{words[0]}</b> acts as a primary driver, influencing how we interpret every other result.</p>
+                    
+                    <h3>🔍 Detailed Correlation</h3>
+                    <p>Notice the relationship between <b>{words[1]}</b> and <b>{words[2]}</b>. In a high-level academic environment, 
+                    we must understand that <b>{words[1]}</b> creates a ripple effect. Your text mentions: <i>"{sentences[0] if sentences else 'the core findings'}"</i>. 
+                    This proves that without a firm grasp of <b>{words[2]}</b>, the logic of the project would collapse.</p>
+                    
+                    <h3>💡 Critical Insights</h3>
+                    <p>Furthermore, <b>{words[3]}</b> and <b>{words[4]}</b> should be viewed as your two most important variables. 
+                    A great researcher doesn't just list these—they analyze how <b>{words[3]}</b> provides the evidence needed to support the claims of <b>{words[4]}</b>. 
+                    Keep this structure in mind for your final IB report to ensure total clarity and depth.</p>
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (DYNAMIC RESET ENABLED) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
@@ -180,7 +203,7 @@ elif choice == "⚙️ Settings":
         st.button("27. Backup to Cloud", key=f"b27_{v_id}")
         st.button("28. Generate Key", key=f"b28_{v_id}")
         st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 14.0.0 (vID: {v_id})")
+        st.info(f"30. Build: 16.0.0 (vID: {v_id})")
 
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
@@ -190,7 +213,7 @@ elif choice == "⚙️ Settings":
             col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
         else:
             col.button(f"{i}. Advanced Command {i}", key=f"b{i}_{v_id}")
-    st.success("51. Status: 🟢 System Fully Optimized")
+    st.success("51. Status: 🟢 Live Tracking Enabled")
 
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
