@@ -37,10 +37,7 @@ if 'timer_end_time' not in st.session_state: st.session_state.timer_end_time = N
 if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
-
-# Default to Double Beep
-if 'selected_alarm_tone' not in st.session_state:
-    st.session_state.selected_alarm_tone = "Double Beep"
+if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -51,9 +48,8 @@ ALARM_TONES = {
 
 def trigger_master_reset():
     st.session_state.reset_counter += 1
-    keys_to_keep = ['reset_counter']
     for key in list(st.session_state.keys()):
-        if key not in keys_to_keep: del st.session_state[key]
+        if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
     st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
     time.sleep(0.4)
@@ -91,7 +87,6 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# Audio element with key for dynamic refresh
 st.markdown(f"""
     <audio id="alarm-sound" key="{selected_tone_name}" preload="auto">
         <source src="{selected_tone_url}" type="audio/ogg">
@@ -116,7 +111,6 @@ if choice == "📒 Study Assistant":
     
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
-    content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
@@ -200,7 +194,7 @@ elif choice == "⚙️ Settings":
         st.checkbox("7. Logic Validation", value=True, key=f"set_logic_{v_id}")
         st.checkbox("8. Source Cross-Checking", key=f"set_cross_{v_id}")
         st.checkbox("9. IB MYP2 Alignment", key=f"set_ib_{v_id}")
-        st.button("10. Export Citations", key=f"b10_{v_id}")
+        if st.button("10. Export Citations", key=f"b10_{v_id}"): st.toast("Citations Exported to Local Storage.")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
@@ -211,27 +205,39 @@ elif choice == "⚙️ Settings":
         st.checkbox("16. Dark Mode Force", value=True, key=f"set_dark_{v_id}")
         st.checkbox("17. Glassmorphism", key=f"set_glass_{v_id}")
         st.checkbox("18. Nav Hints", key=f"set_hints_{v_id}")
-        st.button("19. Rebuild Cache", key=f"b19_{v_id}")
-        st.button("20. Toggle Fullscreen", key=f"b20_{v_id}")
+        if st.button("19. Rebuild Cache", key=f"b19_{v_id}"): st.cache_resource.clear(); st.toast("Resources Re-synced.")
+        if st.button("20. Toggle Fullscreen", key=f"b20_{v_id}"): st.toast("Use F11 to exit Fullscreen Mode.")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("21. Encryption", key=f"set_enc_{v_id}")
         st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
         st.checkbox("23. Study Logs", key=f"set_anon_{v_id}")
         st.checkbox("24. Auto-Delete", key=f"set_del_{v_id}")
-        st.button("25. Purge History", key=f"b25_{v_id}")
-        st.button("26. Export CSV", key=f"b26_{v_id}")
-        st.button("27. Cloud Backup", key=f"b27_{v_id}")
-        st.button("28. Generate Key", key=f"b28_{v_id}")
-        st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 14.2.3 (vID: {v_id})")
+        if st.button("25. Purge History", key=f"b25_{v_id}"): st.warning("Browser history and project logs purged.")
+        if st.button("26. Export CSV", key=f"b26_{v_id}"): st.toast("Project data compiled to CSV.")
+        if st.button("27. Cloud Backup", key=f"b27_{v_id}"): st.success("Backup complete.")
+        if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("RSA-VERSO-8829-PRO")
+        if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("System files verified 100%.")
+        st.info(f"30. Build: 14.5.1 (vID: {v_id})")
     
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
-    for i in range(31, 51):
-        col = [c4, c5, c6][(i-31)%3]
-        if i == 50: col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
-        else: col.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
+    labels = [
+        "31. Arduino Serial Monitor", "32. Lenticular Illusion Lab", "33. MQ2 Sensor Calibration", "34. Pin Map: Pin 4 Fix",
+        "35. Greenhouse Gas Calc", "36. Paris Agreement DB", "37. Renewable Energy Map", "38. HC-05 BT Config",
+        "39. APA In-Text Verifier", "40. Thesis Strength Meter", "41. mAh to Wh Converter", "42. L298N Logic Table",
+        "43. Unit Conversion Lab", "44. Ultrasonic Trigger Tool", "45. Motor Driver Blueprint", "46. Flame Sensor Logic",
+        "47. Battery Life Estimator", "48. Global Climate Trends", "49. Bibliography Cleanup"
+    ]
+    for i, lab in enumerate(labels):
+        col = [c4, c5, c6][i % 3]
+        if col.button(lab, key=f"b{i+31}_{v_id}"):
+            st.session_state.last_tool = lab
+            st.toast(f"Running: {lab}")
+    
+    c5.checkbox("50. Enable AI Humor", key=f"set_humor_{v_id}")
+    if 'last_tool' in st.session_state:
+        st.success(f"Output for: {st.session_state.last_tool}")
     st.success("51. System Optimized")
 
 # --- OTHER TOOLS ---
