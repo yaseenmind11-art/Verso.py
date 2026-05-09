@@ -5,17 +5,7 @@ import time
 import re
 import streamlit.components.v1 as components
 
-# --- 🛠️ ACADEMIC ENGINE SETUP ---
-@st.cache_resource
-def setup_system():
-    try:
-        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
-            nltk.download(res, quiet=True)
-    except Exception: pass
-
-setup_system()
-
-# --- 🛰️ GOOGLE ANALYTICS ---
+# --- 🛰️ GOOGLE ANALYTICS (Matches your DebugView) ---
 def inject_ga():
     ga_id = "G-030XWBG97P"
     ga_code = f"""
@@ -24,104 +14,89 @@ def inject_ga():
         window.dataLayer = window.dataLayer || [];
         function gtag(){{dataLayer.push(arguments);}}
         gtag('js', new Date());
-        gtag('config', '{ga_id}');
+        gtag('config', '{ga_id}', {{ 'debug_mode': true }});
     </script>
     """
     components.html(ga_code, height=0)
 
-# --- ⚙️ DYNAMIC RESET ---
-if 'reset_counter' not in st.session_state:
-    st.session_state.reset_counter = 0
-
-# Default Global Styles
-accent = st.session_state.get('set_color', "#3b82f6")
-bg_card = st.session_state.get('set_bg', "#1e293b")
-f_scale = st.session_state.get('set_font', 1.1)
-
+# --- 🛠️ SYSTEM SETUP ---
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# --- CUSTOM DYNAMIC STYLING ---
+if 'reset_counter' not in st.session_state:
+    st.session_state.reset_counter = 0
+
+accent = st.session_state.get('set_color', "#3b82f6")
+f_scale = st.session_state.get('set_font', 1.1)
+
+# --- DYNAMIC STYLES ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
-    [data-testid="stSidebar"] {{ background-color: #1e293b !important; }}
     .teacher-board {{ 
         background-color: #1a202c; 
         border-left: 10px solid {accent}; 
-        padding: 40px; border-radius: 15px; 
-        color: #e2e8f0; line-height: 1.8; 
+        padding: 30px; border-radius: 12px; 
+        color: #e2e8f0; line-height: 1.6; 
         font-size: {f_scale}rem; 
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }}
-    .teacher-heading {{ color: {accent}; margin-top: 25px; font-weight: bold; font-size: 1.5rem; }}
+    .t-head {{ color: {accent}; font-weight: bold; font-size: 1.3rem; margin-top: 20px; }}
     </style>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "⚙️ Settings"])
 
 # --- MODULE: STUDY ASSISTANT ---
 if choice == "📒 Study Assistant":
     st.title("NotebookLM Writing Teacher")
+    
+    # Input Area
+    raw_text = st.text_area("Paste your research material here:", height=150)
+    
+    if raw_text:
+        # Teacher Logic
+        blob = TextBlob(raw_text)
+        words = [w.upper() for w in blob.noun_phrases if len(w) > 4]
+        if not words: words = ["RESEARCH", "ANALYSIS", "EVIDENCE", "LOGIC"]
+        
+        # This is where we make it talk NORMALLY
+        st.write("---")
+        st.write("### 👋 Hello! I've analyzed your work.")
+        st.write("I've identified some key connections that will help your report stand out. Click the button below to start our deep-dive session.")
 
-    # Resource Hub
-    st.markdown("### 📥 Universal Resource Hub")
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        st.file_uploader("Upload School Files", type=['pdf', 'docx', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
-    with col_b:
-        st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    
-    raw_content = st.text_area("Input Content:", height=150, placeholder="Paste your research text here...")
-    
-    if raw_content:
-        # Simple processing
-        content = re.sub(r'[^\x00-\x7f]', r'', raw_content)
-        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Writing Teacher"])
-        
-        blob = TextBlob(content)
-        words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-        if len(words) < 5: words += ["academic research", "data analysis", "logic", "evidence", "framework"]
-        
-        with t4:
-            st.subheader("Interactive Lesson")
-            if st.button("🚀 Start Lesson"):
-                # Define topics
-                topic = words[0].upper()
-                v1, v2 = words[1].title(), words[2].title()
-                v3, v4 = words[3].title(), words[4].title()
+        if st.button("🚀 Start Lesson"):
+            # Variables for the lesson
+            topic = words[0]
+            v1 = words[1].title() if len(words) > 1 else "Your Data"
+            v2 = words[2].title() if len(words) > 2 else "The Outcome"
+            
+            # The Final Rendered Board (No raw code visible)
+            st.markdown(f"""
+            <div class="teacher-board">
+                <h2 style="color:{accent}; margin:0;">Topic: {topic}</h2>
+                <p style="font-size: 0.8rem; opacity: 0.6;">IB MYP2 ACADEMIC LEVEL</p>
                 
-                # RENDER THE BOARD NORMALLY
-                st.markdown(f"""
-                <div class="teacher-board">
-                    <h1 style="color:{accent}; margin-bottom:0;">🎓 Let's discuss: {topic}</h1>
-                    <p style="opacity:0.7; font-size:0.9rem; margin-bottom:20px;">IB MYP2 LEVEL • GUIDED SESSION</p>
-                    <hr style="border: 0.5px solid #334155;">
-                    
-                    <div class="teacher-heading">1. The Big Picture</div>
-                    <p>To really get a handle on this research, we need to focus on <b>{topic}</b>. It’s not just a detail; it's the anchor for everything else you've written. If you don't explain this clearly in your report, your other points won't have a solid foundation to stand on.</p>
-                    
-                    <div class="teacher-heading">2. Connecting the Dots</div>
-                    <p>I want you to notice how <b>{v1}</b> directly impacts <b>{v2}</b>. Think of it like a chain reaction. When one changes, the other has to follow. In a top-tier report, you shouldn't just list these separately—you should explain <i>how</i> they work together to prove your point.</p>
-                    
-                    <div class="teacher-heading">3. My Advice for Your Report</div>
-                    <p>Finally, keep an eye on <b>{v3}</b> and <b>{v4}</b>. A common mistake is treating them as simple facts. Instead, use <b>{v3}</b> as your "proof" to back up what you're saying about <b>{v4}</b>. This kind of deep connection is exactly what examiners look for in an IB project.</p>
-                </div>
-                """, unsafe_allow_html=True)
+                <div class="t-head">1. The Big Picture</div>
+                <p>To master this topic, we have to start with <b>{topic}</b>. It’s the foundation of your entire study. 
+                If this part isn't clear, your whole argument loses its weight.</p>
+                
+                <div class="t-head">2. The Ripple Effect</div>
+                <p>Look at how <b>{v1}</b> connects to <b>{v2}</b>. As your teacher, I want you to see that <b>{v1}</b> 
+                is the catalyst—when it changes, <b>{v2}</b> has to react. Don't just list them; explain the relationship!</p>
+                
+                <div class="t-head">3. Strategic Advice</div>
+                <p>When you write your final IB report, make sure you connect these variables directly. 
+                That depth of connection is what separates a basic project from a master-level inquiry.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-# --- HOME / SETTINGS / TOOLS (Simplified for brevity) ---
-elif choice == "🏠 Home":
-    st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:")
-    if q: st.markdown(f'<iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:600px; border:none;"></iframe>', unsafe_allow_html=True)
-
+# --- SETTINGS ---
 elif choice == "⚙️ Settings":
-    st.title("Settings")
-    st.color_picker("Primary Accent", "#3b82f6", key="set_color")
-    if st.button("🚨 Reset System"):
+    st.title("Control Center")
+    st.color_picker("Choose Teacher Color", "#3b82f6", key="set_color")
+    if st.button("🚨 Wipe System"):
         st.session_state.reset_counter += 1
         st.rerun()
