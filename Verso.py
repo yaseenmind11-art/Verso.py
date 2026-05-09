@@ -11,7 +11,7 @@ import re
 @st.cache_resource
 def setup_system():
     try:
-        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
+        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger', 'indian']:
             nltk.download(res, quiet=True)
     except Exception: pass
 
@@ -29,7 +29,7 @@ st.markdown("""
     .stApp { background-color: #0e1117; color: #FFFFFF; }
     [data-testid="stSidebar"] { background-color: #1e293b !important; }
     .notebook-card { background-color: #1e293b; padding: 20px; border-radius: 12px; border-left: 5px solid #3b82f6; margin-bottom: 15px; color: #FFFFFF; }
-    .teacher-board { background-color: #1a202c; border: 2px solid #3b82f6; padding: 30px; border-radius: 15px; font-family: 'Courier New', Courier, monospace; min-height: 300px; color: #e2e8f0; line-height: 1.7; font-size: 1.1rem; }
+    .teacher-board { background-color: #1a202c; border: 2px solid #3b82f6; padding: 35px; border-radius: 15px; font-family: 'Georgia', serif; min-height: 400px; color: #e2e8f0; line-height: 1.8; font-size: 1.15rem; white-space: pre-wrap; }
     .settings-panel { background: #1a202c; border: 1px solid #4a5568; padding: 30px; border-radius: 20px; color: white; }
     </style>
 """, unsafe_allow_html=True)
@@ -44,27 +44,27 @@ with st.sidebar:
 if choice == "📒 Study Assistant":
     st.title("NotebookLM Pro")
     src_type = st.radio("Source Input:", ["Manual Text", "Upload Files"])
-    raw_content = st.text_area("Input Content:", height=150) if src_type == "Manual Text" else "Scientific analysis of research variables and evidence-based methodologies."
+    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your detailed text here...") if src_type == "Manual Text" else ""
 
     # Clean Content
     content = re.sub(r'\b(ix|iv|v?i{0,3}|x|xl|l|c|d|m)\b', '', raw_content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
-        # TABS: Keywords -> Quiz -> Flashcards -> Writing Teacher
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ 10-Question Quiz", "🗂️ 30+ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(content)
         sentences = [str(s) for s in blob.sentences]
         
+        # Smart Keyword Extraction
         words = [w.lower() for w in blob.noun_phrases if len(w) > 3 and not any(c.isdigit() for c in w)]
         if len(words) < 20: 
-            words += ["analysis", "methodology", "framework", "variables", "observation", "evidence", "hypothesis", "conclusion"]
+            words += ["context", "significance", "methodology", "primary data", "theoretical framework", "analytical approach"]
         words = list(dict.fromkeys(words))
 
         with t1:
             st.subheader("Extracted Keywords")
             for phrase in words[:12]:
-                st.markdown(f'<div class="notebook-card"><b>Core Topic:</b> {phrase.title()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
 
         with t2:
             st.subheader("Graded Quiz")
@@ -75,59 +75,68 @@ if choice == "📒 Study Assistant":
                 opts = [target] + wrong_opts
                 random.seed(i)
                 random.shuffle(opts)
-                st.write(f"**Q{i+1}:** Identify the concept that best fits the context of: **{target.upper()}**")
-                user_choice = st.radio("Choose one:", opts, key=f"qz_v7_{i}", index=None)
+                st.write(f"**Q{i+1}:** Regarding the text provided, explain the context of: **{target.upper()}**")
+                user_choice = st.radio("Select the correct answer:", opts, key=f"qz_v8_{i}", index=None)
                 if user_choice == target: score += 1
-            if st.button("Calculate My Grade"):
-                st.metric("Final Score", f"{score}/10")
+            if st.button("Calculate Final Grade"):
+                st.metric("Total Score", f"{score}/10")
 
         with t3:
             st.subheader("30+ Active Recall Cards")
             for i in range(30):
                 term = words[i % len(words)]
-                real_context = next((s for s in sentences if term in s.lower()), f"This topic is a fundamental component of the {term} discussion in your notes.")
-                with st.expander(f"Flashcard {i+1}: Explain the meaning of {term.upper()}"):
-                    if st.checkbox("Reveal Answer", key=f"fcr_v7_{i}"):
-                        st.info(f"**Source Context:** {real_context}")
-                    st.radio("Status:", ["Mastered", "Needs Review"], key=f"fcv_v7_{i}")
+                real_context = next((s for s in sentences if term in s.lower()), f"This concept acts as a critical component in your discussion of {term}.")
+                with st.expander(f"Flashcard {i+1}: Detailed Analysis of {term.upper()}"):
+                    if st.checkbox("Show Answer from Source", key=f"fcr_v8_{i}"):
+                        st.info(f"**Text Reference:** {real_context}")
+                    st.radio("Knowledge Status:", ["Learned", "In Progress"], key=f"fcv_v8_{i}")
 
         with t4:
-            st.subheader("The Writing Teacher")
+            st.subheader("Detailed Lesson Teacher")
             
-            # --- Academic Lesson Generation ---
-            lesson_plan = f"""
-LESSON TOPIC: {words[0].upper()} & {words[1].upper()}
+            # --- Advanced Lesson Logic ---
+            # Extract 3 main sentences from the user's text for a "Deep Dive"
+            sample_insights = sentences[:3] if len(sentences) >= 3 else sentences
+            
+            lesson_content = f"""
+📖 COMPREHENSIVE LESSON: {words[0].upper()}
 
-1. INTRODUCTION:
-Welcome to today's session. We are examining the core principles within your notes. 
-The foundation of this material is built upon '{words[0].title()}'. It is essential to 
-understand this first, as it sets the context for everything that follows.
+---
+I. INTRODUCTION TO THE TOPIC
+In our analysis of the text you provided, the overarching theme centers on '{words[0]}'. 
+To understand this in detail, we must look at how it interacts with '{words[1]}'. 
+The objective of this lesson is to synthesize these points into a clear academic framework.
 
-2. THE DEEP DIVE:
-As we look further, we see the integration of '{words[1]}' and '{words[2]}'. 
-In an academic context, these aren't just isolated terms; they represent the 
-variables you are investigating. For instance, notice how the text emphasizes 
-the role of '{words[3]}' in shaping the overall framework.
+II. DEEP DIVE INTO YOUR CONTENT
+Your text provides several critical insights that we should examine closely:
 
-3. SUMMARY & APPLICATION:
-To conclude, your research into '{words[4]}' highlights a significant finding. 
-When you review these notes, focus on how these elements connect to form a 
-complete picture. Mastering these concepts will be vital for your upcoming 
-assessments.
+1. "{sample_insights[0] if len(sample_insights) > 0 else 'N/A'}"
+This indicates that the primary foundation of your study is built on specific evidence.
 
-Class dismissed. Keep reviewing the keywords for better retention.
+2. "{sample_insights[1] if len(sample_insights) > 1 else 'N/A'}"
+Here, we see a shift toward the methodology or the secondary impact of your concepts.
+
+3. "{sample_insights[2] if len(sample_insights) > 2 else 'N/A'}"
+This final point connects the theoretical aspects of '{words[2]}' to the practical results.
+
+III. CONCLUSION & KEY TAKEAWAY
+The most important lesson here is that '{words[3]}' and '{words[4]}' are not independent; 
+they are linked through your research findings. When reviewing for your IB assessments, 
+focus on the relationship between these specific variables.
+
+Class dismissed. Keep these detailed points in mind for your final report.
             """
 
-            if st.button("✍️ Begin Writing Lesson"):
+            if st.button("✍️ Start Detailed Written Lesson"):
                 board = st.empty()
                 typed_text = ""
-                for char in lesson_plan:
+                for char in lesson_content:
                     typed_text += char
                     board.markdown(f'<div class="teacher-board">{typed_text}▌</div>', unsafe_allow_html=True)
-                    time.sleep(0.015) 
-                board.markdown(f'<div class="teacher-board">{lesson_plan}</div>', unsafe_allow_html=True)
+                    time.sleep(0.01) 
+                board.markdown(f'<div class="teacher-board">{lesson_content}</div>', unsafe_allow_html=True)
             else:
-                st.markdown('<div class="teacher-board">Teacher is ready. Click the button to start the written lecture...</div>', unsafe_allow_html=True)
+                st.markdown('<div class="teacher-board">Whiteboard ready. Click the button to start the lesson based on your input...</div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -143,20 +152,20 @@ elif choice == "⏱️ Time Tracker":
         st.rerun()
 
     m, s = divmod(st.session_state.timer_seconds, 60)
-    st.metric("Time Left", f"{int(m):02d}:{int(s):02d}")
+    st.metric("Focus Time", f"{int(m):02d}:{int(s):02d}")
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
-    st.title("Settings")
+    st.title("User Profile")
     st.markdown("""
         <div class="settings-panel">
             <h2 style='color:#3b82f6;'>VERSO PRO DASHBOARD</h2>
             <p><b>User:</b> Yaseen Amr</p>
-            <p><b>Academic Track:</b> IB MYP2</p>
-            <p><b>Version:</b> 6.5.0</p>
+            <p><b>Program:</b> IB MYP2</p>
+            <p><b>Software:</b> Research Pro 6.8.0</p>
         </div>
     """, unsafe_allow_html=True)
-    if st.button("🔄 Reset Progress"):
+    if st.button("🔄 Reset Global Cache"):
         for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
 
@@ -165,16 +174,3 @@ elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
-
-elif choice == "🌍 Global Translator":
-    st.title("Translator")
-    t_text = st.text_area("Input:")
-    if st.button("Translate"):
-        st.success(GoogleTranslator(source='auto', target='en').translate(t_text))
-
-elif choice == "🛡️ Plagiarism Checker":
-    st.title("Deep Scan")
-    p_text = st.text_area("Check Text:")
-    if st.button("Analyze"):
-        time.sleep(1)
-        st.error("🚨 Similarity Found") if len(p_text.split()) > 20 else st.success("✅ Original")
