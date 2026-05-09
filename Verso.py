@@ -72,10 +72,10 @@ f_scale = st.session_state.get('set_font', 1.1)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# --- EMBEDDED AUDIO PLAYER (BASE64) ---
+# --- HIDDEN PERSISTENT AUDIO PLAYER ---
 st.markdown("""
     <audio id="alarm-sound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YV92T197e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3y">
+        <source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg">
     </audio>
 """, unsafe_allow_html=True)
 
@@ -85,6 +85,8 @@ st.markdown(f"""
     [data-testid="stSidebar"] {{ background-color: #1e293b !important; }}
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
+    .time-up-banner { background-color: red; color: white; padding: 20px; text-align: center; font-weight: bold; border-radius: 10px; font-size: 24px; animation: blinker 1s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0; } }
     </style>
 """, unsafe_allow_html=True)
 
@@ -128,7 +130,7 @@ if choice == "📒 Study Assistant":
                 st.write(f"**Question {i+1}:** Analyze: **{target.upper()}**")
                 ans = st.radio("Select best fit:", opts, key=f"qz_{i}_{st.session_state.reset_counter}", index=None)
                 if ans == target: score += 1
-            if st.button("Submit"): st.metric("Score", f"{score}/10")
+            if st.button("Submit Assessment"): st.metric("Score", f"{score}/10")
         with t3:
             for i in range(20):
                 term = words[i % len(words)]
@@ -192,7 +194,6 @@ elif choice == "⚙️ Settings":
         else: col.button(f"{i}. Command {i}", key=f"b{i}_{v_id}")
     st.success("51. System Optimized")
 
-# --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
     p_text = st.text_area("Paste text:")
@@ -205,13 +206,18 @@ elif choice == "🏠 Home":
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
-# --- TIME TRACKER (HIGH RELIABILITY) ---
+# --- MODULE: TIME TRACKER (RELIABLE VERSION) ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     
-    if st.button("🔊 UNLOCK SOUND ENGINE"):
-        components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); audio.play().then(() => { audio.pause(); audio.currentTime = 0; });</script>""", height=0)
-        st.toast("Sound Engine Initialized!")
+    if st.button("🔊 ACTIVATE SOUND ENGINE (Required for alarm)"):
+        components.html("""
+            <script>
+                var audio = window.parent.document.getElementById('alarm-sound');
+                audio.play(); // Play 0.1s beep to prove it works
+            </script>
+        """, height=0)
+        st.toast("Sound Engine Online!")
 
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
@@ -236,12 +242,14 @@ elif choice == "⏱️ Time Tracker":
     timer_display = st.empty()
     m, s = divmod(st.session_state.remaining_at_pause, 60)
     timer_display.metric("Status: Running" if st.session_state.timer_active else "Status: Paused", f"{int(m):02d}:{int(s):02d}")
+    
     if st.session_state.timer_active:
         time.sleep(1)
         st.rerun()
 
-# --- GLOBAL TRIGGER FOR SOUND & BALLOONS ---
+# --- FINAL GLOBAL SOUND TRIGGER ---
 if st.session_state.get('timer_finished_trigger'):
+    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True)
     st.session_state.timer_finished_trigger = False
     st.balloons()
     components.html("""
@@ -249,9 +257,11 @@ if st.session_state.get('timer_finished_trigger'):
             var audio = window.parent.document.getElementById('alarm-sound');
             if (audio) {
                 audio.currentTime = 0;
+                audio.loop = true;
                 audio.play();
-                setTimeout(function(){ audio.pause(); }, 6000); // Ring for 6 seconds
+                // Stops automatically after 10 seconds so it doesn't annoy you forever
+                setTimeout(function(){ audio.pause(); }, 10000); 
             }
         </script>
     """, height=0)
-    st.toast("⏰ Time's Up!")
+    st.toast("⏰ Timer Finished!")
