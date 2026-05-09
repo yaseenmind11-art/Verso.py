@@ -21,7 +21,7 @@ def setup_system():
 
 setup_system()
 
-# --- 📊 GOOGLE ANALYTICS: VERSO RESEARCH PRO ---
+# --- 📊 GOOGLE ANALYTICS: UPDATED TRACKING ---
 def inject_analytics():
     ga_id = "G-030XWBG97P" 
     ga_code = f"""
@@ -30,7 +30,10 @@ def inject_analytics():
       window.dataLayer = window.dataLayer || [];
       function gtag(){{dataLayer.push(arguments);}}
       gtag('js', new Date());
-      gtag('config', '{ga_id}');
+      gtag('config', '{ga_id}', {{
+        'page_location': window.parent.location.href,
+        'debug_mode': true
+      }});
     </script>
     """
     components.html(ga_code, height=0)
@@ -43,24 +46,32 @@ st.set_page_config(
 )
 inject_analytics()
 
-# --- FORCE DARK MODE STYLING ---
+# --- FORCE DARK MODE & THEME STYLING ---
 st.markdown("""
     <style>
-    /* Force dark background for the whole app */
+    /* Main App Background */
     .stApp {
         background-color: #0e1117;
         color: #FFFFFF;
     }
+    
+    /* Input field styling (White/Grey preference) */
+    input, textarea {
+        background-color: #f1f5f9 !important;
+        color: #1e293b !important;
+    }
+    
     .instruction-box {
         background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
         padding: 20px; border-radius: 15px; margin-bottom: 25px; color: #cbd5e1; font-style: italic;
     }
+    
     .notebook-card {
         background-color: #1e293b; padding: 15px; border-radius: 10px;
         border-left: 5px solid #3b82f6; margin-bottom: 10px;
     }
     
-    /* Clipping Container for Google Header/Footer */
+    /* Search Container Clipping */
     .search-container {
         overflow: hidden; 
         border-radius: 15px; 
@@ -72,7 +83,7 @@ st.markdown("""
         width: 100%; 
         height: 1000px; 
         border: none; 
-        margin-top: -120px; /* Clips top search bar/header */
+        margin-top: -120px; 
     }
     </style>
 """, unsafe_allow_html=True)
@@ -95,7 +106,7 @@ LANGUAGES = {
     'Ukrainian': 'uk', 'Urdu': 'ur', 'Vietnamese': 'vi', 'Welsh': 'cy', 'Yoruba': 'yo'
 }
 
-# --- Sidebar Navigation ---
+# --- Sidebar ---
 with st.sidebar:
     st.title("VERSO PRO")
     choice = st.radio("Navigation", [
@@ -106,6 +117,7 @@ with st.sidebar:
 
 # --- MODULE 1: HOME ---
 if choice == "🏠 Home":
+    inject_analytics() # Re-trigger to ensure home tracking
     st.title("VERSO RESEARCH")
     st.subheader("Welcome, Yaseen Amr")
     st.markdown('<div class="instruction-box">"Search professional academic results directly within the dashboard."</div>', unsafe_allow_html=True)
@@ -144,7 +156,6 @@ elif choice == "📚 Citation Helper":
                     full_cit = f"Editor. ({year}). *{title}*. {site_name.title()}. {source_url}"
                     
                     st.markdown("### Your APA Citation:")
-                    # Note: Using dark background for the citation box itself for readability
                     st.markdown(f"""
                         <div style="background-color: #1e293b; padding: 25px; border-radius: 5px; border-left: 12px solid #3b82f6; color: #FFFFFF; font-family: 'Times New Roman', serif; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                             {full_cit}
@@ -185,7 +196,7 @@ elif choice == "📒 Study Assistant":
             for phrase in list(set(blob.noun_phrases))[:5]:
                 st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
 
-# --- OTHER TOOLS ---
+# --- REMAINING TOOLS ---
 elif choice == "🔍 Smart Analysis":
     st.title("Universal Writing Analyzer")
     draft = st.text_area("Paste writing here:", height=250)
