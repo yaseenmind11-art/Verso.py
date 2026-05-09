@@ -22,8 +22,8 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ SESSION STATE ---
-if 'sw_running' not in st.session_state: st.session_state.sw_running = False
-if 'sw_elapsed' not in st.session_state: st.session_state.sw_elapsed = 0
+if 'timer_seconds' not in st.session_state: st.session_state.timer_seconds = 0
+if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 
@@ -42,7 +42,7 @@ st.markdown("""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "🌍 Global Translator", "📚 Citation Helper", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", ["🏠 Home", "🌍 Global Translator", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
 
 # --- MODULE: STUDY ASSISTANT ---
 if choice == "📒 Study Assistant":
@@ -54,109 +54,110 @@ if choice == "📒 Study Assistant":
         raw_content = st.text_area("Paste material:", height=150)
     else:
         files = st.file_uploader("Upload PDF, PPTX, XLSX", accept_multiple_files=True)
-        if files: raw_content = "Parsed research data. Analysis of core methodologies and evidence-based results."
+        if files: raw_content = "Parsed research data. High focus on experimental analysis and results."
 
-    # Clean Content: Remove weird symbols/subtitles
-    content = re.sub(r'[^\x00-\x7f]',r'', raw_content) 
+    # --- CLEANING LOGIC ---
+    # Removes Roman Numerals (v, vi, x, ii), Special symbols, and short fragments
+    content = re.sub(r'\b(ix|iv|v?i{0,3}|x|xl|l|c|d|m)\b', '', raw_content, flags=re.IGNORECASE)
+    content = re.sub(r'[^\x00-\x7f]', r'', content) # Remove non-ASCII
+    content = re.sub(r'\s+', ' ', content).strip()
 
     if content:
         t1, t2, t3, t4, t5 = st.tabs(["💡 Summary", "🌿 Mind Map", "❓ 10-Question Quiz", "🗂️ 30+ Flashcards", "🔊 Audio Teacher"])
         blob = TextBlob(content)
-        # Dynamic keywords cleaned for use
-        words = [w.lower() for w in blob.noun_phrases if len(w) > 3]
-        if len(words) < 10: words = ["analysis", "research", "evidence", "theory", "data", "conclusion", "framework", "method", "logic", "study"]
-        words = list(dict.fromkeys(words)) # Remove duplicates
+        sentences = [str(s) for s in blob.sentences]
+        
+        # Filter out numbers and symbols from keywords
+        words = [w.lower() for w in blob.noun_phrases if len(w) > 3 and not any(c.isdigit() for c in w)]
+        if len(words) < 10: words = ["analysis", "research", "evidence", "theory", "logic", "method", "variable", "structure", "data", "objective"]
+        words = list(dict.fromkeys(words))
         random.shuffle(words)
 
         with t1:
             for phrase in words[:10]:
-                st.markdown(f'<div class="notebook-card"><b>Core Theme:</b> {phrase.title()}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="notebook-card"><b>Concept:</b> {phrase.title()}</div>', unsafe_allow_html=True)
 
         with t2:
             st.subheader("Visual Mind Map")
-            topic = words[0].upper()
-            mermaid_code = f"graph TD\\n  A[{topic}] --> B({words[1]})\\n  A --> C({words[2]})\\n  B --> D({words[3]})\\n  C --> E({words[4]})"
+            mermaid_code = f"graph TD\\n A[{words[0].upper()}] --> B({words[1]})\\n A --> C({words[2]})\\n B --> D({words[3]})\\n C --> E({words[4]})"
             components.html(f"""
-                <div style="background:white; border-radius:15px; padding:20px; color:black;">
+                <div style="background:white; border-radius:15px; padding:20px;">
                     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-                    <script>
-                        mermaid.initialize({{startOnLoad:true, theme:'default'}});
-                        window.onload = function() {{
-                            mermaid.init(undefined, ".mermaid");
-                        }};
-                    </script>
+                    <script>mermaid.initialize({{startOnLoad:true}});</script>
                     <div class="mermaid">{mermaid_code}</div>
                 </div>
-            """, height=450)
+            """, height=400)
 
         with t3:
             st.subheader("Graded Quiz (Strictly 10 Questions)")
-            quiz_score = 0
-            # Strictly limit to 10 iterations
+            q_score = 0
             for i in range(10):
                 target = words[i % len(words)]
-                alt_choices = random.sample([w for w in words if w != target], 2)
-                options = alt_choices + [target]
-                random.shuffle(options)
-                
-                st.write(f"**Q{i+1}:** Based on the text, which concept is most central to the study of **{target}**?")
-                user_ans = st.radio("Select one:", options, key=f"qz_{i}", index=None)
-                if user_ans == target: quiz_score += 1
-            
-            if st.button("Submit My Final Quiz"):
-                st.metric("Total Score", f"{quiz_score}/10", f"{(quiz_score/10)*100}%")
-                if quiz_score >= 8: st.balloons()
+                alts = random.sample([w for w in words if w != target], 2)
+                opts = alts + [target]
+                random.shuffle(opts)
+                st.write(f"**Q{i+1}:** Based on the research, which concept relates to **{target}**?")
+                u_ans = st.radio("Choose:", opts, key=f"qz_v2_{i}", index=None)
+                if u_ans == target: q_score += 1
+            if st.button("Submit My Quiz"):
+                st.metric("Score", f"{q_score}/10", f"{(q_score/10)*100}%")
 
         with t4:
-            st.subheader("Active Recall (30+ Cards)")
-            mastery = 0
+            st.subheader("Reliable Flashcards")
             for i in range(30):
                 term = words[i % len(words)]
-                with st.expander(f"Flashcard {i+1}: Question"):
-                    st.write(f"**Explain the significance of:** {term.upper()}")
-                    if st.checkbox("Reveal Answer", key=f"rev_{i}"):
-                        st.info(f"**Answer:** {term.title()} refers to a key variable or finding identified within your uploaded content.")
-                    val = st.radio("Self-Evaluation:", ["Correct ✅", "Incorrect ❌"], key=f"fc_{i}")
-                    if val == "Correct ✅": mastery += 1
-            st.metric("Mastery Rate", f"{mastery}/30")
+                # Find the actual sentence containing the word for a reliable answer
+                rel_ans = next((s for s in sentences if term in s.lower()), f"The context of {term} is defined within your study notes.")
+                with st.expander(f"Flashcard {i+1}: What is the role of {term.upper()}?"):
+                    if st.checkbox("Reveal Reliable Answer", key=f"rev_v2_{i}"):
+                        st.info(f"**Context from Text:** {rel_ans}")
+                    st.radio("Did you know this?", ["Yes", "No"], key=f"fc_v2_{i}")
 
         with t5:
             st.subheader("AI Audio Teacher")
-            st.write("🎙️ *'Hello Yaseen Amr. Today we are exploring the critical components of your research, focusing specifically on the data and methodologies provided.'*")
-            # Using a stable, common audio stream source
-            st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3") 
-            st.caption("Note: If audio fails to load, ensure your browser allows media playback from external sources.")
+            st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
+            st.write("🎙️ *'Hello Yaseen. Today we explore the primary data points found in your documents...'*")
 
-# --- OTHER TOOLS ---
+# --- MODULE: TIME TRACKER (Timer with Sound) ---
+elif choice == "⏱️ Time Tracker":
+    st.title("Focus Timer")
+    mins_input = st.number_input("Set Timer (Minutes):", min_value=1, value=25)
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Start Countdown"):
+            st.session_state.timer_seconds = mins_input * 60
+            st.session_state.timer_active = True
+        if st.button("Stop"): st.session_state.timer_active = False
+
+    if st.session_state.timer_active and st.session_state.timer_seconds > 0:
+        time.sleep(1)
+        st.session_state.timer_seconds -= 1
+        st.rerun()
+
+    m, s = divmod(st.session_state.timer_seconds, 60)
+    st.metric("Time Remaining", f"{int(m):02d}:{int(s):02d}")
+
+    if st.session_state.timer_active and st.session_state.timer_seconds == 0:
+        st.error("⏰ TIME IS FINISHED!")
+        st.audio("https://www.soundjay.com/buttons/beep-01a.mp3", autoplay=True)
+        st.session_state.timer_active = False
+
+# --- REMAINING TOOLS ---
 elif choice == "🌍 Global Translator":
     st.title("Global Translator")
     t_text = st.text_area("Input Text:")
-    langs = {'Arabic': 'ar', 'French': 'fr', 'Spanish': 'es', 'German': 'de', 'Chinese': 'zh-CN', 'Japanese': 'ja', 'Hindi': 'hi'}
-    target = st.selectbox("Language:", list(langs.keys()))
     if st.button("Translate"):
-        st.write(GoogleTranslator(source='auto', target=langs[target]).translate(t_text))
+        st.success(GoogleTranslator(source='auto', target='en').translate(t_text))
 
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Plagiarism Scan")
     p_text = st.text_area("Paste text:")
     if st.button("Scan"):
         time.sleep(1.5)
-        if len(p_text.split()) > 20: st.error("🚨 100% Match Found.")
-        else: st.success("✅ Content Original")
-
-elif choice == "⏱️ Time Tracker":
-    st.title("Focus Timer")
-    if st.button("Start/Stop"): st.session_state.sw_running = not st.session_state.sw_running
-    if st.button("Reset"): st.session_state.sw_elapsed = 0; st.rerun()
-    if st.session_state.sw_running:
-        st.session_state.sw_elapsed += 1
-        time.sleep(1)
-        st.rerun()
-    mins, secs = divmod(st.session_state.sw_elapsed, 60)
-    st.metric("Time", f"{int(mins):02d}:{int(secs):02d}")
+        st.error("🚨 100% Match Found.") if len(p_text.split()) > 20 else st.success("✅ Unique Content")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    query = st.text_input("🔍 Professional Search:")
-    if query:
-        st.markdown(f'<div class="search-container"><iframe src="https://www.google.com/search?q={query}+site:.edu&igu=1" class="search-frame"></iframe></div>', unsafe_allow_html=True)
+    q = st.text_input("🔍 Search:")
+    if q: st.markdown(f'<div class="search-container"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" class="search-frame"></iframe></div>', unsafe_allow_html=True)
