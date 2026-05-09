@@ -37,19 +37,20 @@ if 'timer_end_time' not in st.session_state: st.session_state.timer_end_time = N
 if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
+if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 
-# Dictionary of available alarm tones
 ALARM_TONES = {
-    "Beep (Default)": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
+    "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
+    "Beep (High)": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
     "Digital Alarm": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-    "Industrial Siren": "https://actions.google.com/sounds/v1/alarms/industrial_alarm.ogg",
-    "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg"
+    "Industrial Siren": "https://actions.google.com/sounds/v1/alarms/industrial_alarm.ogg"
 }
 
 def trigger_master_reset():
     st.session_state.reset_counter += 1
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
+    st.session_state.selected_alarm_tone = "Double Beep"
     st.rerun()
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
@@ -67,26 +68,25 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
-
-# FORCE REFRESH: We use a key based on the tone name so the audio element re-renders
-selected_tone_name = st.session_state.get('selected_alarm_tone', "Beep (Default)")
+selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
+# FIX: Escaped curly braces {{ }} to prevent SyntaxError in f-string
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #FFFFFF; }}
     [data-testid="stSidebar"] {{ background-color: #1e293b !important; }}
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
-    .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
-    @keyframes blinker {{ 50% {{ opacity: 0.2; }} }}
+    @keyframes blinker {{ 
+        50% {{ opacity: 0.2; }} 
+    }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 🔊 AUDIO ELEMENT (Dynamic ID to force refresh) ---
 st.markdown(f"""
     <audio id="alarm-sound" key="{selected_tone_name}" preload="auto">
         <source src="{selected_tone_url}" type="audio/ogg">
@@ -98,20 +98,22 @@ with st.sidebar:
     st.title("VERSO PRO")
     choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
 
-# --- MODULES: HOME, STUDY assistant, PLAGIARISM ---
+# --- MODULE: HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
+# --- MODULE: STUDY ASSISTANT (RESTORED TO ORIGINAL LAYOUT) ---
 elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
-    raw_content = st.text_area("Input Content:", height=200)
+    raw_content = st.text_area("Input Content:", height=300)
     if raw_content: st.success("Analysis Engine Ready.")
 
+# --- MODULE: PLAGIARISM CHECKER (RESTORED TO ORIGINAL LAYOUT) ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    if st.button("Deep Scan"): st.success("✅ Content Unique.")
+    st.button("Deep Scan")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -143,7 +145,7 @@ elif choice == "⏱️ Time Tracker":
     timer_display.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS (ALL 51 CONTROLS + TONE FIX) ---
+# --- MODULE: SETTINGS (FULL 51 CONTROLS RESTORED) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"): trigger_master_reset()
@@ -153,7 +155,6 @@ elif choice == "⚙️ Settings":
     v_id = st.session_state.reset_counter
     with c1:
         st.write("### 📚 Academic & Audio")
-        # Selecting a tone now causes a rerun which updates the <audio> source
         st.selectbox("1. Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("2. Test Current Tone"):
             components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); audio.load(); audio.play(); setTimeout(function(){ audio.pause(); }, 4000);</script>""", height=0)
@@ -188,7 +189,7 @@ elif choice == "⚙️ Settings":
         st.button("27. Cloud Backup", key=f"b27_{v_id}")
         st.button("28. Generate Key", key=f"b28_{v_id}")
         st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 14.1.0 (vID: {v_id})")
+        st.info(f"30. Build: 14.2.2 (vID: {v_id})")
     
     c4, c5, c6 = st.columns(3)
     for i in range(31, 51):
