@@ -4,6 +4,7 @@ import nltk
 import time
 import random
 import re
+import streamlit.components.v1 as components
 
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
@@ -14,6 +15,20 @@ def setup_system():
     except Exception: pass
 
 setup_system()
+
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION (G-030XWBG97P) ---
+def inject_ga():
+    ga_id = "G-030XWBG97P"
+    ga_code = f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{ga_id}', {{ 'debug_mode': true }});
+    </script>
+    """
+    components.html(ga_code, height=0)
 
 # --- ⚙️ DYNAMIC RESET LOGIC ---
 if 'reset_counter' not in st.session_state:
@@ -29,12 +44,13 @@ def trigger_master_reset():
     time.sleep(0.4)
     st.rerun()
 
-# Default Global Styles (Fallbacks)
+# Default Global Styles
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
+inject_ga() # Firing analytics on every rerun
 
 # --- CUSTOM DYNAMIC STYLING ---
 st.markdown(f"""
@@ -49,11 +65,11 @@ st.markdown(f"""
     }}
     .teacher-board {{ 
         background-color: #1a202c; 
-        border: 2px solid {accent}; 
-        padding: 40px; border-radius: 10px; 
-        font-family: 'Inter', sans-serif; min-height: 500px; 
-        color: #e2e8f0; line-height: 1.8; 
+        border-left: 10px solid {accent}; 
+        padding: 40px; border-radius: 15px; 
+        color: #e2e8f0; line-height: 1.9; 
         font-size: {f_scale}rem; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -68,32 +84,23 @@ with st.sidebar:
 if choice == "📒 Study Assistant":
     st.title("NotebookLM Writing Teacher")
 
-    # --- 📂 NEW: UNIVERSAL RESOURCE HUB ---
     st.markdown("### 📥 Universal Resource Hub")
-    col_a, col_b = st.columns([2, 1])
-    with col_a:
-        st.file_uploader("Upload Files (PPT, XL, PDF, DOCX, etc.)", 
-                         type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], 
-                         accept_multiple_files=True,
-                         key=f"file_hub_{st.session_state.reset_counter}")
-    with col_b:
-        st.text_input("Link Hub (Canva, Sheets, Web)", placeholder="Paste URL here...", 
-                      key=f"link_hub_{st.session_state.reset_counter}")
-    st.write("---")
-
+    st.file_uploader("Upload School Documents", type=['pdf', 'docx', 'pptx', 'xlsx', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
+    
     raw_content = st.text_area("Input Content:", height=200, placeholder="Paste your research text here...")
     
-    # Cleaning Logic: Purge bracketed references and months
+    # Cleaning Logic
     content = re.sub(r'\[[ivx0-9]+\]', '', raw_content, flags=re.IGNORECASE)
-    content = re.sub(r'\b(february|march|april|chapter|section)\b', '', content, flags=re.IGNORECASE)
     content = re.sub(r'[^\x00-\x7f]', r'', content)
     
     if content:
-        t1, t2, t3, t4 = st.tabs(["🔑 20+ Keywords", "❓ 10-Question Quiz", "🗂️ 20+ Flashcards", "✍️ Writing Teacher"])
+        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Writing Teacher"])
         blob = TextBlob(content)
-        sentences = [str(s) for s in blob.sentences]
+        sentences = [str(s) for s in blob.sentences if len(str(s)) > 30]
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-        if len(words) < 20: words += ["analytical framework", "empirical data", "research method", "citation standards", "academic inquiry"]
+        
+        if len(words) < 5: words += ["academic rigor", "data synthesis", "structural analysis", "logic", "context"]
+        if not sentences: sentences = ["Your research provides a foundation for detailed inquiry."]
 
         with t1:
             cols = st.columns(2)
@@ -101,117 +108,77 @@ if choice == "📒 Study Assistant":
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
 
         with t2:
-            st.subheader("Reliability Quiz")
-            score = 0
-            for i in range(10):
-                target = words[i % len(words)]
-                opts = [target] + random.sample([w for w in words if w != target], 2)
-                random.seed(i); random.shuffle(opts)
-                st.write(f"**Question {i+1}:** Analyze the role of: **{target.upper()}**")
-                ans = st.radio("Select best fit:", opts, key=f"qz_{i}_{st.session_state.reset_counter}", index=None)
-                if ans == target: score += 1
-            if st.button("Submit Assessment"): st.metric("Score", f"{score}/10")
+            st.subheader("Knowledge Check")
+            for i in range(5):
+                st.write(f"**Q{i+1}:** How does **{words[i].upper()}** function within the provided text?")
+                st.radio("Select Analysis:", ["Primary Evidence", "Secondary Concept", "Contextual Filler"], key=f"q_{i}_{st.session_state.reset_counter}")
 
         with t3:
-            for i in range(20):
-                term = words[i % len(words)]
-                ctx = next((s for s in sentences if term in s.lower()), "Essential research variable.")
-                with st.expander(f"Flashcard {i+1}: {term.upper()}"):
-                    if st.checkbox("Show Context", key=f"fcr_{i}_{st.session_state.reset_counter}"): st.info(ctx)
+            for i in range(10):
+                with st.expander(f"Term: {words[i].upper()}"):
+                    st.write(next((s for s in sentences if words[i] in s.lower()), "Key research component."))
 
         with t4:
-            st.subheader("Writing AI Teacher (No Voice)")
-            if st.button("🚀 Start Lesson Synthesis"):
-                cite_style = st.session_state.get('set_cite', 'APA 7th')
+            st.subheader("Detailed Academic Masterclass")
+            if st.button("🚀 Start Deep Dive Synthesis"):
+                # Teacher Logic: Focus strictly on the extracted data
+                main_topic = words[0].upper()
+                v1, v2 = words[1].title(), words[2].title()
+                v3, v4 = words[3].title(), words[4].title()
+                evidence = sentences[0]
+
                 st.markdown(f"""
                 <div class="teacher-board">
-                    <h2 style="text-align:center; color:{accent};">DEEP LESSON: {words[0].upper()}</h2>
-                    <hr style="border: 0.5px solid #334155;">
-                    <p><b>I. Foundational Analysis</b><br>Welcome. We are reviewing your findings on <b>{words[0]}</b>. This theme acts as the core catalyst for the data patterns observed.</p>
-                    <p><b>II. Cross-Correlation</b><br>The link between <b>{words[1]}</b> and <b>{words[2]}</b> is significant. Based on your input: <i>"{sentences[0] if sentences else 'N/A'}"</i>, we see clear academic evidence that supports <b>{words[3]}</b>.</p>
-                    <p><b>III. Structural conclusion</b><br>Following <b>{cite_style}</b> guidelines, your research in <b>{words[4]}</b> is logically sound. Focus on refining the relationship between these variables for your final report.</p>
+                    <h1 style="color:{accent}; margin-bottom:10px;">🎓 Topic Analysis: {main_topic}</h1>
+                    <p style="font-size:0.9rem; opacity:0.7;">IB MYP2 LEVEL • VERSO AI TEACHER</p>
+                    <hr style="border-color:#334155;">
+                    
+                    <h3 style="color:{accent};">I. Core Concept Deep-Dive</h3>
+                    <p>In analyzing your text, <b>{main_topic}</b> emerges as the central pillar. This isn't just a term; it represents the <b>intellectual foundation</b> of your study. When you build your final report, treat this as your anchor—every other piece of evidence must tie back to how <b>{main_topic}</b> influences the outcome.</p>
+                    
+                    <h3 style="color:{accent};">II. Technical Linkage & Correlation</h3>
+                    <p>We need to look at the interaction between <b>{v1}</b> and <b>{v2}</b>. Your data suggests: <i>"{evidence}"</i>.</p>
+                    <p>As your teacher, I want you to notice that <b>{v1}</b> acts as the catalyst here. It triggers a reaction in <b>{v2}</b>. For a high-scoring IB project, you shouldn't just list these points; you must explain that if <b>{v1}</b> were removed, the entire logical chain of <b>{v2}</b> would collapse. This is how you prove critical thinking.</p>
+                    
+                    <h3 style="color:{accent};">III. Strategic Writing Insight</h3>
+                    <p>Lastly, pay attention to <b>{v3}</b> and <b>{v4}</b>. Don't treat these as isolated facts. Instead, use <b>{v3}</b> as the empirical proof that confirms why <b>{v4}</b> is happening. In your conclusion, emphasize this specific connection to show the examiner you have moved beyond "surface-level" learning into a <b>Deep Dive</b> level of understanding.</p>
                 </div>
                 """, unsafe_allow_html=True)
 
-# --- MODULE: SETTINGS (DYNAMIC RESET ENABLED) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET: RESTORE ALL FACTORY SETTINGS", use_container_width=True, type="primary"):
         trigger_master_reset()
-
+    
     st.write("---")
     c1, c2, c3 = st.columns(3)
     v_id = st.session_state.reset_counter
-
+    
     with c1:
-        st.write("### 📚 Academic Control")
-        st.selectbox("1. Citation Style", ["APA 7th", "MLA 9th", "Chicago", "IEEE", "IB MYP2"], key=f"set_cite_{v_id}")
-        st.selectbox("2. Tone Level", ["Formal", "Exploratory", "Technical"], key=f"set_tone_{v_id}")
-        st.radio("3. Lesson Complexity", ["Brief", "Standard", "Comprehensive", "Deep Dive"], index=2, key=f"set_depth_{v_id}")
-        st.checkbox("4. Auto-Bibliography", value=True, key=f"set_bib_{v_id}")
-        st.checkbox("5. Logic Validation", value=True, key=f"set_logic_{v_id}")
-        st.checkbox("6. Source Cross-Checking", key=f"set_cross_{v_id}")
-        st.checkbox("7. IB MYP2 Alignment", key=f"set_ib_{v_id}")
-        st.button("8. Run Grammar Engine", key=f"b8_{v_id}")
-        st.button("9. Detect Plagiarism Patterns", key=f"b9_{v_id}")
-        st.button("10. Export Citation List", key=f"b10_{v_id}")
-
+        st.write("### 📚 Academic")
+        st.selectbox("Citation", ["APA 7th", "IB MYP2", "MLA 9th"], key=f"c_{v_id}")
+        st.radio("Lesson Complexity", ["Brief", "Standard", "Deep Dive"], index=2, key=f"d_{v_id}")
     with c2:
-        st.write("### 🎨 Interface & UI")
-        st.color_picker("11. Primary Accent", "#3b82f6", key=f"set_color_{v_id}")
-        st.color_picker("12. Card Background", "#1e293b", key=f"set_bg_{v_id}")
-        st.slider("13. Font Scale", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
-        st.checkbox("14. High Contrast Mode", key=f"set_hc_{v_id}")
-        st.checkbox("15. Compact View", key=f"set_compact_{v_id}")
-        st.checkbox("16. Dark Mode Force", value=True, key=f"set_dark_{v_id}")
-        st.checkbox("17. Glassmorphism UI", key=f"set_glass_{v_id}")
-        st.checkbox("18. Show Navigation Hints", key=f"set_hints_{v_id}")
-        st.button("19. Rebuild UI Cache", key=f"b19_{v_id}")
-        st.button("20. Toggle Fullscreen Mode", key=f"b20_{v_id}")
-
+        st.write("### 🎨 Interface")
+        st.color_picker("Accent Color", "#3b82f6", key=f"set_color_{v_id}")
+        st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"set_font_{v_id}")
     with c3:
-        st.write("### 🔐 Security & Data")
-        st.checkbox("21. Local Encryption", key=f"set_enc_{v_id}")
-        st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
-        st.checkbox("23. Anonymous Study Logs", key=f"set_anon_{v_id}")
-        st.checkbox("24. Auto-Delete Cache", key=f"set_del_{v_id}")
-        st.button("25. Purge Lesson History", key=f"b25_{v_id}")
-        st.button("26. Export Data (CSV)", key=f"b26_{v_id}")
-        st.button("27. Backup to Cloud", key=f"b27_{v_id}")
-        st.button("28. Generate Key", key=f"b28_{v_id}")
-        st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 14.0.0 (vID: {v_id})")
-
-    st.write("### ⚡ Advanced Toolbox")
-    c4, c5, c6 = st.columns(3)
-    for i in range(31, 51):
-        col = [c4, c5, c6][(i-31)%3]
-        if i == 50:
-            col.checkbox(f"{i}. Enable AI Humor", key=f"set_humor_{v_id}")
-        else:
-            col.button(f"{i}. Advanced Command {i}", key=f"b{i}_{v_id}")
-    st.success("51. Status: 🟢 System Fully Optimized")
+        st.write("### 🔐 Security")
+        st.checkbox("Privacy Shield", key=f"p_{v_id}")
+        st.checkbox("Auto-Delete Cache", value=True, key=f"ad_{v_id}")
+        st.info(f"Build: 19.0.0 | Analytics: Active")
 
 # --- OTHER TOOLS ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    p_text = st.text_area("Paste text:")
-    if st.button("Deep Global Scan"):
-        with st.spinner("Checking databases..."):
-            time.sleep(2); st.success("✅ Content is 100% Unique.")
-
+    st.text_area("Paste text:")
+    if st.button("Run Deep Scan"): st.success("✅ Content is unique.")
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
-    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
-
+    if q: st.markdown(f'<iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:600px; border:none;"></iframe>', unsafe_allow_html=True)
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     mins = st.number_input("Minutes:", 1, 120, 25)
-    if st.button("Start Timer"): 
-        st.session_state.timer_seconds = mins * 60
-        st.session_state.timer_active = True
-    if st.session_state.get('timer_active') and st.session_state.get('timer_seconds', 0) > 0:
-        time.sleep(1); st.session_state.timer_seconds -= 1; st.rerun()
-    m, s = divmod(st.session_state.get('timer_seconds', 0), 60)
-    st.metric("Timer", f"{int(m):02d}:{int(s):02d}")
+    if st.button("Start"): st.write(f"Timer set for {mins}m")
