@@ -67,7 +67,10 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
-selected_tone_url = ALARM_TONES.get(st.session_state.get('selected_alarm_tone'), ALARM_TONES["Beep (Default)"])
+
+# FORCE REFRESH: We use a key based on the tone name so the audio element re-renders
+selected_tone_name = st.session_state.get('selected_alarm_tone', "Beep (Default)")
+selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
@@ -83,9 +86,9 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 🔊 THE AUTOMATIC SOUND ENGINE ---
+# --- 🔊 AUDIO ELEMENT (Dynamic ID to force refresh) ---
 st.markdown(f"""
-    <audio id="alarm-sound" preload="auto">
+    <audio id="alarm-sound" key="{selected_tone_name}" preload="auto">
         <source src="{selected_tone_url}" type="audio/ogg">
     </audio>
 """, unsafe_allow_html=True)
@@ -95,7 +98,7 @@ with st.sidebar:
     st.title("VERSO PRO")
     choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
 
-# --- MODULES: HOME, STUDY, PLAGIARISM ---
+# --- MODULES: HOME, STUDY assistant, PLAGIARISM ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
@@ -103,7 +106,6 @@ if choice == "🏠 Home":
 
 elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
-    st.markdown("### 📥 Universal Resource Hub")
     raw_content = st.text_area("Input Content:", height=200)
     if raw_content: st.success("Analysis Engine Ready.")
 
@@ -120,7 +122,7 @@ elif choice == "⏱️ Time Tracker":
             st.session_state.sound_unlocked = True
             st.rerun()
     else:
-        st.success(f"✅ Alarm Active: {st.session_state.get('selected_alarm_tone', 'Beep (Default)')}")
+        st.success(f"✅ Active Tone: {selected_tone_name}")
 
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3, c4 = st.columns(4)
@@ -141,20 +143,20 @@ elif choice == "⏱️ Time Tracker":
     timer_display.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS (FULL 51 CONTROLS RESTORED) ---
+# --- MODULE: SETTINGS (ALL 51 CONTROLS + TONE FIX) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", use_container_width=True, type="primary"): trigger_master_reset()
     st.write("---")
     
-    # --- ROW 1: ACADEMIC & AUDIO ---
     c1, c2, c3 = st.columns(3)
     v_id = st.session_state.reset_counter
     with c1:
         st.write("### 📚 Academic & Audio")
+        # Selecting a tone now causes a rerun which updates the <audio> source
         st.selectbox("1. Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("2. Test Alarm"):
-            components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); audio.currentTime = 0; audio.play(); setTimeout(function(){ audio.pause(); }, 3000);</script>""", height=0)
+        if st.button("2. Test Current Tone"):
+            components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); audio.load(); audio.play(); setTimeout(function(){ audio.pause(); }, 4000);</script>""", height=0)
         st.selectbox("3. Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"set_cite_{v_id}")
         st.selectbox("4. Tone Level", ["Formal", "Technical"], key=f"set_tone_{v_id}")
         st.radio("5. Lesson Complexity", ["Brief", "Standard", "Deep Dive"], index=1, key=f"set_depth_{v_id}")
@@ -186,9 +188,8 @@ elif choice == "⚙️ Settings":
         st.button("27. Cloud Backup", key=f"b27_{v_id}")
         st.button("28. Generate Key", key=f"b28_{v_id}")
         st.button("29. Integrity Check", key=f"b29_{v_id}")
-        st.info(f"30. Build: 14.0.0 (vID: {v_id})")
+        st.info(f"30. Build: 14.1.0 (vID: {v_id})")
     
-    # --- ROW 2: EXTRA CONTROLS ---
     c4, c5, c6 = st.columns(3)
     for i in range(31, 51):
         col = [c4, c5, c6][(i-31)%3]
@@ -200,5 +201,5 @@ elif choice == "⚙️ Settings":
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True)
     st.balloons()
-    components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); if (audio) { audio.currentTime = 0; audio.play(); }</script>""", height=0)
+    components.html("""<script>var audio = window.parent.document.getElementById('alarm-sound'); if (audio) { audio.load(); audio.play(); }</script>""", height=0)
     if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
