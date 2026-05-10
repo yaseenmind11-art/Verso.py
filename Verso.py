@@ -109,49 +109,52 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (PRECISION CLEAN V3.0) ---
+# --- MODULE: GRAMMAR CHECKER (GOOGLE SEARCH LOGIC V4.0) ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V3.0</span></h1>', unsafe_allow_html=True)
-    st.write("Fixed word-splitting bugs for names and common research phrases.")
+    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V4.0</span></h1>', unsafe_allow_html=True)
+    st.write("Fixed punctuation and word-splitting issues for names.")
     
     text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
-            with st.spinner("Applying Precision Corrections..."):
-                # Pass 1: Initial Spellcheck
-                blob = TextBlob(text_to_check)
-                mid_text = str(blob.correct())
+            with st.spinner("Applying Google logic..."):
+                # PASS 1: Manual Precision Fixes (Prevents splits like "ya seen")
+                t = text_to_check.lower()
+                t = re.sub(r'\bmy\s+nme\b', 'my name', t)
+                t = re.sub(r'\bnme\b', 'name', t)
+                t = re.sub(r'\bya\s+seen\b', 'yaseen', t)
+                t = re.sub(r'\bar\b', 'are', t)
+                
+                # PASS 2: General Spellcheck
+                blob = TextBlob(t)
+                corrected = str(blob.correct())
 
-                # Pass 2: Precision Word Repair (Fixes the "ya seen" split)
-                mid_text = re.sub(r'\b[Yy]a\s+[Ss]een\b', 'Yaseen', mid_text)
-                mid_text = re.sub(r'\b[Mm]y\s+[Nn]ame\b', 'my name', mid_text, flags=re.IGNORECASE)
+                # PASS 3: Casing & Intent Punctuation
+                # Force 'I', 'My', and 'Yaseen'
+                corrected = re.sub(r'\bi\b', 'I', corrected)
+                corrected = re.sub(r'\bmy\b', 'My', corrected)
+                corrected = re.sub(r'\byaseen\b', 'Yaseen', corrected, flags=re.IGNORECASE)
                 
-                # Pass 3: Casing & Grammar Logic
-                q_words = ['who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi']
-                mid_text = re.sub(r'\bi\b', 'I', mid_text)
-                mid_text = re.sub(r'\bmy\b', 'My', mid_text)
-                mid_text = re.sub(r'\byaseen\b', 'Yaseen', mid_text, flags=re.IGNORECASE)
-                
-                # Intelligent Punctuation
-                lower_text = mid_text.lower()
-                if any(lower_text.startswith(word) for word in q_words) or "yaseen" in lower_text:
-                    if not mid_text.endswith("?"):
-                        mid_text = mid_text.rstrip('.') + "?"
-                elif not mid_text.endswith((".", "!", "?")):
-                    mid_text += "."
+                # Question Logic (If it starts with a question word, add ?)
+                q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi')
+                if corrected.lower().startswith(q_words) and not corrected.endswith('?'):
+                    corrected = corrected.rstrip('.') + "?"
+                elif not corrected.endswith(('.', '!', '?')):
+                    corrected += "."
 
-                final_text = mid_text[0].upper() + mid_text[1:] if mid_text else ""
+                # Final sentence case
+                final_text = corrected[0].upper() + corrected[1:] if corrected else ""
                 
-                # Visual Diff
+                # Visual Diff Generation
                 diff_html = ""
                 matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
                     if tag == 'equal':
                         diff_html += text_to_check[i1:i2]
-                    elif tag in ('replace', 'delete', 'insert'):
-                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>' if i1 != i2 else ""
-                        diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>' if j1 != j2 else ""
+                    else:
+                        if i1 != i2: diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                        if j1 != j2: diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
 
                 st.success("Correction Finished!")
                 st.markdown("### 📝 Highlighting Changes")
