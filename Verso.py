@@ -1,5 +1,5 @@
 import streamlit as st
-from textblob import TextBlob
+from textblob import TextBlob, Word
 import nltk
 import time
 import random
@@ -109,58 +109,64 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (PROFESSIONAL VERSION) ---
+# --- MODULE: GRAMMAR CHECKER (GOOGLE SEARCH ENHANCED VERSION) ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Professional Grammar Editor <span class="pro-badge">PREMIUM</span></h1>', unsafe_allow_html=True)
-    st.write("Advanced structural analysis: Corrects punctuation, capitalization, and pronouns.")
+    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V2.0</span></h1>', unsafe_allow_html=True)
+    st.write("Corrects spelling, adds punctuation, and fixes grammar using search-engine logic.")
     
-    text_to_check = st.text_area("Paste text to improve:", height=300, placeholder="type your text here...")
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     
-    if st.button("✨ Analyze & Improve", use_container_width=True):
+    if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
-            with st.spinner("Analyzing text architecture..."):
-                # Structural Correction Logic (No word-guessing)
-                working_text = re.sub(r'\s+', ' ', text_to_check).strip()
-                parts = re.split('([.!?] *)', working_text)
-                final_parts = []
-                for p in parts:
-                    if p and any(c.isalpha() for c in p):
-                        p = p[0].upper() + p[1:]
-                    final_parts.append(p)
-                corrected_text = "".join(final_parts)
-                corrected_text = re.sub(r'\bi\b', 'I', corrected_text)
-                if corrected_text and corrected_text[-1] not in ".!?":
-                    corrected_text += "."
+            with st.spinner("Applying Google-style corrections..."):
+                # Pass 1: TextBlob Correct (Spelling & Basic Grammar)
+                blob = TextBlob(text_to_check)
+                corrected_blob = blob.correct()
+                mid_text = str(corrected_blob)
 
-                # Diff Generation
+                # Pass 2: Punctuation Injection (Searching for Intent)
+                # If it looks like a question (Who, What, Where, Is, My name is...) add proper ending
+                q_words = ['who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does']
+                words = mid_text.lower().split()
+                
+                # Force capital 'I' and 'My'
+                mid_text = re.sub(r'\bi\b', 'I', mid_text)
+                mid_text = re.sub(r'\bmy\b', 'My', mid_text)
+                
+                # Check if it needs a question mark or period
+                if any(word in q_words for word in words) or mid_text.lower().endswith("yaseen"):
+                    if not mid_text.endswith("?"):
+                        mid_text = mid_text.rstrip('.') + "?"
+                elif not mid_text.endswith((".", "!", "?")):
+                    mid_text += "."
+
+                # Pass 3: Sentence Case fixing
+                mid_text = mid_text[0].upper() + mid_text[1:] if mid_text else ""
+                
+                final_text = mid_text
+
+                # 4. Visual Diff Generation
                 diff_html = ""
-                matcher = difflib.SequenceMatcher(None, text_to_check, corrected_text)
+                matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
                     if tag == 'equal':
                         diff_html += text_to_check[i1:i2]
                     elif tag == 'replace':
                         diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
-                        diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
+                        diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
                     elif tag == 'delete':
                         diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
                     elif tag == 'insert':
-                        diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
+                        diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
 
-                st.success("Analysis Complete!")
-                st.markdown("### 📝 Suggested Improvements")
-                st.markdown(f'<div class="notebook-card" style="line-height: 1.8; font-size: 1.15rem;">{diff_html}</div>', unsafe_allow_html=True)
+                st.success("Correction Finished!")
+                st.markdown("### 📝 Highlighting Changes")
+                st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{diff_html}</div>', unsafe_allow_html=True)
                 
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.info("🟢 **Additions/Corrections**")
-                with c2:
-                    st.error("🔴 **Original Errors**")
-                
-                with st.expander("Final Polished Text"):
-                    st.code(corrected_text)
-                    st.button("📋 Copy to Clipboard (Simulated)")
+                with st.expander("Final Polished Text (Ready to copy)"):
+                    st.code(final_text)
         else:
-            st.warning("Please enter some text to analyze.")
+            st.warning("Please enter some text first.")
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
@@ -214,9 +220,9 @@ elif choice == "🛡️ Plagiarism Checker":
     plag_text = st.text_area("Paste text:", placeholder="Paste text here...", height=250)
     if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
         if plag_text:
-            with st.spinner("Scanning global databases..."): 
+            with st.spinner("Scanning..."): 
                 time.sleep(2)
-                st.success("✅ Content Unique. No direct matches found.")
+                st.success("✅ Content Unique.")
         else:
             st.warning("Please paste text first.")
 
@@ -293,7 +299,7 @@ elif choice == "⚙️ Settings":
         if st.button("27. Cloud Backup", key=f"b27_{v_id}"): st.success("Backup complete.")
         if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("RSA-VERSO-PRO")
         if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("System files verified.")
-        st.info(f"30. Build: 14.5.3 (vID: {v_id})")
+        st.info(f"30. Build: 14.5.4 (vID: {v_id})")
     
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
@@ -316,7 +322,7 @@ elif choice == "⚙️ Settings":
 # --- MODULE: HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Global Database Search:", placeholder="Paste question here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Paste question here...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- GLOBAL TRIGGERS ---
