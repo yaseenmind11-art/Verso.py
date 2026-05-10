@@ -227,12 +227,11 @@ elif choice == "⚙️ Settings":
         if st.button("Export Citations"): st.toast("Done.")
     with c2:
         st.write("### 🎨 UI")
-        # --- Theme Buttons Added Here ---
-        btn_l, btn_d = st.columns(2)
-        if btn_l.button("☀️ Light Mode"):
+        # --- THEME BUTTONS ---
+        if st.button("☀️ Light Mode"):
             st.session_state.theme_mode = "light"
             st.rerun()
-        if btn_d.button("🌑 Dark Mode"):
+        if st.button("🌑 Dark Mode"):
             st.session_state.theme_mode = "dark"
             st.rerun()
             
