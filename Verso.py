@@ -324,7 +324,7 @@ elif choice == "⚙️ Settings":
 # --- MODULE: HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Paste question here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Paste your question here...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- GLOBAL TRIGGERS ---
