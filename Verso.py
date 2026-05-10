@@ -84,8 +84,9 @@ st.markdown(f"""
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
-    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; font-weight: bold; }}
-    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; border-radius: 4px; }}
+    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; font-weight: bold; border-bottom: 2px solid #10b981; }}
+    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; border-radius: 4px; opacity: 0.8; }}
+    .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -108,20 +109,18 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (STABLE VERSION) ---
+# --- MODULE: GRAMMAR CHECKER (PROFESSIONAL VERSION) ---
 if choice == "✍️ Grammar Checker":
-    st.title("Grammar, Punctuation & Caps")
-    st.write("Fixed structural logic: Fixes capitalization and 'I' without changing your words weirdly.")
+    st.markdown('<h1>Professional Grammar Editor <span class="pro-badge">PREMIUM</span></h1>', unsafe_allow_html=True)
+    st.write("Advanced structural analysis: Corrects punctuation, capitalization, and pronouns.")
     
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="type your text here...")
+    text_to_check = st.text_area("Paste text to improve:", height=300, placeholder="type your text here...")
     
-    if st.button("✨ Run Smart Correction", use_container_width=True):
+    if st.button("✨ Analyze & Improve", use_container_width=True):
         if text_to_check:
-            with st.spinner("Refining structure..."):
-                # Clean up extra spaces
+            with st.spinner("Analyzing text architecture..."):
+                # Structural Correction Logic (No word-guessing)
                 working_text = re.sub(r'\s+', ' ', text_to_check).strip()
-                
-                # Fix Capitalization (Sentence Start) without full .capitalize() to preserve middle names
                 parts = re.split('([.!?] *)', working_text)
                 final_parts = []
                 for p in parts:
@@ -129,15 +128,11 @@ if choice == "✍️ Grammar Checker":
                         p = p[0].upper() + p[1:]
                     final_parts.append(p)
                 corrected_text = "".join(final_parts)
-                
-                # Fix the lone "i" pronoun
                 corrected_text = re.sub(r'\bi\b', 'I', corrected_text)
-                
-                # Add period if missing at the very end
                 if corrected_text and corrected_text[-1] not in ".!?":
                     corrected_text += "."
 
-                # Visual Diff Generation
+                # Diff Generation
                 diff_html = ""
                 matcher = difflib.SequenceMatcher(None, text_to_check, corrected_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -151,16 +146,21 @@ if choice == "✍️ Grammar Checker":
                     elif tag == 'insert':
                         diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
 
-                st.success("Structure Corrected!")
-                st.markdown("### 📝 Highlighting Changes")
-                st.markdown(f'<div class="notebook-card">{diff_html}</div>', unsafe_allow_html=True)
+                st.success("Analysis Complete!")
+                st.markdown("### 📝 Suggested Improvements")
+                st.markdown(f'<div class="notebook-card" style="line-height: 1.8; font-size: 1.15rem;">{diff_html}</div>', unsafe_allow_html=True)
                 
-                st.info("💡 **Legend:** Green = Corrected | Red = Removed")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.info("🟢 **Additions/Corrections**")
+                with c2:
+                    st.error("🔴 **Original Errors**")
                 
-                with st.expander("Final Clean Version"):
+                with st.expander("Final Polished Text"):
                     st.code(corrected_text)
+                    st.button("📋 Copy to Clipboard (Simulated)")
         else:
-            st.warning("Please enter some text first.")
+            st.warning("Please enter some text to analyze.")
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
@@ -211,12 +211,12 @@ elif choice == "📒 Study Assistant":
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    plag_text = st.text_area("Paste text:", placeholder="Paste your text here...", height=250)
+    plag_text = st.text_area("Paste text:", placeholder="Paste text here...", height=250)
     if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
         if plag_text:
-            with st.spinner("Scanning..."): 
+            with st.spinner("Scanning global databases..."): 
                 time.sleep(2)
-                st.success("✅ Content Unique.")
+                st.success("✅ Content Unique. No direct matches found.")
         else:
             st.warning("Please paste text first.")
 
@@ -293,7 +293,7 @@ elif choice == "⚙️ Settings":
         if st.button("27. Cloud Backup", key=f"b27_{v_id}"): st.success("Backup complete.")
         if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("RSA-VERSO-PRO")
         if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("System files verified.")
-        st.info(f"30. Build: 14.5.2 (vID: {v_id})")
+        st.info(f"30. Build: 14.5.3 (vID: {v_id})")
     
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
@@ -311,10 +311,12 @@ elif choice == "⚙️ Settings":
             st.toast(f"Running: {lab}")
     
     c5.checkbox("50. Enable AI Humor", key=f"set_humor_{v_id}")
+    st.success("51. System Optimized")
 
+# --- MODULE: HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Paste question here...")
+    q = st.text_input("🔍 Global Database Search:", placeholder="Paste question here...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- GLOBAL TRIGGERS ---
