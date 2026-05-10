@@ -68,22 +68,29 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
-# --- 🎨 LIGHT/DARK ADAPTIVE STYLING ---
+# --- 🎨 DYNAMIC THEME COLOR LOGIC ---
+if st.session_state.theme_mode == "dark":
+    main_text_color = "#FFFFFF"
+    app_bg = "#0e1117"
+else:
+    main_text_color = "#000000"
+    app_bg = "#FFFFFF"
+
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
-# Theme text adjustment
-main_text_color = "#1e293b" if st.session_state.theme_mode == "light" else "inherit"
-
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
 st.markdown(f"""
     <style>
-    .stApp {{ color: {main_text_color}; }}
+    /* Force main text and headers to follow the theme color */
+    .stApp, h1, h2, h3, p, span, label, .stMarkdown {{ color: {main_text_color} !important; }}
+    .stApp {{ background-color: {app_bg}; }}
+    
     .notebook-card {{ 
         background-color: {bg_card}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
@@ -92,7 +99,7 @@ st.markdown(f"""
     .teacher-board {{ 
         background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
         border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; 
-        color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; 
+        color: #e2e8f0 !important; line-height: 1.8; font-size: {f_scale}rem; 
     }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
@@ -117,7 +124,7 @@ with st.sidebar:
 
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    st.markdown(f'<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
@@ -230,14 +237,20 @@ elif choice == "⚙️ Settings":
     with c2:
         st.write("### 🎨 UI & Theme")
         tcol1, tcol2 = st.columns(2)
-        if tcol1.button("☀️ Light Mode"): st.session_state.theme_mode = "light"; st.rerun()
-        if tcol2.button("🌑 Dark Mode"): st.session_state.theme_mode = "dark"; st.rerun()
+        # Theme buttons logic
+        if tcol1.button("☀️ Light Mode"):
+            st.session_state.theme_mode = "light"
+            st.rerun()
+        if tcol2.button("🌑 Dark Mode"):
+            st.session_state.theme_mode = "dark"
+            st.rerun()
+            
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("High Contrast", key=f"s14_{v_id}")
         st.checkbox("Compact", key=f"s15_{v_id}")
-        st.checkbox("Force Dark Mode", value=True, key=f"s16_{v_id}")
+        st.checkbox("Force Dark Mode", value=(True if st.session_state.theme_mode=="dark" else False), key=f"s16_{v_id}")
         st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
         if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
