@@ -113,7 +113,7 @@ with st.sidebar:
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you wnt to correct...")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Applying Google logic..."):
@@ -173,7 +173,7 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", height=200)
+    raw_content = st.text_area("Input Content:", height=200, placeholder="Input the text you want to study from")
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Teacher"])
         blob = TextBlob(raw_content); words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
@@ -251,7 +251,7 @@ elif choice == "⚙️ Settings":
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     q = st.text_input("🔍 Search Database:")
-    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
+    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True, placeholder="Please write the question you want to ask...")
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
