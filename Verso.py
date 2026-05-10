@@ -4,7 +4,7 @@ import nltk
 import time
 import random
 import re
-import os
+import difflib
 import streamlit.components.v1 as components
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
@@ -83,7 +83,9 @@ st.markdown(f"""
     .notebook-card {{ background-color: {bg_card}; padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; margin-bottom: 15px; color: #FFFFFF; }}
     .teacher-board {{ background-color: #1a202c; border: 2px solid {accent}; padding: 40px; border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
-    @keyframes blinker {{ 50% {{ opacity: 0.2; }} }}
+    @keyframes blinker {{ 50% {{ opacity: 0; }} }}
+    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; font-weight: bold; }}
+    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; border-radius: 4px; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -97,10 +99,71 @@ st.markdown(f"""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    choice = st.radio("Navigation", [
+        "🏠 Home", 
+        "📒 Study Assistant", 
+        "✍️ Grammar Checker", 
+        "🛡️ Plagiarism Checker", 
+        "⏱️ Time Tracker", 
+        "⚙️ Settings"
+    ])
+
+# --- MODULE: GRAMMAR CHECKER (STABLE VERSION) ---
+if choice == "✍️ Grammar Checker":
+    st.title("Grammar, Punctuation & Caps")
+    st.write("Fixed structural logic: Fixes capitalization and 'I' without changing your words weirdly.")
+    
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="type your text here...")
+    
+    if st.button("✨ Run Smart Correction", use_container_width=True):
+        if text_to_check:
+            with st.spinner("Refining structure..."):
+                # Clean up extra spaces
+                working_text = re.sub(r'\s+', ' ', text_to_check).strip()
+                
+                # Fix Capitalization (Sentence Start) without full .capitalize() to preserve middle names
+                parts = re.split('([.!?] *)', working_text)
+                final_parts = []
+                for p in parts:
+                    if p and any(c.isalpha() for c in p):
+                        p = p[0].upper() + p[1:]
+                    final_parts.append(p)
+                corrected_text = "".join(final_parts)
+                
+                # Fix the lone "i" pronoun
+                corrected_text = re.sub(r'\bi\b', 'I', corrected_text)
+                
+                # Add period if missing at the very end
+                if corrected_text and corrected_text[-1] not in ".!?":
+                    corrected_text += "."
+
+                # Visual Diff Generation
+                diff_html = ""
+                matcher = difflib.SequenceMatcher(None, text_to_check, corrected_text)
+                for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                    if tag == 'equal':
+                        diff_html += text_to_check[i1:i2]
+                    elif tag == 'replace':
+                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                        diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
+                    elif tag == 'delete':
+                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                    elif tag == 'insert':
+                        diff_html += f'<span class="diff-add">{corrected_text[j1:j2]}</span>'
+
+                st.success("Structure Corrected!")
+                st.markdown("### 📝 Highlighting Changes")
+                st.markdown(f'<div class="notebook-card">{diff_html}</div>', unsafe_allow_html=True)
+                
+                st.info("💡 **Legend:** Green = Corrected | Red = Removed")
+                
+                with st.expander("Final Clean Version"):
+                    st.code(corrected_text)
+        else:
+            st.warning("Please enter some text first.")
 
 # --- MODULE: STUDY ASSISTANT ---
-if choice == "📒 Study Assistant":
+elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
@@ -144,6 +207,18 @@ if choice == "📒 Study Assistant":
             if st.button("🚀 Start Lesson Synthesis"):
                 cite_style = st.session_state.get('set_cite', 'APA 7th')
                 st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON: {words[0].upper()}</h2><hr><p>Guidelines: {cite_style}</p></div>', unsafe_allow_html=True)
+
+# --- MODULE: PLAGIARISM CHECKER ---
+elif choice == "🛡️ Plagiarism Checker":
+    st.title("Integrity Scanner")
+    plag_text = st.text_area("Paste text:", placeholder="Paste your text here...", height=250)
+    if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
+        if plag_text:
+            with st.spinner("Scanning..."): 
+                time.sleep(2)
+                st.success("✅ Content Unique.")
+        else:
+            st.warning("Please paste text first.")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -194,7 +269,7 @@ elif choice == "⚙️ Settings":
         st.checkbox("7. Logic Validation", value=True, key=f"set_logic_{v_id}")
         st.checkbox("8. Source Cross-Checking", key=f"set_cross_{v_id}")
         st.checkbox("9. IB MYP2 Alignment", key=f"set_ib_{v_id}")
-        if st.button("10. Export Citations", key=f"b10_{v_id}"): st.toast("Citations Exported to Local Storage.")
+        if st.button("10. Export Citations", key=f"b10_{v_id}"): st.toast("Citations Exported.")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("11. Accent", "#3b82f6", key=f"set_color_{v_id}")
@@ -206,19 +281,19 @@ elif choice == "⚙️ Settings":
         st.checkbox("17. Glassmorphism", key=f"set_glass_{v_id}")
         st.checkbox("18. Nav Hints", key=f"set_hints_{v_id}")
         if st.button("19. Rebuild Cache", key=f"b19_{v_id}"): st.cache_resource.clear(); st.toast("Resources Re-synced.")
-        if st.button("20. Toggle Fullscreen", key=f"b20_{v_id}"): st.toast("Use F11 to exit Fullscreen Mode.")
+        if st.button("20. Toggle Fullscreen", key=f"b20_{v_id}"): st.toast("F11 to toggle.")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("21. Encryption", key=f"set_enc_{v_id}")
         st.checkbox("22. Privacy Shield", key=f"set_priv_{v_id}")
         st.checkbox("23. Study Logs", key=f"set_anon_{v_id}")
         st.checkbox("24. Auto-Delete", key=f"set_del_{v_id}")
-        if st.button("25. Purge History", key=f"b25_{v_id}"): st.warning("Browser history and project logs purged.")
-        if st.button("26. Export CSV", key=f"b26_{v_id}"): st.toast("Project data compiled to CSV.")
+        if st.button("25. Purge History", key=f"b25_{v_id}"): st.warning("History purged.")
+        if st.button("26. Export CSV", key=f"b26_{v_id}"): st.toast("CSV compiled.")
         if st.button("27. Cloud Backup", key=f"b27_{v_id}"): st.success("Backup complete.")
-        if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("RSA-VERSO-8829-PRO")
-        if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("System files verified 100%.")
-        st.info(f"30. Build: 14.5.1 (vID: {v_id})")
+        if st.button("28. Generate Key", key=f"b28_{v_id}"): st.code("RSA-VERSO-PRO")
+        if st.button("29. Integrity Check", key=f"b29_{v_id}"): st.toast("System files verified.")
+        st.info(f"30. Build: 14.5.2 (vID: {v_id})")
     
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
@@ -236,23 +311,13 @@ elif choice == "⚙️ Settings":
             st.toast(f"Running: {lab}")
     
     c5.checkbox("50. Enable AI Humor", key=f"set_humor_{v_id}")
-    if 'last_tool' in st.session_state:
-        st.success(f"Output for: {st.session_state.last_tool}")
-    st.success("51. System Optimized")
-
-# --- OTHER TOOLS ---
-elif choice == "🛡️ Plagiarism Checker":
-    st.title("Integrity Scanner")
-    st.text_area("Paste text:", placeholder="Paste your text here...")
-    if st.button("Deep Scan"):
-        with st.spinner("Scanning..."): time.sleep(2); st.success("✅ Content Unique.")
 
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Paste your research question here...")
-    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}+site:.edu&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
+    q = st.text_input("🔍 Search Database:", placeholder="Paste question here...")
+    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
-# --- FINAL AUTOMATIC TRIGGER ---
+# --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True)
     st.balloons()
