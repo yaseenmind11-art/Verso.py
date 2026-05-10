@@ -38,7 +38,6 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
-if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "dark"
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -52,7 +51,6 @@ def trigger_master_reset():
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
-    st.session_state.theme_mode = "dark"
     st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
     time.sleep(0.4)
     st.rerun()
@@ -68,21 +66,10 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
-# --- 🎨 LIGHT/DARK ADAPTIVE STYLING ---
+# --- 🎨 STYLING ---
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
-
-# Logic to handle theme colors
-if st.session_state.theme_mode == "light":
-    main_bg = "#FFFFFF"
-    main_text = "#31333F"
-    card_txt = "#FFFFFF" # Keeping cards dark for better contrast
-else:
-    main_bg = "#0e1117"
-    main_text = "#FFFFFF"
-    card_txt = "#FFFFFF"
-
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
@@ -91,11 +78,11 @@ inject_ga()
 
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: {main_bg}; color: {main_text}; }}
+    .stApp {{ color: inherit; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
-        margin-bottom: 15px; color: {card_txt} !important; 
+        margin-bottom: 15px; color: #FFFFFF !important; 
     }}
     .teacher-board {{ 
         background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
@@ -218,7 +205,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS ---
+# --- MODULE: SETTINGS (CLEANED UP) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
@@ -239,21 +226,11 @@ elif choice == "⚙️ Settings":
         if st.button("Export Citations"): st.toast("Done.")
     with c2:
         st.write("### 🎨 UI")
-        
-        col_l, col_d = st.columns(2)
-        if col_l.button("☀️ Light Mode", use_container_width=True):
-            st.session_state.theme_mode = "light"
-            st.rerun()
-        if col_d.button("🌑 Dark Mode", use_container_width=True):
-            st.session_state.theme_mode = "dark"
-            st.rerun()
-
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
-        st.checkbox("Force Dark", value=(st.session_state.theme_mode == "dark"), key=f"s16_{v_id}")
-        st.checkbox("Glassmorphism", key=f"s17_{v_id}")
+        st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
         if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
         if st.button("Toggle Fullscreen"): st.toast("F11")
