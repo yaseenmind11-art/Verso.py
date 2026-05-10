@@ -109,7 +109,7 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (GOOGLE SEARCH ENHANCED VERSION) ---
+# --- MODULE: GRAMMAR CHECKER (ENHANCED GOOGLE LOGIC) ---
 if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V2.0</span></h1>', unsafe_allow_html=True)
     st.write("Corrects spelling, adds punctuation, and fixes grammar using search-engine logic.")
@@ -119,33 +119,33 @@ if choice == "✍️ Grammar Checker":
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Applying Google-style corrections..."):
-                # Pass 1: TextBlob Correct (Spelling & Basic Grammar)
+                # Pass 1: Standard Spellcheck
                 blob = TextBlob(text_to_check)
                 corrected_blob = blob.correct()
                 mid_text = str(corrected_blob)
 
-                # Pass 2: Punctuation Injection (Searching for Intent)
-                # If it looks like a question (Who, What, Where, Is, My name is...) add proper ending
-                q_words = ['who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does']
-                words = mid_text.lower().split()
+                # Pass 2: Contextual Punctuation & Casing
+                q_words = ['who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi']
                 
-                # Force capital 'I' and 'My'
+                # Fix 'i' and 'my' casing
                 mid_text = re.sub(r'\bi\b', 'I', mid_text)
                 mid_text = re.sub(r'\bmy\b', 'My', mid_text)
                 
-                # Check if it needs a question mark or period
-                if any(word in q_words for word in words) or mid_text.lower().endswith("yaseen"):
+                # Fix name casing specifically for Yaseen
+                mid_text = re.sub(r'\byaseen\b', 'Yaseen', mid_text, flags=re.IGNORECASE)
+                
+                # Smart Punctuation Check
+                lower_text = mid_text.lower()
+                if any(lower_text.startswith(word) for word in q_words) or "yaseen" in lower_text:
                     if not mid_text.endswith("?"):
                         mid_text = mid_text.rstrip('.') + "?"
                 elif not mid_text.endswith((".", "!", "?")):
                     mid_text += "."
 
-                # Pass 3: Sentence Case fixing
-                mid_text = mid_text[0].upper() + mid_text[1:] if mid_text else ""
+                # Final Sentence Capitalization
+                final_text = mid_text[0].upper() + mid_text[1:] if mid_text else ""
                 
-                final_text = mid_text
-
-                # 4. Visual Diff Generation
+                # Visual Diff Generation
                 diff_html = ""
                 matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
