@@ -68,18 +68,25 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
-# --- 🎨 STYLING SETUP ---
+# --- 🎨 SMART THEME ADAPTATION ---
 accent = st.session_state.get('set_color', "#3b82f6")
-bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 
-# Map theme to colors for CSS
+# Adaptive colors so CSS doesn't "mess up" in light mode
 if st.session_state.theme_mode == "light":
-    current_bg = "#FFFFFF"
-    current_text = "#31333F"
+    main_bg = "#F0F2F6"
+    main_text = "#262730"
+    card_bg = "#FFFFFF"
+    card_text = "#262730"
+    board_bg = "#E1E4E8"
+    board_text = "#1A202C"
 else:
-    current_bg = "#0e1117"
-    current_text = "#FFFFFF"
+    main_bg = "#0e1117"
+    main_text = "#FFFFFF"
+    card_bg = "#1e293b"
+    card_text = "#FFFFFF"
+    board_bg = "#1a202c"
+    board_text = "#e2e8f0"
 
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
@@ -87,19 +94,20 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# RESTORED YOUR ORIGINAL CSS EXACTLY 💎
+# FIXED CSS WITH ADAPTIVE VARIABLES 🛠️
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: {current_bg}; color: {current_text}; }}
+    .stApp {{ background-color: {main_bg}; color: {main_text}; }}
     .notebook-card {{ 
-        background-color: {bg_card}; 
+        background-color: {card_bg}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
-        margin-bottom: 15px; color: #FFFFFF !important; 
+        margin-bottom: 15px; color: {card_text} !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }}
     .teacher-board {{ 
-        background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
+        background-color: {board_bg}; border: 2px solid {accent}; padding: 40px; 
         border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; 
-        color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; 
+        color: {board_text}; line-height: 1.8; font-size: {f_scale}rem; 
     }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
@@ -238,6 +246,7 @@ elif choice == "⚙️ Settings":
     with c2:
         st.write("### 🎨 UI")
         
+        # --- THEME BUTTONS ---
         col_light, col_dark = st.columns(2)
         if col_light.button("☀️ Light Mode", use_container_width=True):
             st.session_state.theme_mode = "light"
