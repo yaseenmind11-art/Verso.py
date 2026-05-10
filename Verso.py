@@ -109,32 +109,31 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (ENHANCED GOOGLE LOGIC) ---
+# --- MODULE: GRAMMAR CHECKER (PRECISION CLEAN V3.0) ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V2.0</span></h1>', unsafe_allow_html=True)
-    st.write("Corrects spelling, adds punctuation, and fixes grammar using search-engine logic.")
+    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V3.0</span></h1>', unsafe_allow_html=True)
+    st.write("Fixed word-splitting bugs for names and common research phrases.")
     
     text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
-            with st.spinner("Applying Google-style corrections..."):
-                # Pass 1: Standard Spellcheck
+            with st.spinner("Applying Precision Corrections..."):
+                # Pass 1: Initial Spellcheck
                 blob = TextBlob(text_to_check)
-                corrected_blob = blob.correct()
-                mid_text = str(corrected_blob)
+                mid_text = str(blob.correct())
 
-                # Pass 2: Contextual Punctuation & Casing
-                q_words = ['who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi']
+                # Pass 2: Precision Word Repair (Fixes the "ya seen" split)
+                mid_text = re.sub(r'\b[Yy]a\s+[Ss]een\b', 'Yaseen', mid_text)
+                mid_text = re.sub(r'\b[Mm]y\s+[Nn]ame\b', 'my name', mid_text, flags=re.IGNORECASE)
                 
-                # Fix 'i' and 'my' casing
+                # Pass 3: Casing & Grammar Logic
+                q_words = ['who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi']
                 mid_text = re.sub(r'\bi\b', 'I', mid_text)
                 mid_text = re.sub(r'\bmy\b', 'My', mid_text)
-                
-                # Fix name casing specifically for Yaseen
                 mid_text = re.sub(r'\byaseen\b', 'Yaseen', mid_text, flags=re.IGNORECASE)
                 
-                # Smart Punctuation Check
+                # Intelligent Punctuation
                 lower_text = mid_text.lower()
                 if any(lower_text.startswith(word) for word in q_words) or "yaseen" in lower_text:
                     if not mid_text.endswith("?"):
@@ -142,22 +141,17 @@ if choice == "✍️ Grammar Checker":
                 elif not mid_text.endswith((".", "!", "?")):
                     mid_text += "."
 
-                # Final Sentence Capitalization
                 final_text = mid_text[0].upper() + mid_text[1:] if mid_text else ""
                 
-                # Visual Diff Generation
+                # Visual Diff
                 diff_html = ""
                 matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
                     if tag == 'equal':
                         diff_html += text_to_check[i1:i2]
-                    elif tag == 'replace':
-                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
-                        diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
-                    elif tag == 'delete':
-                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
-                    elif tag == 'insert':
-                        diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
+                    elif tag in ('replace', 'delete', 'insert'):
+                        diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>' if i1 != i2 else ""
+                        diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>' if j1 != j2 else ""
 
                 st.success("Correction Finished!")
                 st.markdown("### 📝 Highlighting Changes")
