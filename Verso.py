@@ -109,18 +109,18 @@ with st.sidebar:
         "⚙️ Settings"
     ])
 
-# --- MODULE: GRAMMAR CHECKER (GOOGLE SEARCH LOGIC V4.0) ---
+# --- MODULE: GRAMMAR CHECKER (GOOGLE SEARCH LOGIC V5.0) ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V4.0</span></h1>', unsafe_allow_html=True)
-    st.write("Fixed punctuation and word-splitting issues for names.")
+    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    st.write("Fixed punctuation overlap and word-splitting issues.")
     
     text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Applying Google logic..."):
-                # PASS 1: Manual Precision Fixes (Prevents splits like "ya seen")
-                t = text_to_check.lower()
+                # PASS 1: Manual Precision Fixes
+                t = text_to_check.lower().strip()
                 t = re.sub(r'\bmy\s+nme\b', 'my name', t)
                 t = re.sub(r'\bnme\b', 'name', t)
                 t = re.sub(r'\bya\s+seen\b', 'yaseen', t)
@@ -130,21 +130,26 @@ if choice == "✍️ Grammar Checker":
                 blob = TextBlob(t)
                 corrected = str(blob.correct())
 
-                # PASS 3: Casing & Intent Punctuation
-                # Force 'I', 'My', and 'Yaseen'
+                # PASS 3: Clean up existing punctuation first
+                corrected = corrected.rstrip('.?! ')
+
+                # PASS 4: Casing
                 corrected = re.sub(r'\bi\b', 'I', corrected)
                 corrected = re.sub(r'\bmy\b', 'My', corrected)
                 corrected = re.sub(r'\byaseen\b', 'Yaseen', corrected, flags=re.IGNORECASE)
                 
-                # Question Logic (If it starts with a question word, add ?)
-                q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi')
-                if corrected.lower().startswith(q_words) and not corrected.endswith('?'):
-                    corrected = corrected.rstrip('.') + "?"
-                elif not corrected.endswith(('.', '!', '?')):
+                # PASS 5: Smart Punctuation Trigger
+                q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi', 'are')
+                if corrected.lower().startswith(q_words):
+                    corrected += "?"
+                else:
                     corrected += "."
 
-                # Final sentence case
-                final_text = corrected[0].upper() + corrected[1:] if corrected else ""
+                # Final sentence case for the very first letter
+                if corrected:
+                    final_text = corrected[0].upper() + corrected[1:]
+                else:
+                    final_text = ""
                 
                 # Visual Diff Generation
                 diff_html = ""
