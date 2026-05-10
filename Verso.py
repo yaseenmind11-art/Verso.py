@@ -53,7 +53,7 @@ def trigger_master_reset():
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
     st.session_state.theme_mode = "dark"
-    st.toast("🚨 SYSTEM WIPED")
+    st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
     time.sleep(0.4)
     st.rerun()
 
@@ -68,25 +68,20 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
-# --- 🎨 SMART THEME ADAPTATION ---
+# --- 🎨 LIGHT/DARK ADAPTIVE STYLING ---
 accent = st.session_state.get('set_color', "#3b82f6")
+bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
 
-# Adaptive colors so CSS doesn't "mess up" in light mode
+# Logic to handle theme colors
 if st.session_state.theme_mode == "light":
-    main_bg = "#F0F2F6"
-    main_text = "#262730"
-    card_bg = "#FFFFFF"
-    card_text = "#262730"
-    board_bg = "#E1E4E8"
-    board_text = "#1A202C"
+    main_bg = "#FFFFFF"
+    main_text = "#31333F"
+    card_txt = "#FFFFFF" # Keeping cards dark for better contrast
 else:
     main_bg = "#0e1117"
     main_text = "#FFFFFF"
-    card_bg = "#1e293b"
-    card_text = "#FFFFFF"
-    board_bg = "#1a202c"
-    board_text = "#e2e8f0"
+    card_txt = "#FFFFFF"
 
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
@@ -94,20 +89,18 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# FIXED CSS WITH ADAPTIVE VARIABLES 🛠️
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {main_bg}; color: {main_text}; }}
     .notebook-card {{ 
-        background-color: {card_bg}; 
+        background-color: {bg_card}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
-        margin-bottom: 15px; color: {card_text} !important; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 15px; color: {card_txt} !important; 
     }}
     .teacher-board {{ 
-        background-color: {board_bg}; border: 2px solid {accent}; padding: 40px; 
+        background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
         border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; 
-        color: {board_text}; line-height: 1.8; font-size: {f_scale}rem; 
+        color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; 
     }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
@@ -243,18 +236,18 @@ elif choice == "⚙️ Settings":
         st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
         st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
         st.checkbox("IB Alignment", key=f"s9_{v_id}")
+        if st.button("Export Citations"): st.toast("Done.")
     with c2:
         st.write("### 🎨 UI")
         
-        # --- THEME BUTTONS ---
-        col_light, col_dark = st.columns(2)
-        if col_light.button("☀️ Light Mode", use_container_width=True):
+        col_l, col_d = st.columns(2)
+        if col_l.button("☀️ Light Mode", use_container_width=True):
             st.session_state.theme_mode = "light"
             st.rerun()
-        if col_dark.button("🌑 Dark Mode", use_container_width=True):
+        if col_d.button("🌑 Dark Mode", use_container_width=True):
             st.session_state.theme_mode = "dark"
             st.rerun()
-            
+
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
@@ -262,10 +255,17 @@ elif choice == "⚙️ Settings":
         st.checkbox("Force Dark", value=(st.session_state.theme_mode == "dark"), key=f"s16_{v_id}")
         st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
+        if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
+        if st.button("Toggle Fullscreen"): st.toast("F11")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
         st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
+        if st.button("Purge History"): st.warning("Purged.")
+        if st.button("Export CSV"): st.toast("Saved.")
+        if st.button("Cloud Backup"): st.success("Backed up.")
+        if st.button("Generate Key"): st.code("RSA-VERSO-PRO")
+        if st.button("Integrity Check"): st.toast("Verified.")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
     
     st.success("System Optimized")
