@@ -52,18 +52,9 @@ def trigger_master_reset():
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
-    st.session_state.theme_mode = "dark"
     st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
     time.sleep(0.4)
     st.rerun()
-
-# --- 🎨 LIGHT/DARK ENGINE ---
-if st.session_state.theme_mode == "dark":
-    txt_col = "#FFFFFF"
-    app_bg = "#0e1117"
-else:
-    txt_col = "#000000"
-    app_bg = "#FFFFFF"
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
 if st.session_state.timer_active and st.session_state.timer_end_time:
@@ -76,6 +67,7 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
+# --- 🎨 LIGHT/DARK ADAPTIVE STYLING ---
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
@@ -87,8 +79,7 @@ inject_ga()
 
 st.markdown(f"""
     <style>
-    .stApp {{ background-color: {app_bg}; }}
-    h1, h2, h3, p, span, label, .stMarkdown {{ color: {txt_col} !important; }}
+    .stApp {{ color: inherit; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
@@ -157,11 +148,13 @@ elif choice == "🛡️ Plagiarism Checker":
                 time.sleep(2.5)
                 sentences = re.split(r'(?<=[.!?]) +', plag_text)
                 academic_triggers = ["infrastructure", "implementation", "federal funding", "neurological", "opportunity", "assessment", "significant"]
-                marked_text = ""; match_count = 0
+                marked_text = ""
+                match_count = 0
                 for s in sentences:
                     is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
                     if is_match:
-                        marked_text += f'<span class="plag-highlight">{s}</span> '; match_count += 1
+                        marked_text += f'<span class="plag-highlight">{s}</span> '
+                        match_count += 1
                     else:
                         marked_text += f'{s} '
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
@@ -234,20 +227,20 @@ elif choice == "⚙️ Settings":
         if st.button("Export Citations"): st.toast("Done.")
     with c2:
         st.write("### 🎨 UI")
-        # --- THEME BUTTONS ---
-        tc_l, tc_d = st.columns(2)
-        if tc_l.button("☀️ Light Mode"):
+        # --- Theme Buttons Added Here ---
+        btn_l, btn_d = st.columns(2)
+        if btn_l.button("☀️ Light Mode"):
             st.session_state.theme_mode = "light"
             st.rerun()
-        if tc_d.button("🌑 Dark Mode"):
+        if btn_d.button("🌑 Dark Mode"):
             st.session_state.theme_mode = "dark"
             st.rerun()
-        
+            
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
-        st.checkbox("Force Dark", value=(True if st.session_state.theme_mode=="dark" else False), key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
+        st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
         if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
         if st.button("Toggle Fullscreen"): st.toast("F11")
