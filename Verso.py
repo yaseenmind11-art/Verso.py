@@ -38,6 +38,7 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
+if 'theme_mode' not in st.session_state: st.session_state.theme_mode = "dark"
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -51,6 +52,7 @@ def trigger_master_reset():
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
+    st.session_state.theme_mode = "dark"
     st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
     time.sleep(0.4)
     st.rerun()
@@ -66,23 +68,30 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
-# --- 🎨 LIGHT/DARK ADAPTIVE STYLING ---
+# --- 🎨 DYNAMIC THEME & STYLING ---
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
-selected_tone_name = st.session_state.selected_alarm_tone
-selected_tone_url = ALARM_TONES.get(selected_tone_name)
+selected_tone_url = ALARM_TONES.get(st.session_state.selected_alarm_tone)
+
+# Theme Logic for Text Colors
+if st.session_state.theme_mode == "light":
+    primary_text = "#1e293b"
+    card_text = "#FFFFFF" # Keep card text white for contrast against dark cards
+else:
+    primary_text = "#FFFFFF"
+    card_text = "#FFFFFF"
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
 st.markdown(f"""
     <style>
-    .stApp {{ color: inherit; }}
+    .stApp {{ color: {primary_text}; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
-        margin-bottom: 15px; color: #FFFFFF !important; 
+        margin-bottom: 15px; color: {card_text} !important; 
     }}
     .teacher-board {{ 
         background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
@@ -99,7 +108,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.markdown(f"""
-    <audio id="alarm-sound" key="{selected_tone_name}" preload="auto">
+    <audio id="alarm-sound" key="{st.session_state.selected_alarm_tone}" preload="auto">
         <source src="{selected_tone_url}" type="audio/ogg">
     </audio>
 """, unsafe_allow_html=True)
@@ -147,20 +156,13 @@ elif choice == "🛡️ Plagiarism Checker":
                 time.sleep(2.5)
                 sentences = re.split(r'(?<=[.!?]) +', plag_text)
                 academic_triggers = ["infrastructure", "implementation", "federal funding", "neurological", "opportunity", "assessment", "significant"]
-                
-                marked_text = ""
-                match_count = 0
+                marked_text = ""; match_count = 0
                 for s in sentences:
-                    # Logic: Flag sentences longer than 15 words or containing academic triggers
                     is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
                     if is_match:
-                        marked_text += f'<span class="plag-highlight">{s}</span> '
-                        match_count += 1
-                    else:
-                        marked_text += f'{s} '
-                
+                        marked_text += f'<span class="plag-highlight">{s}</span> '; match_count += 1
+                    else: marked_text += f'{s} '
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
-                
                 if plag_percent > 20:
                     st.error(f"⚠️ Similarity Found: {plag_percent}%")
                     st.progress(plag_percent / 100)
@@ -185,13 +187,6 @@ elif choice == "📒 Study Assistant":
         with t1:
             cols = st.columns(2)
             for i, phrase in enumerate(words[:20]): cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
-        with t2:
-            score = 0
-            for i in range(10):
-                target = words[i % len(words)]; opts = [target] + random.sample([w for w in words if w != target], 2); random.shuffle(opts)
-                st.write(f"**Q{i+1}:** {target.upper()}"); ans = st.radio("Select:", opts, key=f"q_{i}_{st.session_state.reset_counter}", index=None)
-                if ans == target: score += 1
-            if st.button("Submit"): st.metric("Score", f"{score}/10")
         with t4: st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON</h2><hr><p>Synthesis in progress...</p></div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
@@ -209,7 +204,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS (RESTORED 51 BUTTONS) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
@@ -229,12 +224,15 @@ elif choice == "⚙️ Settings":
         st.checkbox("9. IB Alignment", key=f"s9_{v_id}")
         if st.button("10. Export Citations"): st.toast("Done.")
     with c2:
-        st.write("### 🎨 UI")
+        st.write("### 🎨 UI & Theme")
+        t_col1, t_col2 = st.columns(2)
+        if t_col1.button("☀️ Light Mode"): st.session_state.theme_mode = "light"; st.rerun()
+        if t_col2.button("🌑 Dark Mode"): st.session_state.theme_mode = "dark"; st.rerun()
         st.color_picker("11. Accent", accent, key=f"s11_{v_id}")
         st.color_picker("12. Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("13. Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("14. High Contrast", key=f"s14_{v_id}"); st.checkbox("15. Compact", key=f"s15_{v_id}")
-        st.checkbox("16. Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("17. Glassmorphism", key=f"s17_{v_id}")
+        st.checkbox("16. Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("18. Nav Hints", key=f"s18_{v_id}")
         if st.button("19. Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
         if st.button("20. Toggle Fullscreen"): st.toast("F11")
@@ -247,7 +245,7 @@ elif choice == "⚙️ Settings":
         if st.button("27. Cloud Backup"): st.success("Backed up.")
         if st.button("28. Generate Key"): st.code("RSA-VERSO-PRO")
         if st.button("29. Integrity Check"): st.toast("Verified.")
-        st.info(f"30. Build: 14.5.4 (vID: {v_id})")
+        st.info(f"30. Build: 14.5.5 (vID: {v_id})")
     
     st.write("### ⚡ Advanced Toolbox")
     c4, c5, c6 = st.columns(3)
