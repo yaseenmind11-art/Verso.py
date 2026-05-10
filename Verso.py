@@ -114,7 +114,7 @@ if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
     st.write("Fixed punctuation overlap and word-splitting issues.")
     
-    text_to_check = st.text_area("Paste text to improve:", height=250,)
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please paste the sentence you want to correct here:")
     
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
