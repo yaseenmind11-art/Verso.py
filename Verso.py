@@ -52,14 +52,9 @@ def trigger_master_reset():
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
-    st.session_state.theme_mode = "dark"
     st.toast("🚨 SYSTEM WIPED")
     time.sleep(0.4)
     st.rerun()
-
-# --- 🎯 THEME CALLBACK LOGIC ---
-def switch_theme(new_mode):
-    st.session_state.theme_mode = new_mode
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
 if st.session_state.timer_active and st.session_state.timer_end_time:
@@ -82,7 +77,7 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-# RESTORED YOUR ORIGINAL CSS EXACTLY 💎
+# CORE CSS RESTORED EXACTLY AS SHOWN IN YOUR SCREENSHOTS
 st.markdown(f"""
     <style>
     .stApp {{ color: inherit; }}
@@ -117,49 +112,8 @@ with st.sidebar:
     st.title("VERSO PRO")
     choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
 
-# --- MODULE: SETTINGS ---
-if choice == "⚙️ Settings":
-    st.title("Verso Control Center")
-    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
-    st.write("---")
-    v_id = st.session_state.reset_counter
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.write("### 📚 Academic & Audio")
-        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"s3_{v_id}")
-        st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
-        st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
-        st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
-        st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
-        st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
-        st.checkbox("IB Alignment", key=f"s9_{v_id}")
-    with c2:
-        st.write("### 🎨 UI")
-        
-        # --- THEME BUTTONS USING STANDARD ON_CLICK LOGIC ---
-        col_light, col_dark = st.columns(2)
-        col_light.button("☀️ Light", on_click=switch_theme, args=("light",), use_container_width=True)
-        col_dark.button("🌙 Dark", on_click=switch_theme, args=("dark",), use_container_width=True)
-            
-        st.color_picker("Accent", accent, key=f"s11_{v_id}")
-        st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
-        st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
-        st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
-        st.checkbox("Force Dark", value=(st.session_state.theme_mode == "dark"), key=f"s16_{v_id}")
-        st.checkbox("Glassmorphism", key=f"s17_{v_id}")
-        st.checkbox("Nav Hints", key=f"s18_{v_id}")
-    with c3:
-        st.write("### 🔐 Security")
-        st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
-        st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
-        st.info(f"Build: 14.5.4 (vID: {v_id})")
-    
-    st.success("System Optimized")
-
 # --- MODULE: GRAMMAR CHECKER ---
-elif choice == "✍️ Grammar Checker":
+if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     if st.button("✨ Run Smart Correction", use_container_width=True):
@@ -252,6 +206,52 @@ elif choice == "⏱️ Time Tracker":
     if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
+
+# --- MODULE: SETTINGS ---
+elif choice == "⚙️ Settings":
+    st.title("Verso Control Center")
+    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
+    st.write("---")
+    v_id = st.session_state.reset_counter
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.write("### 📚 Academic & Audio")
+        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
+        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
+        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"s3_{v_id}")
+        st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
+        st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
+        st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
+        st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
+        st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
+        st.checkbox("IB Alignment", key=f"s9_{v_id}")
+    with c2:
+        st.write("### 🎨 UI")
+        
+        # THEME BUTTONS USING THE DEFAULT STREAMLIT LOOK
+        col_light, col_dark = st.columns(2)
+        if col_light.button("☀️ Light", use_container_width=True):
+            st.session_state.theme_mode = "light"
+            st.rerun()
+        if col_dark.button("🌙 Dark", use_container_width=True):
+            st.session_state.theme_mode = "dark"
+            st.rerun()
+            
+        st.color_picker("Accent", accent, key=f"s11_{v_id}")
+        st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
+        st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
+        st.checkbox("High Contrast", key=f"s14_{v_id}")
+        st.checkbox("Compact", key=f"s15_{v_id}")
+        st.checkbox("Force Dark", value=(st.session_state.theme_mode == "dark"), key=f"s16_{v_id}")
+        st.checkbox("Glassmorphism", key=f"s17_{v_id}")
+        st.checkbox("Nav Hints", key=f"s18_{v_id}")
+    with c3:
+        st.write("### 🔐 Security")
+        st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
+        st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
+        st.info(f"Build: 14.5.4 (vID: {v_id})")
+    
+    st.success("System Optimized")
 
 # --- HOME ---
 elif choice == "🏠 Home":
