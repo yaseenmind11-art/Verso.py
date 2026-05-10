@@ -52,9 +52,18 @@ def trigger_master_reset():
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
-    st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
+    st.session_state.theme_mode = "dark"
+    st.toast("🚨 SYSTEM WIPED")
     time.sleep(0.4)
     st.rerun()
+
+# --- 🎨 THEME TOGGLE LOGIC ---
+if st.session_state.theme_mode == "light":
+    bg_color = "#FFFFFF"
+    text_color = "#000000"
+else:
+    bg_color = "#0e1117"
+    text_color = "#FFFFFF"
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
 if st.session_state.timer_active and st.session_state.timer_end_time:
@@ -67,7 +76,7 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
     else:
         st.session_state.remaining_at_pause = diff
 
-# --- 🎨 LIGHT/DARK ADAPTIVE STYLING ---
+# --- 🎨 STYLING ---
 accent = st.session_state.get('set_color', "#3b82f6")
 bg_card = st.session_state.get('set_bg', "#1e293b")
 f_scale = st.session_state.get('set_font', 1.1)
@@ -79,7 +88,8 @@ inject_ga()
 
 st.markdown(f"""
     <style>
-    .stApp {{ color: inherit; }}
+    .stApp {{ background-color: {bg_color}; color: {text_color}; }}
+    h1, h2, h3, p, span, label, .stMarkdown {{ color: {text_color} !important; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
         padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
@@ -228,10 +238,11 @@ elif choice == "⚙️ Settings":
     with c2:
         st.write("### 🎨 UI")
         # --- THEME BUTTONS ---
-        if st.button("☀️ Light Mode"):
+        col_light, col_dark = st.columns(2)
+        if col_light.button("☀️ Light Mode", use_container_width=True):
             st.session_state.theme_mode = "light"
             st.rerun()
-        if st.button("🌑 Dark Mode"):
+        if col_dark.button("🌑 Dark Mode", use_container_width=True):
             st.session_state.theme_mode = "dark"
             st.rerun()
             
@@ -239,7 +250,8 @@ elif choice == "⚙️ Settings":
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
-        st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
+        st.checkbox("Force Dark", value=(True if st.session_state.theme_mode == "dark" else False), key=f"s16_{v_id}")
+        st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
         if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
         if st.button("Toggle Fullscreen"): st.toast("F11")
