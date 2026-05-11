@@ -38,7 +38,6 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
-# New persistent states for Quiz stability
 if 'quiz_questions' not in st.session_state: st.session_state.quiz_questions = []
 if 'current_content_hash' not in st.session_state: st.session_state.current_content_hash = ""
 
@@ -179,14 +178,12 @@ elif choice == "📒 Study Assistant":
     raw_content = st.text_area("Input Content:", height=200, placeholder="Input the text you want to study from...")
     
     if raw_content:
-        # Stable Quiz Logic: Check if content changed to avoid rerandomizing
         new_hash = str(hash(raw_content))
         if st.session_state.current_content_hash != new_hash:
             blob = TextBlob(raw_content)
             words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
             if len(words) < 10: words += ["academic research", "data analysis", "framework", "sustainability", "implementation"]
             
-            # Pre-generate questions once
             st.session_state.quiz_questions = []
             for i in range(10):
                 target = words[i % len(words)]
@@ -207,16 +204,37 @@ elif choice == "📒 Study Assistant":
         
         with t2:
             score = 0
-            # Use pre-generated data to keep questions static
             for i, q in enumerate(st.session_state.quiz_questions):
                 st.write(f"**Q{i+1}:** {q['target'].upper()}")
                 ans = st.radio("Select:", q['options'], key=f"q_{i}_{st.session_state.current_content_hash}", index=None)
                 if ans == q['target']: score += 1
-            if st.button("Submit"): 
+            
+            c1, c2 = st.columns([1, 4])
+            if c1.button("Submit"): 
                 st.metric("Score", f"{score}/10")
                 if score >= 7: st.balloons()
+            # RETAKE BUTTON: Clears the current hash to force a regeneration/reset
+            if c2.button("🔄 Retake Quiz"):
+                st.session_state.current_content_hash = "reset"
+                st.rerun()
         
-        with t4: st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON</h2><hr><p>Synthesis in progress...</p></div>', unsafe_allow_html=True)
+        with t3:
+            st.markdown("### Memory Cards")
+            for i, word in enumerate(st.session_state.words_list[:10]):
+                with st.expander(f"Flashcard {i+1}: {word.title()}"):
+                    st.write(f"**Concept:** {word.upper()}")
+                    st.write("*Review the text above for full context.*")
+
+        with t4: 
+            st.markdown(f"""
+            <div class="teacher-board">
+                <h2>ACADEMIC SYNTHESIS</h2>
+                <hr>
+                <p><b>Topic Analysis:</b> {st.session_state.words_list[0].title()}</p>
+                <p>This text focuses on the implementation of <b>{st.session_state.words_list[1]}</b> within the framework of <b>{st.session_state.words_list[2]}</b>.</p>
+                <p><i>Recommendation: Focus your research on how these variables interact.</i></p>
+            </div>
+            """, unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -244,18 +262,13 @@ elif choice == "⚙️ Settings":
         st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
-        
-        # COMPLETE CITATION LIST
         st.selectbox("Citation Style", [
             "APA 10th", "APA 9th", "APA 8th", "APA 7th", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
             "MLA 9th", "Chicago", "Harvard", "Vancouver", "IEEE", "ACS", "AMA", "IB MYP2"
         ], key=f"s3_{v_id}")
-        
         st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
         st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
         st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
-        st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
-        st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
         st.checkbox("IB Alignment", key=f"s9_{v_id}")
         if st.button("Export Citations"): st.toast("Done ✔️")
     with c2:
@@ -265,18 +278,13 @@ elif choice == "⚙️ Settings":
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
         st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
-        st.checkbox("Nav Hints", key=f"s18_{v_id}")
         if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced ✔️")
-        if st.button("Toggle Fullscreen"): st.toast("F11")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
-        st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
         if st.button("Purge History"): st.warning("Purged ✔️")
         if st.button("Export CSV"): st.toast("Saved ✔️")
         if st.button("Cloud Backup"): st.success("Backed up ✔️")
-        if st.button("Generate Key"): st.code("RSA-VERSO-PRO")
-        if st.button("Integrity Check"): st.toast("Verified ✔️")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
     
     st.success("System Optimized")
