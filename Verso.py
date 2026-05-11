@@ -246,24 +246,21 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.4 (vID: {v_id})")
     st.success("System Optimized")
 
-# --- HOME (MAINTAINING GOOGLE AS CORE) ---
+# --- HOME (ACADEMIC TRUSTED SEARCH ONLY) ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     
-    # Placeholder added as requested
-    q = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to ask...")
+    q_input = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to ask...")
     
-    if q:
-        google_url = f"https://www.google.com/search?q={q}&igu=1"
+    if q_input:
+        # 📚 Automatic Academic Filtering (Excludes Wikipedia, forces trusted domains)
+        # Filters for .org, .edu, and Britannica while specifically blocking -wikipedia
+        academic_query = f"{q_input} site:.org OR site:.edu OR site:britannica.com -wikipedia"
+        google_url = f"https://www.google.com/search?q={academic_query}&igu=1"
         
-        # 🛡️ Bypass logic: Providing a direct link helps if Sophos blocks the frame
-        col1, col2 = st.columns([1, 4])
-        with col1:
-            st.link_button("🚀 Direct Search", google_url, help="Click here if the search box below is blocked by Sophos.")
-        with col2:
-            st.info("Loading Google Search Results...")
+        st.info("Filtering for Trusted Academic Sources (.org, .edu, Britannica)...")
 
-        # The embedded search box remains Google only
+        # The embedded search box
         st.markdown(f"""
             <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
                 <iframe src="{google_url}" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe>
