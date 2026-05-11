@@ -216,7 +216,14 @@ elif choice == "⚙️ Settings":
         st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"s3_{v_id}")
+        
+        # --- EXPANDED CITATION STYLES ---
+        st.selectbox("Citation Style", [
+            "APA 10th (Coming Soon)", "APA 8th", "APA 7th", "APA 6th", 
+            "MLA 9th", "Chicago", "Harvard", "Vancouver", 
+            "IEEE", "ACS", "AMA", "IB MYP2"
+        ], key=f"s3_{v_id}")
+        
         st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
         st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
         st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
@@ -253,9 +260,6 @@ elif choice == "🏠 Home":
     q_input = st.text_input("🔍 Search Reliable Database:", placeholder="Please write the question you want to ask...")
     
     if q_input:
-        # 🧪 Ultra-Reliable Filter:
-        # Includes .edu, .gov, .org, .int (International Orgs), Britannica, JSTOR, ResearchGate, ScienceDirect
-        # Hard exclusion of Wikipedia and general .com blogs
         academic_filter = (
             "site:.edu OR site:.gov OR site:.org OR site:.int OR "
             "site:britannica.com OR site:jstor.org OR site:researchgate.net OR site:sciencedirect.com "
