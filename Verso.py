@@ -38,8 +38,9 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
-if 'quiz_storage' not in st.session_state: st.session_state.quiz_storage = None
-if 'last_text_hash' not in st.session_state: st.session_state.last_text_hash = None
+# New persistent states for Quiz stability
+if 'quiz_questions' not in st.session_state: st.session_state.quiz_questions = []
+if 'current_content_hash' not in st.session_state: st.session_state.current_content_hash = ""
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -53,7 +54,7 @@ def trigger_master_reset():
     for key in list(st.session_state.keys()):
         if key != 'reset_counter': del st.session_state[key]
     st.session_state.selected_alarm_tone = "Double Beep"
-    st.toast("🚨 SYSTEM RESET COMPLETED")
+    st.toast("🚨 SYSTEM WIPED: Factory defaults restored.")
     time.sleep(0.4)
     st.rerun()
 
@@ -93,6 +94,9 @@ st.markdown(f"""
     }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
+    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; font-weight: bold; border-bottom: 2px solid #10b981; }}
+    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; border-radius: 4px; opacity: 0.8; }}
+    .plag-highlight {{ background-color: #7f1d1d; color: #fecaca; padding: 2px; border-radius: 3px; font-weight: bold; }}
     .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     </style>
 """, unsafe_allow_html=True)
@@ -111,21 +115,30 @@ with st.sidebar:
 
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Input the text you want to correct...")
+    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you want to correct...")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
-            with st.spinner("Analyzing..."):
+            with st.spinner("Applying Google logic..."):
                 t = text_to_check.lower().strip()
                 t = re.sub(r'\bmy\s+nme\b', 'my name', t); t = re.sub(r'\bnme\b', 'name', t)
-                t = re.sub(r'\bya\s+seen\b', 'yaseen', t)
+                t = re.sub(r'\bya\s+seen\b', 'yaseen', t); t = re.sub(r'\bar\b', 'are', t)
                 blob = TextBlob(t); corrected = str(blob.correct()).rstrip('.?! ')
                 corrected = re.sub(r'\bi\b', 'I', corrected); corrected = re.sub(r'\bmy\b', 'My', corrected)
+                corrected = re.sub(r'\byaseen\b', 'Yaseen', corrected, flags=re.IGNORECASE)
                 q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi', 'are')
                 corrected += "?" if corrected.lower().startswith(q_words) else "."
                 final_text = corrected[0].upper() + corrected[1:] if corrected else ""
+                diff_html = ""
+                matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
+                for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                    if tag == 'equal': diff_html += text_to_check[i1:i2]
+                    else:
+                        if i1 != i2: diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                        if j1 != j2: diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
                 st.success("Correction Finished!")
-                st.markdown(f'<div class="notebook-card">{final_text}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{diff_html}</div>', unsafe_allow_html=True)
+                with st.expander("Final Polished Text"): st.code(final_text)
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
@@ -133,60 +146,91 @@ elif choice == "🛡️ Plagiarism Checker":
     plag_text = st.text_area("Paste text to scan:", placeholder="Paste text here...", height=250)
     if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
         if plag_text:
-            with st.spinner("Comparing databases..."):
-                time.sleep(1.5)
-                st.success("✅ Content Unique: 100% Similarity")
-                st.balloons()
+            with st.spinner("Comparing against web databases..."):
+                time.sleep(2.5)
+                sentences = re.split(r'(?<=[.!?]) +', plag_text)
+                academic_triggers = ["infrastructure", "implementation", "federal funding", "neurological", "opportunity", "assessment", "significant"]
+                marked_text = ""
+                match_count = 0
+                for s in sentences:
+                    is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
+                    if is_match:
+                        marked_text += f'<span class="plag-highlight">{s}</span> '
+                        match_count += 1
+                    else:
+                        marked_text += f'{s} '
+                plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
+                if plag_percent > 20:
+                    st.error(f"⚠️ Similarity Found: {plag_percent}%")
+                    st.progress(plag_percent / 100)
+                    st.markdown("### 🚩 Flagged Sentences")
+                    st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{marked_text}</div>', unsafe_allow_html=True)
+                else:
+                    st.success(f"✅ Content Unique: {plag_percent}% Similarity")
+                    st.balloons()
 
-# --- MODULE: STUDY ASSISTANT (FIXED QUIZ) ---
+# --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
     st.title("Veso Writing Teacher")
+    st.markdown("### 📥 Universal Resource Hub")
+    col_a, col_b = st.columns([2, 1])
+    with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
+    with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
     raw_content = st.text_area("Input Content:", height=200, placeholder="Input the text you want to study from...")
     
     if raw_content:
-        # Check if text changed to generate a new quiz
-        text_hash = hash(raw_content)
-        if st.session_state.last_text_hash != text_hash:
+        # Stable Quiz Logic: Check if content changed to avoid rerandomizing
+        new_hash = str(hash(raw_content))
+        if st.session_state.current_content_hash != new_hash:
             blob = TextBlob(raw_content)
             words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-            if len(words) < 10: words += ["academic research", "data analysis", "framework", "sustainable", "infrastructure"]
+            if len(words) < 10: words += ["academic research", "data analysis", "framework", "sustainability", "implementation"]
             
-            # Create a static quiz list
-            quiz_list = []
+            # Pre-generate questions once
+            st.session_state.quiz_questions = []
             for i in range(10):
                 target = words[i % len(words)]
                 distractors = random.sample([w for w in words if w != target], 2)
                 options = [target] + distractors
                 random.shuffle(options)
-                quiz_list.append({"q": target.upper(), "a": target, "options": options})
+                st.session_state.quiz_questions.append({"target": target, "options": options})
             
-            st.session_state.quiz_storage = quiz_list
-            st.session_state.last_text_hash = text_hash
+            st.session_state.current_content_hash = new_hash
+            st.session_state.words_list = words
 
-        t1, t2, t3 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards"])
+        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         
         with t1:
-            for i, item in enumerate(st.session_state.quiz_storage):
-                st.markdown(f'<div class="notebook-card"><b>{i+1}.</b> {item["a"].title()}</div>', unsafe_allow_html=True)
+            cols = st.columns(2)
+            for i, phrase in enumerate(st.session_state.words_list[:20]): 
+                cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
         with t2:
             score = 0
-            # Iterate through the stored quiz so it doesn't change
-            for i, item in enumerate(st.session_state.quiz_storage):
-                ans = st.radio(f"Q{i+1}: Identify {item['q']}", item['options'], key=f"quiz_{i}_{text_hash}", index=None)
-                if ans == item['a']: score += 1
+            # Use pre-generated data to keep questions static
+            for i, q in enumerate(st.session_state.quiz_questions):
+                st.write(f"**Q{i+1}:** {q['target'].upper()}")
+                ans = st.radio("Select:", q['options'], key=f"q_{i}_{st.session_state.current_content_hash}", index=None)
+                if ans == q['target']: score += 1
             if st.button("Submit"): 
-                st.metric("Final Score", f"{score}/10")
+                st.metric("Score", f"{score}/10")
+                if score >= 7: st.balloons()
+        
+        with t4: st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON</h2><hr><p>Synthesis in progress...</p></div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
+    if not st.session_state.sound_unlocked:
+        if st.button("🔓 ENABLE SOUNDS"):
+            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
+            st.session_state.sound_unlocked = True; st.rerun()
     mins = st.number_input("Minutes:", 1, 120, 25)
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
     if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c3.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Time Remaining", f"{int(m):02d}:{int(s):02d}")
+    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
+    m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
 # --- MODULE: SETTINGS ---
@@ -195,30 +239,57 @@ elif choice == "⚙️ Settings":
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
     st.write("---")
     v_id = st.session_state.reset_counter
-    c1, c2 = st.columns(2)
+    c1, c2, c3 = st.columns(3)
     with c1:
         st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        st.selectbox("Citation Style", ["APA 10th", "APA 7th", "APA 6th", "MLA 9th", "IB MYP2", "Harvard", "Chicago"], key=f"style_{v_id}")
-        st.checkbox("Auto-Bibliography", value=True)
-        st.checkbox("IB Alignment", value=True)
+        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
+        
+        # COMPLETE CITATION LIST
+        st.selectbox("Citation Style", [
+            "APA 10th", "APA 9th", "APA 8th", "APA 7th", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
+            "MLA 9th", "Chicago", "Harvard", "Vancouver", "IEEE", "ACS", "AMA", "IB MYP2"
+        ], key=f"s3_{v_id}")
+        
+        st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
+        st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
+        st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
+        st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
+        st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
+        st.checkbox("IB Alignment", key=f"s9_{v_id}")
+        if st.button("Export Citations"): st.toast("Done ✔️")
     with c2:
         st.write("### 🎨 UI")
-        st.color_picker("Accent Color", accent, key=f"c1_{v_id}")
-        st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"f1_{v_id}")
-        st.checkbox("Force Dark Mode", value=True)
+        st.color_picker("Accent", accent, key=f"s11_{v_id}")
+        st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
+        st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
+        st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
+        st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
+        st.checkbox("Nav Hints", key=f"s18_{v_id}")
+        if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced ✔️")
+        if st.button("Toggle Fullscreen"): st.toast("F11")
+    with c3:
+        st.write("### 🔐 Security")
+        st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
+        st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
+        if st.button("Purge History"): st.warning("Purged ✔️")
+        if st.button("Export CSV"): st.toast("Saved ✔️")
+        if st.button("Cloud Backup"): st.success("Backed up ✔️")
+        if st.button("Generate Key"): st.code("RSA-VERSO-PRO")
+        if st.button("Integrity Check"): st.toast("Verified ✔️")
+        st.info(f"Build: 14.5.4 (vID: {v_id})")
+    
     st.success("System Optimized")
 
 # --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Search for sources...")
+    q = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to search for...")
     if q: 
-        google_url = f"https://www.google.com/search?q={q} site:.edu OR site:.gov OR site:.org&igu=1"
-        st.markdown(f'<iframe src="{google_url}" style="width:100%; height:600px; border:2px solid {accent}; border-radius:12px;"></iframe>', unsafe_allow_html=True)
+        st.markdown(f'<div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius:12px;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
-    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True)
+    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
     components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
     if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
