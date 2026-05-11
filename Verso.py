@@ -113,7 +113,7 @@ with st.sidebar:
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you wnt to correct...")
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Applying Google logic..."):
@@ -173,7 +173,7 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Input the text you want to study from...")
+    raw_content = st.text_area("Input Content:", height=200)
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Teacher"])
         blob = TextBlob(raw_content); words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
@@ -205,7 +205,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS (CLEANED UP) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
@@ -244,14 +244,32 @@ elif choice == "⚙️ Settings":
         if st.button("Generate Key"): st.code("RSA-VERSO-PRO")
         if st.button("Integrity Check"): st.toast("Verified.")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
-    
     st.success("System Optimized")
 
-# --- HOME ---
+# --- HOME (MAINTAINING GOOGLE AS CORE) ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
+    
+    # Placeholder added as requested
     q = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to ask...")
-    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True,)
+    
+    if q:
+        google_url = f"https://www.google.com/search?q={q}&igu=1"
+        
+        # 🛡️ Bypass logic: Providing a direct link helps if Sophos blocks the frame
+        col1, col2 = st.columns([1, 4])
+        with col1:
+            st.link_button("🚀 Direct Search", google_url, help="Click here if the search box below is blocked by Sophos.")
+        with col2:
+            st.info("Loading Google Search Results...")
+
+        # The embedded search box remains Google only
+        st.markdown(f"""
+            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
+                <iframe src="{google_url}" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe>
+            </div>
+        """, unsafe_allow_html=True)
+
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
