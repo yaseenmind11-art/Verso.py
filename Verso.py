@@ -113,7 +113,7 @@ with st.sidebar:
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="hi my nme is yaseen")
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you wnt to correct...")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Applying Google logic..."):
@@ -173,35 +173,21 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", height=200)
+    raw_content = st.text_area("Input Content:", height=200, placeholder="Input the text you want to study from...")
     if raw_content:
-        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Teacher"])
+        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         blob = TextBlob(raw_content); words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
         if len(words) < 20: words += ["academic research", "data analysis", "framework"]
-        
         with t1:
             cols = st.columns(2)
             for i, phrase in enumerate(words[:20]): cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
-            
         with t2:
-            st.markdown("### Test Your Knowledge")
             score = 0
-            # RESTORED QUIZ LOGIC: Select from words list, randomized options
             for i in range(10):
-                target = words[i % len(words)]
-                # Ensure we have unique distractors
-                distractors = [w for w in words if w != target]
-                if len(distractors) < 2: distractors = ["general study", "academic context"]
-                opts = [target] + random.sample(distractors, 2)
-                random.shuffle(opts)
-                
-                st.write(f"**Q{i+1}:** {target.upper()}")
-                ans = st.radio("Select:", opts, key=f"q_{i}_{st.session_state.reset_counter}", index=None)
+                target = words[i % len(words)]; opts = [target] + random.sample([w for w in words if w != target], 2); random.shuffle(opts)
+                st.write(f"**Q{i+1}:** {target.upper()}"); ans = st.radio("Select:", opts, key=f"q_{i}_{st.session_state.reset_counter}", index=None)
                 if ans == target: score += 1
-            if st.button("Submit Quiz"): 
-                st.metric("Final Score", f"{score}/10")
-                if score > 7: st.balloons()
-                
+            if st.button("Submit"): st.metric("Score", f"{score}/10")
         with t4: st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON</h2><hr><p>Synthesis in progress...</p></div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
@@ -219,7 +205,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS ---
+# --- MODULE: SETTINGS (CLEANED UP) ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
@@ -230,21 +216,14 @@ elif choice == "⚙️ Settings":
         st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
-        
-        # RESTORED CITATION LIST: NO "COMING SOON"
-        st.selectbox("Citation Style", [
-            "APA 10th", "APA 9th", "APA 8th", "APA 7th", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
-            "MLA 9th", "Chicago", "Harvard", "Vancouver", 
-            "IEEE", "ACS", "AMA", "IB MYP2"
-        ], key=f"s3_{v_id}")
-        
+        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "IB MYP2"], key=f"s3_{v_id}")
         st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
         st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
         st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
         st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
         st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
         st.checkbox("IB Alignment", key=f"s9_{v_id}")
-        if st.button("Export Citations"): st.toast("Done.")
+        if st.button("Export Citations"): st.toast("Done ✔️")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
@@ -253,30 +232,26 @@ elif choice == "⚙️ Settings":
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
         st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
-        if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced.")
+        if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced ✔️")
         if st.button("Toggle Fullscreen"): st.toast("F11")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
         st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
-        if st.button("Purge History"): st.warning("Purged.")
-        if st.button("Export CSV"): st.toast("Saved.")
-        if st.button("Cloud Backup"): st.success("Backed up.")
-        if st.button("Generate Key"): st.code("RSA-VERSO-PRO")
-        if st.button("Integrity Check"): st.toast("Verified.")
+        if st.button("Purge History"): st.warning("Purged ✔️")
+        if st.button("Export CSV"): st.toast("Saved ✔️")
+        if st.button("Cloud Backup"): st.success("Backed up ✔️")
+        if st.button("Generate Key"): st.code("RSA-VERSO-PRO ✔️")
+        if st.button("Integrity Check"): st.toast("Verified ✔️")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
+    
     st.success("System Optimized")
 
 # --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q_input = st.text_input("🔍 Search Reliable Database:", placeholder="Please write the question you want to ask...")
-    if q_input:
-        academic_filter = "site:.edu OR site:.gov OR site:.org OR site:.int OR site:britannica.com OR site:jstor.org -wikipedia -blogspot -wordpress"
-        google_url = f"https://www.google.com/search?q={q_input} {academic_filter}&igu=1"
-        st.info("Results limited to Peer-Reviewed and Institutional Sources.")
-        st.markdown(f'<div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;"><iframe src="{google_url}" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
-
+    q = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to search for...")
+    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True,)
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
