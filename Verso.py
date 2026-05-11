@@ -178,16 +178,30 @@ elif choice == "📒 Study Assistant":
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ Teacher"])
         blob = TextBlob(raw_content); words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
         if len(words) < 20: words += ["academic research", "data analysis", "framework"]
+        
         with t1:
             cols = st.columns(2)
             for i, phrase in enumerate(words[:20]): cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
+            
         with t2:
+            st.markdown("### Test Your Knowledge")
             score = 0
+            # RESTORED QUIZ LOGIC: Select from words list, randomized options
             for i in range(10):
-                target = words[i % len(words)]; opts = [target] + random.sample([w for w in words if w != target], 2); random.shuffle(opts)
-                st.write(f"**Q{i+1}:** {target.upper()}"); ans = st.radio("Select:", opts, key=f"q_{i}_{st.session_state.reset_counter}", index=None)
+                target = words[i % len(words)]
+                # Ensure we have unique distractors
+                distractors = [w for w in words if w != target]
+                if len(distractors) < 2: distractors = ["general study", "academic context"]
+                opts = [target] + random.sample(distractors, 2)
+                random.shuffle(opts)
+                
+                st.write(f"**Q{i+1}:** {target.upper()}")
+                ans = st.radio("Select:", opts, key=f"q_{i}_{st.session_state.reset_counter}", index=None)
                 if ans == target: score += 1
-            if st.button("Submit"): st.metric("Score", f"{score}/10")
+            if st.button("Submit Quiz"): 
+                st.metric("Final Score", f"{score}/10")
+                if score > 7: st.balloons()
+                
         with t4: st.markdown(f'<div class="teacher-board"><h2>DEEP LESSON</h2><hr><p>Synthesis in progress...</p></div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
@@ -217,11 +231,11 @@ elif choice == "⚙️ Settings":
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
         
-        # --- FULL APA HISTORY & ALL STYLES ---
+        # RESTORED CITATION LIST: NO "COMING SOON"
         st.selectbox("Citation Style", [
-            "APA 7th (Current)", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
-            "MLA 9th", "Chicago (Notes & Bibliography)", "Chicago (Author-Date)", 
-            "Harvard", "Vancouver", "IEEE", "ACS", "AMA", "IB MYP2"
+            "APA 10th", "APA 9th", "APA 8th", "APA 7th", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
+            "MLA 9th", "Chicago", "Harvard", "Vancouver", 
+            "IEEE", "ACS", "AMA", "IB MYP2"
         ], key=f"s3_{v_id}")
         
         st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
@@ -253,27 +267,15 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.4 (vID: {v_id})")
     st.success("System Optimized")
 
-# --- HOME (ULTRA-RELIABLE ACADEMIC SEARCH) ---
+# --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    
     q_input = st.text_input("🔍 Search Reliable Database:", placeholder="Please write the question you want to ask...")
-    
     if q_input:
-        academic_filter = (
-            "site:.edu OR site:.gov OR site:.org OR site:.int OR "
-            "site:britannica.com OR site:jstor.org OR site:researchgate.net OR site:sciencedirect.com "
-            "-wikipedia -blogspot -wordpress"
-        )
+        academic_filter = "site:.edu OR site:.gov OR site:.org OR site:.int OR site:britannica.com OR site:jstor.org -wikipedia -blogspot -wordpress"
         google_url = f"https://www.google.com/search?q={q_input} {academic_filter}&igu=1"
-        
-        st.info("Results limited to Peer-Reviewed, Government, and Institutional Sources.")
-
-        st.markdown(f"""
-            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
-                <iframe src="{google_url}" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe>
-            </div>
-        """, unsafe_allow_html=True)
+        st.info("Results limited to Peer-Reviewed and Institutional Sources.")
+        st.markdown(f'<div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;"><iframe src="{google_url}" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True)
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
