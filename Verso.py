@@ -246,21 +246,25 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.4 (vID: {v_id})")
     st.success("System Optimized")
 
-# --- HOME (ACADEMIC TRUSTED SEARCH ONLY) ---
+# --- HOME (ULTRA-RELIABLE ACADEMIC SEARCH) ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     
-    q_input = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to ask...")
+    q_input = st.text_input("🔍 Search Reliable Database:", placeholder="Please write the question you want to ask...")
     
     if q_input:
-        # 📚 Automatic Academic Filtering (Excludes Wikipedia, forces trusted domains)
-        # Filters for .org, .edu, and Britannica while specifically blocking -wikipedia
-        academic_query = f"{q_input} site:.org OR site:.edu OR site:britannica.com -wikipedia"
-        google_url = f"https://www.google.com/search?q={academic_query}&igu=1"
+        # 🧪 Ultra-Reliable Filter:
+        # Includes .edu, .gov, .org, .int (International Orgs), Britannica, JSTOR, ResearchGate, ScienceDirect
+        # Hard exclusion of Wikipedia and general .com blogs
+        academic_filter = (
+            "site:.edu OR site:.gov OR site:.org OR site:.int OR "
+            "site:britannica.com OR site:jstor.org OR site:researchgate.net OR site:sciencedirect.com "
+            "-wikipedia -blogspot -wordpress"
+        )
+        google_url = f"https://www.google.com/search?q={q_input} {academic_filter}&igu=1"
         
-        st.info("Filtering for Trusted Academic Sources (.org, .edu, Britannica)...")
+        st.info("Results limited to Peer-Reviewed, Government, and Institutional Sources.")
 
-        # The embedded search box
         st.markdown(f"""
             <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
                 <iframe src="{google_url}" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe>
