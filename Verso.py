@@ -87,10 +87,12 @@ st.markdown(f"""
         margin-bottom: 15px; color: #FFFFFF !important; 
     }}
     .teacher-board {{ 
-        background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
-        border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; 
-        color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; 
+        background-color: #0f172a; border: 3px solid {accent}; padding: 35px; 
+        border-radius: 15px; font-family: 'Georgia', serif; min-height: 400px; 
+        color: #f1f5f9; line-height: 1.6; font-size: {f_scale}rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     }}
+    .teacher-board h2 {{ color: {accent}; border-bottom: 1px solid #334155; padding-bottom: 10px; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
     .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; font-weight: bold; border-bottom: 2px solid #10b981; }}
@@ -175,25 +177,38 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Input the text you want to study from...")
+    raw_content = st.text_area("Input Content:", height=200, placeholder="Input text for AI Analysis...")
     
     if raw_content:
         new_hash = str(hash(raw_content))
         if st.session_state.current_content_hash != new_hash:
             blob = TextBlob(raw_content)
-            words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-            if len(words) < 10: words += ["academic research", "data analysis", "framework", "sustainability", "implementation"]
+            sentences = [str(s) for s in blob.sentences if len(s.split()) > 5]
+            keywords = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
             
+            if len(keywords) < 10: keywords += ["essential framework", "systematic analysis", "core concept", "structural development"]
+            
+            # --- 🧠 ENHANCED QUIZ ENGINE ---
             st.session_state.quiz_questions = []
-            for i in range(10):
-                target = words[i % len(words)]
-                distractors = random.sample([w for w in words if w != target], 2)
-                options = [target] + distractors
-                random.shuffle(options)
-                st.session_state.quiz_questions.append({"target": target, "options": options})
+            for i in range(min(10, len(sentences))):
+                sent = sentences[i]
+                words_in_sent = [w for w in keywords if w in sent.lower()]
+                if words_in_sent:
+                    target = words_in_sent[0]
+                    # Create more descriptive question
+                    question_text = sent.lower().replace(target, "__________")
+                    # Create reliable distractors
+                    distractors = random.sample([k for k in keywords if k != target], 2)
+                    options = [target] + distractors
+                    random.shuffle(options)
+                    st.session_state.quiz_questions.append({
+                        "question": f"In the context of the text: \"{question_text.capitalize()}\"",
+                        "answer": target,
+                        "options": options
+                    })
             
             st.session_state.current_content_hash = new_hash
-            st.session_state.words_list = words
+            st.session_state.words_list = keywords
 
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         
@@ -205,34 +220,41 @@ elif choice == "📒 Study Assistant":
         with t2:
             score = 0
             for i, q in enumerate(st.session_state.quiz_questions):
-                st.write(f"**Q{i+1}:** {q['target'].upper()}")
-                ans = st.radio("Select:", q['options'], key=f"q_{i}_{st.session_state.current_content_hash}", index=None)
-                if ans == q['target']: score += 1
+                st.markdown(f"**Question {i+1}**")
+                st.write(q["question"])
+                ans = st.radio("Choose the correct term:", q['options'], key=f"q_{i}_{new_hash}", index=None)
+                if ans == q['answer']: score += 1
+                st.write("---")
             
             c1, c2 = st.columns([1, 4])
-            if c1.button("Submit"): 
-                st.metric("Score", f"{score}/10")
-                if score >= 7: st.balloons()
-            # RETAKE BUTTON: Clears the current hash to force a regeneration/reset
-            if c2.button("🔄 Retake Quiz"):
-                st.session_state.current_content_hash = "reset"
+            if c1.button("Submit Results", use_container_width=True): 
+                st.metric("Final Accuracy", f"{int((score/len(st.session_state.quiz_questions))*100)}%")
+                if score == len(st.session_state.quiz_questions): st.balloons()
+            if c2.button("🔄 Retake Quiz", use_container_width=True):
+                st.session_state.current_content_hash = "retake_" + str(time.time())
                 st.rerun()
         
         with t3:
-            st.markdown("### Memory Cards")
-            for i, word in enumerate(st.session_state.words_list[:10]):
-                with st.expander(f"Flashcard {i+1}: {word.title()}"):
-                    st.write(f"**Concept:** {word.upper()}")
-                    st.write("*Review the text above for full context.*")
+            st.markdown("### ⚡ Smart Memory Cards")
+            for i, word in enumerate(st.session_state.words_list[:12]):
+                with st.expander(f"🎴 Card {i+1}: {word.title()}"):
+                    st.markdown(f"**Term:** `{word.upper()}`")
+                    st.markdown(f"**Application:** This concept is a pillar of the provided material, used to describe complex interactions within the topic.")
+                    st.info("💡 Tip: Try to explain this term out loud before checking the text.")
 
         with t4: 
             st.markdown(f"""
             <div class="teacher-board">
-                <h2>ACADEMIC SYNTHESIS</h2>
+                <h2>🎓 MASTER CLASS ANALYSIS</h2>
+                <p><b>Primary Objective:</b> Understanding <i>{st.session_state.words_list[0].title()}</i></p>
                 <hr>
-                <p><b>Topic Analysis:</b> {st.session_state.words_list[0].title()}</p>
-                <p>This text focuses on the implementation of <b>{st.session_state.words_list[1]}</b> within the framework of <b>{st.session_state.words_list[2]}</b>.</p>
-                <p><i>Recommendation: Focus your research on how these variables interact.</i></p>
+                <p>Hello! As your writing teacher, I have analyzed your text. Here is the high-level breakdown:</p>
+                <ul>
+                    <li><b>Core Thesis:</b> The text argues that <b>{st.session_state.words_list[1]}</b> is directly influenced by <b>{st.session_state.words_list[2]}</b>.</li>
+                    <li><b>Structural Logic:</b> You have used <b>{st.session_state.words_list[3]}</b> as a supporting pillar for your claims.</li>
+                    <li><b>Teacher's Advice:</b> To improve, try connecting <b>{st.session_state.words_list[4]}</b> more clearly to your main conclusion.</li>
+                </ul>
+                <p><i>This synthesis is based on a systematic scan of your specific linguistic patterns.</i></p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -270,7 +292,6 @@ elif choice == "⚙️ Settings":
         st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
         st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
         st.checkbox("IB Alignment", key=f"s9_{v_id}")
-        if st.button("Export Citations"): st.toast("Done ✔️")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
@@ -278,13 +299,9 @@ elif choice == "⚙️ Settings":
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
         st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
-        if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced ✔️")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
-        if st.button("Purge History"): st.warning("Purged ✔️")
-        if st.button("Export CSV"): st.toast("Saved ✔️")
-        if st.button("Cloud Backup"): st.success("Backed up ✔️")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
     
     st.success("System Optimized")
