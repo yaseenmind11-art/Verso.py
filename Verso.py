@@ -217,11 +217,11 @@ elif choice == "⚙️ Settings":
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
         
-        # --- EXPANDED CITATION STYLES ---
+        # --- FULL APA HISTORY & ALL STYLES ---
         st.selectbox("Citation Style", [
-            "APA 10th (Coming Soon)", "APA 8th", "APA 7th", "APA 6th", 
-            "MLA 9th", "Chicago", "Harvard", "Vancouver", 
-            "IEEE", "ACS", "AMA", "IB MYP2"
+            "APA 7th (Current)", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
+            "MLA 9th", "Chicago (Notes & Bibliography)", "Chicago (Author-Date)", 
+            "Harvard", "Vancouver", "IEEE", "ACS", "AMA", "IB MYP2"
         ], key=f"s3_{v_id}")
         
         st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
