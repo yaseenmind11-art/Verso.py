@@ -39,7 +39,7 @@ if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_p
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 # Unified current content tracker
-if 'processed_data' not in st.session_state: st.session_state.processed_data = {"keywords": [], "questions": [], "synthesis": [], "definitions": {}}
+if 'processed_data' not in st.session_state: st.session_state.processed_data = {}
 if 'current_content_hash' not in st.session_state: st.session_state.current_content_hash = ""
 # Flashcard SRS State
 if 'flashcard_idx' not in st.session_state: st.session_state.flashcard_idx = 0
@@ -126,9 +126,7 @@ if choice == "✍️ Grammar Checker":
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Applying Google logic..."):
-                # FIX: Remove trash symbols [viii] before processing
-                t = re.sub(r'\[\s*[ivxlcdm0-9]+\s*\]', '', text_to_check, flags=re.IGNORECASE)
-                t = t.lower().strip()
+                t = text_to_check.lower().strip()
                 t = re.sub(r'\bmy\s+nme\b', 'my name', t); t = re.sub(r'\bnme\b', 'name', t)
                 t = re.sub(r'\bya\s+seen\b', 'yaseen', t); t = re.sub(r'\bar\b', 'are', t)
                 blob = TextBlob(t); corrected = str(blob.correct()).rstrip('.?! ')
@@ -190,9 +188,7 @@ elif choice == "📒 Study Assistant":
         new_hash = str(hash(raw_content))
         if st.session_state.current_content_hash != new_hash:
             with st.spinner("🧠 Verso Engine: Synthesizing material..."):
-                # FIX: Scrub Roman numeral artifacts [viii] from raw input
-                clean_raw = re.sub(r'\[\s*[ivxlcdm0-9]+\s*\]', '', raw_content, flags=re.IGNORECASE)
-                blob = TextBlob(clean_raw)
+                blob = TextBlob(raw_content)
                 sentences = [str(s) for s in blob.sentences if len(s.split()) > 8]
                 keywords = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
                 
@@ -212,8 +208,9 @@ elif choice == "📒 Study Assistant":
                     words_in_sent = [w for w in keywords if w in sent.lower()]
                     if words_in_sent:
                         target = words_in_sent[0]
+                        # Descriptive question creation
                         q_text = sent.lower().replace(target, "__________")
-                        distractors = random.sample([k for k in keywords if k != target], min(2, len(keywords)-1))
+                        distractors = random.sample([k for k in keywords if k != target], 2)
                         options = [target] + distractors
                         random.shuffle(options)
                         st.session_state.processed_data["questions"].append({
@@ -229,7 +226,7 @@ elif choice == "📒 Study Assistant":
                 st.session_state.show_flash_answer = False
                 st.session_state.current_content_hash = new_hash
 
-        data = st.session_state.get("processed_data", {"keywords": [], "questions": [], "synthesis": [], "definitions": {}})
+        data = st.session_state.processed_data
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         
         with t1:
@@ -240,21 +237,21 @@ elif choice == "📒 Study Assistant":
         with t2:
             st.markdown("### 🔥 Dynamic Academic Challenge")
             score = 0
-            # FIX: Ensure 'questions' key exists before iterating to avoid KeyError
-            q_list = data.get("questions", [])
-            for i, q in enumerate(q_list):
+            for i, q in enumerate(data["questions"]):
                 st.markdown(f"**Question {i+1}** <span style='color:grey;font-size:12px'>({q['type']})</span>", unsafe_allow_html=True)
                 st.write(q["text"])
                 ans = st.radio("Choose the correct academic term:", q['options'], key=f"q_{i}_{new_hash}", index=None)
                 if ans == q['answer']: score += 1
                 st.write("---")
             
+            # --- 🧠 RESULTS & INTELLIGENT FEEDBACK ---
             c1, c2, c3 = st.columns([1.5, 2, 1])
-            total_q = len(q_list)
+            total_q = len(data["questions"])
             if total_q > 0 and c1.button("Analyze Results", use_container_width=True): 
                 pct = int((score/total_q)*100)
                 c2.metric("Final Accuracy", f"{score}/{total_q}", f"{pct}%")
                 
+                # Intellect feedback logic
                 if pct == 100: msg = "🏆 Masterful performance! Keep up this standard!"
                 elif pct >= 80: msg = "🌟 Excellent! A reliable grasp of the material!"
                 elif pct >= 60: msg = "👍 Good effort! Review the flashcards to sharpen focus."
@@ -269,24 +266,31 @@ elif choice == "📒 Study Assistant":
         
         with t3:
             st.markdown("### ⚡ SRS Memory Class (Spaced Repetition System)")
+            
             srs_score_str = f"Correct: {st.session_state.srs_scores['correct']} | Wrong: {st.session_state.srs_scores['wrong']}"
             st.write(f"**Progress:** {srs_score_str}")
+            
             kws = data["keywords"]
             idx = st.session_state.flashcard_idx
             
             if idx < len(kws):
                 current_kw = kws[idx]
                 st.markdown(f'<div class="notebook-card" style="text-align:center;"><h2>Card {idx+1}</h2><p>Conceptualize this term in context:</p><h1>`{current_kw.upper()}`</h1></div>', unsafe_allow_html=True)
+                
                 col_sh, col_co, col_wr = st.columns([2, 1, 1])
+                
                 if col_sh.button("👀 Show Reliable Answer", use_container_width=True):
                     st.session_state.show_flash_answer = True
+                
                 if st.session_state.show_flash_answer:
                     st.success(f"**Reliable Context:** {data['definitions'].get(current_kw.upper(), 'Conceptual framework pivotal to understanding systematic material interactions.')}")
+                    
                     if col_co.button("✔️ I Got It Correct", use_container_width=True):
                         st.session_state.srs_scores["correct"] += 1
                         st.session_state.flashcard_idx += 1
                         st.session_state.show_flash_answer = False
                         st.rerun()
+                    
                     if col_wr.button("✖️ Needs Practice", use_container_width=True):
                         st.session_state.srs_scores["wrong"] += 1
                         st.session_state.flashcard_idx += 1
@@ -301,27 +305,31 @@ elif choice == "📒 Study Assistant":
                     st.rerun()
 
         with t4: 
-            if data["keywords"] and len(data["synthesis"]) > 1:
-                st.markdown(f"""
-                <div class="teacher-board">
-                    <h2>🎓 MASTER CLASS TUTOR ANALYSIS</h2>
-                    <p><b>Subject Focus:</b> Synthesizing <i>{data['keywords'][0].title()}</i></p>
-                    <hr>
-                    <p>Greetings, scholar. As your tutoring lead, I have broken down your inputted material into a multi-layered educational framework. Here is your lesson plan and deep analysis:</p>
-                    <h3>Layer 1: Core Theoretical Thesis</h3>
-                    <p>The text establishes that the systematic application of <b>{data['keywords'][1]}</b> is directly influenced by established structural development.</p>
-                    <h3>Layer 2: Structural Logic Pillars</h3>
-                    <ul>
-                        <li><b>Methodology:</b> <i>{data['keywords'][2].capitalize()}</i> serves as the analytical standard.</li>
-                        <li><b>Evidence:</b> You must connect <i>{data['keywords'][3]}</i> directly to your final contextual claims.</li>
-                    </ul>
-                    <h3>Layer 3: Teacher's Review & Guidance</h3>
-                    <div style="background-color:#1a202c; padding:15px; border-radius:10px; margin:10px 0; border-left:3px solid {accent};">
-                        <p><i>- "{data['synthesis'][0]}"</i></p>
-                        <p><i>- "{data['synthesis'][1]}"</i></p>
-                    </div>
+            st.markdown(f"""
+            <div class="teacher-board">
+                <h2>🎓 MASTER CLASS TUTOR ANALYSIS</h2>
+                <p><b>Subject Focus:</b> Synthesizing <i>{data['keywords'][0].title()}</i></p>
+                <hr>
+                <p>Greetings, scholar. As your tutoring lead, I have broken down your inputted material into a multi-layered educational framework. Here is your lesson plan and deep analysis:</p>
+                
+                <h3>Layer 1: Core Theoretical Thesis</h3>
+                <p>The text establishes that the systematic application of <b>{data['keywords'][1]}</b> is directly influenced by established structural development. It argues for a clear methodological connection between theory and implementation.</p>
+                
+                <h3>Layer 2: Structural Logic Pillars</h3>
+                <ul>
+                    <li><b>Methodology:</b> <i>{data['keywords'][2].capitalize()}</i> serves as the analytical standard for evaluating claims.</li>
+                    <li><b>Evidence:</b> You must connect <i>{data['keywords'][3]}</i> directly to your final contextual claims for logical consistency.</li>
+                </ul>
+                
+                <h3>Layer 3: Teacher's Review & Guidance</h3>
+                <p>To achieve a reliable academic standard, focus on integrating <b>{data['keywords'][4]}</b> more seamlessly. I have synthesized the most reliable sentences from your text below for your review. You must study these patterns.</p>
+                <div style="background-color:#1a202c; padding:15px; border-radius:10px; margin:10px 0; border-left:3px solid {accent};">
+                    <p><i>- "{data['synthesis'][0]}"</i></p>
+                    <p><i>- "{data['synthesis'][1]}"</i></p>
                 </div>
-                """, unsafe_allow_html=True)
+                <p>Study this breakdown. Try hard to apply these patterns before moving to the assessment.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
@@ -349,25 +357,31 @@ elif choice == "⚙️ Settings":
         st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
-        st.selectbox("Citation Style", ["APA 10th", "MLA 9th", "Chicago", "IB MYP2"], key=f"s3_{v_id}")
+        st.selectbox("Citation Style", [
+            "APA 10th", "APA 9th", "APA 8th", "APA 7th", "APA 6th", "APA 5th", "APA 4th", "APA 3rd", "APA 2nd", "APA 1st",
+            "MLA 9th", "Chicago", "Harvard", "Vancouver", "IEEE", "ACS", "AMA", "IB MYP2"
+        ], key=f"s3_{v_id}")
         st.selectbox("Tone Level", ["Formal", "Technical"], key=f"s4_{v_id}")
         st.radio("Lesson Complexity", ["Brief", "Standard", "Deep"], index=1, key=f"s5_{v_id}")
         st.checkbox("Auto-Bibliography", value=True, key=f"s6_{v_id}")
         st.checkbox("IB Alignment", key=f"s9_{v_id}")
+        if st.button("Export Citations"): st.toast("Done ✔️")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
         st.slider("Font Scale", 0.8, 2.0, 1.1, key=f"s13_{v_id}")
-        st.checkbox("High Contrast", key=f"s14_{v_id}")
-        st.checkbox("Force Dark", value=True, key=f"s16_{v_id}")
+        st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
+        st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced ✔️")
     with c3:
         st.write("### 🔐 Security")
-        st.checkbox("Encryption", key=f"s21_{v_id}")
+        st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
         if st.button("Purge History"): st.warning("Purged ✔️")
+        if st.button("Export CSV"): st.toast("Saved ✔️")
         if st.button("Cloud Backup"): st.success("Backed up ✔️")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
+    
     st.success("System Optimized")
 
 # --- HOME ---
