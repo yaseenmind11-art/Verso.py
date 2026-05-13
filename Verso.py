@@ -185,7 +185,7 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste the text you want the AI to teach you in detail...")
+    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste content here...")
     
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Deep Teacher"])
@@ -222,7 +222,7 @@ elif choice == "📒 Study Assistant":
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                     random.shuffle(opts)
 
-                choice_q = st.radio("Choose the correct answer:", opts, key=f"q_step_{curr_q}", index=None)
+                choice_q = st.radio("Choose correct answer:", opts, key=f"q_step_{curr_q}", index=None)
                 if st.button("Submit & Continue", use_container_width=True):
                     if choice_q == target:
                         st.session_state.quiz_score += 1
@@ -235,53 +235,60 @@ elif choice == "📒 Study Assistant":
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
-            st.markdown("### Source-Specific Flashcards (25 Cards)")
+            st.markdown("### Varied Content Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
-                curr_word = words[st.session_state.fc_step % len(words)].title()
-                st.write(f"Card **{st.session_state.fc_step + 1}** / **{total_fc}**")
+                curr_idx = st.session_state.fc_step
+                curr_word = words[curr_idx % len(words)].title()
+                st.write(f"Card **{curr_idx + 1}** / **{total_fc}**")
                 
-                # REFACTORED: NO MYP REFERENCES. Pure content questions.
-                st.markdown(f'<div class="notebook-card" style="min-height:200px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.4rem;">Based on the inputed source, what is the specific function or importance of <b>"{curr_word}"</b>?</div>', unsafe_allow_html=True)
+                # --- NEW VARIETY LOGIC FOR FLASHCARDS ---
+                fc_type = curr_idx % 4
+                if fc_type == 0:
+                    q_text = f"How would you define the core significance of <b>'{curr_word}'</b> as used in your source text?"
+                    a_text = f"<b>Definition:</b> In this context, '{curr_word}' represents a pivotal concept that establishes the framework for the material's logic."
+                elif fc_type == 1:
+                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario based on your input, what would be the result?"
+                    a_text = f"<b>Application:</b> Applying '{curr_word}' ensures that the theoretical principles discussed translate into measurable outcomes or structured processes."
+                elif fc_type == 2:
+                    other_word = words[(curr_idx + 1) % len(words)].title()
+                    q_text = f"What is the logical relationship between <b>'{curr_word}'</b> and <b>'{other_word}'</b>?"
+                    a_text = f"<b>Relationship:</b> '{curr_word}' serves as a foundational component that directly influences or supports the development of '{other_word}'."
+                else:
+                    q_text = f"Identify a component from your source that depends directly on <b>'{curr_word}'</b> to function."
+                    a_text = f"<b>Dependency:</b> The source implies that major analytical sections and subsequent conclusions are built upon the validity of '{curr_word}'."
+
+                st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.4rem;">{q_text}</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
-                    if st.button("Flip to Reveal Content Analysis", use_container_width=True):
+                    if st.button("Reveal Detailed Answer", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 
                 if st.session_state.reveal_fc:
-                    st.markdown(f'<div style="background-color:#0f172a; padding:20px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px;"><b>Detailed Analysis:</b> In your source text, "{curr_word}" represents a foundational element. It interacts with the broader context to provide structural integrity to the argument or process described.</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
-                    if c1.button("✅ I Mastered This", use_container_width=True):
+                    if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.rerun()
-                    if c2.button("❌ Still Learning", use_container_width=True):
+                    if c2.button("❌ Review Needed", use_container_width=True):
                         st.session_state.fc_wrong += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False; st.rerun()
             else:
-                st.subheader("Deck Completed")
-                st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
+                st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
 
         with t4:
-            # REFACTORED: DEEP TEACHING MODULE
             st.markdown(f"""
                 <div class="teacher-board">
                 <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
-                
                 <h3>I. Executive Core Concept</h3>
-                <p>The central pillar of your provided text is <b>{words[0].title()}</b>. This is not just a term, but the driving force of the narrative. It dictates how <b>{words[1].title()}</b> is applied in a real-world or theoretical context.</p>
-                
+                <p>The central pillar is <b>{words[0].title()}</b>. This dictates how <b>{words[1].title()}</b> is applied.</p>
                 <h3>II. Technical Mechanics & Workflow</h3>
-                <p>In your source material, we observe a complex interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>. The text suggests that without the presence of <b>{words[4].title()}</b>, the primary objective of the material would likely fail to meet its intended goals.</p>
-                
+                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>. Without <b>{words[4].title()}</b>, the objective would fail.</p>
                 <h3>III. Deep Contextual Impact</h3>
-                <p>Analyzing the nuances of <b>{words[5].title()}</b> reveals a deeper layer of information. It acts as a bridge to <b>{words[6].title()}</b>, allowing for a more sophisticated understanding of the data or logic you've shared. If you were to apply this in a test or professional setting, you must emphasize the relationship between <b>{words[7].title()}</b> and the final outcome.</p>
-                
+                <p>Analyzing <b>{words[5].title()}</b> reveals a deeper layer. It acts as a bridge to <b>{words[6].title()}</b>.</p>
                 <h3>IV. Critical Synthesis</h3>
-                <p>To fully grasp the inputed source, one must realize that <b>{words[8].title()}</b> isn't an isolated event. It is deeply connected to <b>{words[9].title()}</b> and <b>{words[10].title()}</b>. Mastery of this material requires you to be able to explain how these variables influence <b>{words[11].title()}</b> over time.</p>
-                
-                <hr style="border: 0; border-top: 1px solid #334155; margin: 30px 0;">
-                <p style="font-size: 0.9rem; opacity: 0.7; font-style: italic;">Note: This deep teaching analysis is dynamically generated based strictly on the vocabulary and logic of your provided input.</p>
+                <p><b>{words[8].title()}</b> is deeply connected to <b>{words[9].title()}</b> and <b>{words[10].title()}</b>.</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -309,19 +316,18 @@ elif choice == "⚙️ Settings":
     with c1:
         st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.load();a.play();setTimeout(()=>{a.pause();},4000);</script>", height=0)
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        st.info(f"Build: 14.5.5 (vID: {v_id})")
+        st.info(f"Build: 14.5.6 (vID: {v_id})")
 
 # --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Please write the question you want to search for...")
+    q = st.text_input("🔍 Search Database:", placeholder="Search...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True,)
 
 # --- GLOBAL TRIGGERS ---
