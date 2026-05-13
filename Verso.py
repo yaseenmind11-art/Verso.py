@@ -235,37 +235,38 @@ elif choice == "📒 Study Assistant":
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
-            st.markdown("### Varied Content Flashcards (25 Cards)")
+            # --- REFACTORED FLASHCARDS: INTEGRATED TEXT & NOTEBOOK LM LOGIC ---
+            st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
                 curr_idx = st.session_state.fc_step
                 curr_word = words[curr_idx % len(words)].title()
                 st.write(f"Card **{curr_idx + 1}** / **{total_fc}**")
                 
-                # --- NEW VARIETY LOGIC FOR FLASHCARDS ---
                 fc_type = curr_idx % 4
                 if fc_type == 0:
-                    q_text = f"How would you define the core significance of <b>'{curr_word}'</b> as used in your source text?"
-                    a_text = f"<b>Definition:</b> In this context, '{curr_word}' represents a pivotal concept that establishes the framework for the material's logic."
+                    q_text = f"Based strictly on the provided source material, how is <b>'{curr_word}'</b> technically defined or justified?"
+                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor. It serves to validate the primary claims by providing the necessary conceptual grounding described in the text."
                 elif fc_type == 1:
-                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario based on your input, what would be the result?"
-                    a_text = f"<b>Application:</b> Applying '{curr_word}' ensures that the theoretical principles discussed translate into measurable outcomes or structured processes."
+                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
+                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation of '{curr_word}' leads to a more robust result, specifically bridging the gap between theoretical input and real-world execution."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
-                    q_text = f"What is the logical relationship between <b>'{curr_word}'</b> and <b>'{other_word}'</b>?"
-                    a_text = f"<b>Relationship:</b> '{curr_word}' serves as a foundational component that directly influences or supports the development of '{other_word}'."
+                    q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your study content?"
+                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'. They are functionally linked, meaning the effectiveness of one directly impacts the reliability of the other."
                 else:
-                    q_text = f"Identify a component from your source that depends directly on <b>'{curr_word}'</b> to function."
-                    a_text = f"<b>Dependency:</b> The source implies that major analytical sections and subsequent conclusions are built upon the validity of '{curr_word}'."
+                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
+                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable. Its presence is highlighted to ensure the user understands the structural dependency of the entire topic on this specific point."
 
-                st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.4rem;">{q_text}</div>', unsafe_allow_html=True)
+                # Single, clear integrated question box
+                st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
-                    if st.button("Reveal Detailed Answer", use_container_width=True):
+                    if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 
                 if st.session_state.reveal_fc:
-                    st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px;">{a_text}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#cbd5e1; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
@@ -322,7 +323,7 @@ elif choice == "⚙️ Settings":
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        st.info(f"Build: 14.5.6 (vID: {v_id})")
+        st.info(f"Build: 14.5.7 (vID: {v_id})")
 
 # --- HOME ---
 elif choice == "🏠 Home":
