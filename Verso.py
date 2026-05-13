@@ -196,6 +196,7 @@ elif choice == "📒 Study Assistant":
         
         with t1:
             cols = st.columns(2)
+            # Fixed loop to use "words" variable instead of missing "data" key
             for i, phrase in enumerate(words[:20]): 
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
@@ -235,7 +236,7 @@ elif choice == "📒 Study Assistant":
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
-            # --- REFACTORED FLASHCARDS: INTEGRATED TEXT & NOTEBOOK LM LOGIC ---
+            # --- FIXED FLASHCARDS: REMOVED FRAGMENTATION & KEY ERRORS ---
             st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
@@ -245,17 +246,17 @@ elif choice == "📒 Study Assistant":
                 
                 fc_type = curr_idx % 4
                 if fc_type == 0:
-                    q_text = f"Based strictly on the provided source material, how is <b>'{curr_word}'</b> technically defined or justified?"
+                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of **'{curr_word}'**?"
                     a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor. It serves to validate the primary claims by providing the necessary conceptual grounding described in the text."
                 elif fc_type == 1:
-                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
+                    q_text = f"If you had to apply **'{curr_word}'** to a practical scenario following the logic of the source, what would be the intended outcome?"
                     a_text = f"<b>Practical Application:</b> The source implies that successful implementation of '{curr_word}' leads to a more robust result, specifically bridging the gap between theoretical input and real-world execution."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
-                    q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your study content?"
+                    q_text = f"Analyze the connection between **'{curr_word}'** and **'{other_word}'**. How do they interact within your study content?"
                     a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'. They are functionally linked, meaning the effectiveness of one directly impacts the reliability of the other."
                 else:
-                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
+                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of **'{curr_word}'**?"
                     a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable. Its presence is highlighted to ensure the user understands the structural dependency of the entire topic on this specific point."
 
                 # Single, clear integrated question box
@@ -323,7 +324,7 @@ elif choice == "⚙️ Settings":
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        st.info(f"Build: 14.5.7 (vID: {v_id})")
+        st.info(f"Build: 14.5.8 (vID: {v_id})")
 
 # --- HOME ---
 elif choice == "🏠 Home":
