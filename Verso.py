@@ -91,13 +91,22 @@ st.markdown(f"""
     .stApp {{ color: inherit; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
-        padding: 25px; border-radius: 12px; border-left: 5px solid {accent}; 
-        margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
+        margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
     }}
     .teacher-board {{ 
         background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
         border-radius: 10px; font-family: 'Inter', sans-serif; min-height: 500px; 
         color: #e2e8f0; line-height: 1.8; font-size: {f_scale}rem; 
+    }}
+    /* Larger spacing for radio buttons */
+    div[data-testid="stRadio"] > div {{
+        gap: 15px;
+        padding: 10px 0;
+    }}
+    label[data-testid="stWidgetLabel"] {{
+        font-size: 1.2rem !important;
+        margin-bottom: 15px !important;
     }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
@@ -191,7 +200,6 @@ elif choice == "📒 Study Assistant":
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         blob = TextBlob(raw_content)
-        # Extraction for full deck size
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
         while len(words) < 25:
             words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
@@ -202,83 +210,70 @@ elif choice == "📒 Study Assistant":
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
         with t2:
-            st.markdown("### NotebookLM Interactive Quiz (10 Questions)")
+            st.markdown("### Interactive Quiz (10 Questions)")
             total_q = 10
             if st.session_state.quiz_step < total_q:
                 curr_q = st.session_state.quiz_step
                 target = words[curr_q % len(words)].title()
                 
+                # Question Type Rotator
+                q_type = curr_q % 3 
                 st.write(f"Question **{curr_q + 1}** of **{total_q}**")
-                st.markdown(f'<div class="notebook-card" style="font-size:1.1rem;">In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>"{target}"</b>?</div>', unsafe_allow_html=True)
                 
-                opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
-                random.shuffle(opts)
+                if q_type == 0: # Multiple Choice
+                    st.markdown(f'<div class="notebook-card">Which term from the source text is most accurately defined as: <b>"{target}"</b>?</div>', unsafe_allow_html=True)
+                    opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
+                    random.shuffle(opts)
+                elif q_type == 1: # True/False style
+                    fake_target = random.choice([x.title() for x in words if x.title() != target])
+                    st.markdown(f'<div class="notebook-card">According to the study material, is the concept of <b>"{target}"</b> the same as <b>"{fake_target}"</b>?</div>', unsafe_allow_html=True)
+                    opts = ["False", "True"]
+                    target = "False"
+                else: # Fill in the blank
+                    st.markdown(f'<div class="notebook-card">"The primary focus of this section involves the integration of ___________ into the core framework."</div>', unsafe_allow_html=True)
+                    opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
+                    random.shuffle(opts)
+
+                choice_q = st.radio("Choose the correct answer:", opts, key=f"q_step_{curr_q}", index=None)
                 
-                choice_q = st.radio("Select the most accurate response:", opts, key=f"q_step_{curr_q}", index=None)
-                
-                if st.button("Submit & Next"):
+                if st.button("Submit & Continue", use_container_width=True):
                     if choice_q == target:
                         st.session_state.quiz_score += 1
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
-                        st.balloons()
-                        st.success("Correct!")
+                        st.balloons(); st.success("Correct!")
                     else:
-                        st.info(f"That's a tough one! The correct answer is: **{target}**")
-                    
-                    time.sleep(1)
-                    st.session_state.quiz_step += 1
-                    st.rerun()
+                        st.info(f"Incorrect. The correct answer was: **{target}**")
+                    time.sleep(1); st.session_state.quiz_step += 1; st.rerun()
             else:
-                st.metric("Final Result", f"{st.session_state.quiz_score} / {total_q}", f"{(st.session_state.quiz_score/total_q)*100}%")
-                if st.button("Reset Quiz"):
-                    st.session_state.quiz_step = 0
-                    st.session_state.quiz_score = 0
-                    st.rerun()
+                st.metric("Final Score", f"{st.session_state.quiz_score} / {total_q}")
+                if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
-            st.markdown("### Active Recall Deck (25 Cards)")
+            st.markdown("### Flashcard Question Deck (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
-                curr_word = words[st.session_state.fc_step % len(words)].upper()
-                st.write(f"Card **{st.session_state.fc_step + 1}** of **{total_fc}**")
+                curr_word = words[st.session_state.fc_step % len(words)].title()
+                st.write(f"Card **{st.session_state.fc_step + 1}** / **{total_fc}**")
                 
-                st.markdown(f'<div class="notebook-card" style="min-height:180px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.6rem; border-left: 10px solid {accent};"><b>{curr_word}</b></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="notebook-card" style="min-height:200px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.4rem;">Can you explain the role and context of <b>"{curr_word}"</b> within this lesson?</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
-                    if st.button("Reveal Answer"):
-                        st.session_state.reveal_fc = True
-                        st.rerun()
+                    if st.button("Flip Card to See Answer", use_container_width=True):
+                        st.session_state.reveal_fc = True; st.rerun()
                 
                 if st.session_state.reveal_fc:
-                    st.info("Study Note: This concept is central to the lesson logic. Verify your mental definition against the source text.")
+                    st.markdown(f'<div style="background-color:#0f172a; padding:20px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px;"><b>Answer:</b> {curr_word} is a key concept identified in your material that requires critical understanding for IB MYP2 standards.</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
-                    if c1.button("✅ I Got It Right"):
-                        st.session_state.fc_correct += 1
-                        st.session_state.fc_step += 1
-                        st.session_state.reveal_fc = False
+                    if c1.button("✅ I Knew This", use_container_width=True):
+                        st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.rerun()
-                    if c2.button("❌ I Was Wrong"):
-                        st.session_state.fc_wrong += 1
-                        st.session_state.fc_step += 1
-                        st.session_state.reveal_fc = False
-                        st.toast("Keep going! You'll get it next time!")
-                        st.rerun()
+                    if c2.button("❌ Need Review", use_container_width=True):
+                        st.session_state.fc_wrong += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False; st.rerun()
             else:
-                st.subheader("Performance Summary")
-                total_done = st.session_state.fc_correct + st.session_state.fc_wrong
-                acc = (st.session_state.fc_correct / total_done * 100) if total_done > 0 else 0
-                
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Total Correct", f"{st.session_state.fc_correct}")
-                col2.metric("Total Wrong", f"{st.session_state.fc_wrong}")
-                col3.metric("Final Accuracy", f"{acc:.1f}%")
-                
-                if st.button("Restart Deck"):
-                    st.session_state.fc_step = 0
-                    st.session_state.fc_correct = 0
-                    st.session_state.fc_wrong = 0
-                    st.rerun()
+                st.subheader("Deck Completed")
+                st.write(f"Accuracy: {st.session_state.fc_correct}/{total_fc}")
+                if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
 
         with t4:
             st.markdown(f"""
@@ -286,15 +281,11 @@ elif choice == "📒 Study Assistant":
                 <h2>IB PHYSICAL SCIENCE: LESSON SYNTHESIS</h2>
                 <hr>
                 <h3>Detailed Conceptual Breakdown</h3>
-                <p>This lesson provides a rigorous analysis of the submitted documentation, evaluated through the lens of IB MYP Grade Descriptors.</p>
-                <h4>I. Key Variables and Observations</h4>
-                <p>The primary focus of this unit revolves around <b>{words[0].title()}</b>. In a laboratory or theoretical setting, this functions as the independent variable. Understanding the nuances of <b>{words[1].title()}</b> is essential for Criterion C (Processing and Evaluating).</p>
-                <h4>II. Theoretical Application</h4>
-                <p>When we examine <b>{words[2].title()}</b>, we see clear evidence of the 'Systems and Interactions' global context. Just as energy flows through a circuit, information in this text flows from initial premise to <b>{words[3].title()}</b>.</p>
-                <h4>III. Academic Conclusion</h4>
-                <p>Students must be able to describe the implications of <b>{words[4].title()}</b> on the broader field of study. Mastery of this content ensures a high level of performance in summative assessments.</p>
+                <p>The primary focus revolves around <b>{words[0].title()}</b>. In a laboratory setting, this functions as the independent variable. Understanding the nuances of <b>{words[1].title()}</b> is essential for Criterion C.</p>
+                <h4>Theoretical Application</h4>
+                <p>When we examine <b>{words[2].title()}</b>, we see clear evidence of the 'Systems and Interactions' global context. Information flows from initial premise to <b>{words[3].title()}</b>.</p>
                 <hr>
-                <p style="font-size: 0.9rem; opacity: 0.7;">IB Standards Alignment: Criterion A (Knowledge) & Criterion D (Reflecting on the Impacts of Science).</p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">IB Standards Alignment: Criterion A & Criterion D.</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -313,7 +304,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS (CLEANED UP) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
@@ -331,7 +322,6 @@ elif choice == "⚙️ Settings":
         st.checkbox("Logic Validation", value=True, key=f"s7_{v_id}")
         st.checkbox("Source Cross-Check", key=f"s8_{v_id}")
         st.checkbox("IB Alignment", key=f"s9_{v_id}")
-        if st.button("Export Citations"): st.toast("Done ✔️")
     with c2:
         st.write("### 🎨 UI")
         st.color_picker("Accent", accent, key=f"s11_{v_id}")
@@ -340,19 +330,11 @@ elif choice == "⚙️ Settings":
         st.checkbox("High Contrast", key=f"s14_{v_id}"); st.checkbox("Compact", key=f"s15_{v_id}")
         st.checkbox("Force Dark", value=True, key=f"s16_{v_id}"); st.checkbox("Glassmorphism", key=f"s17_{v_id}")
         st.checkbox("Nav Hints", key=f"s18_{v_id}")
-        if st.button("Rebuild Cache"): st.cache_resource.clear(); st.toast("Resynced ✔️")
-        if st.button("Toggle Fullscreen"): st.toast("F11")
     with c3:
         st.write("### 🔐 Security")
         st.checkbox("Encryption", key=f"s21_{v_id}"); st.checkbox("Privacy Shield", key=f"s22_{v_id}")
         st.checkbox("Study Logs", key=f"s23_{v_id}"); st.checkbox("Auto-Delete", key=f"s24_{v_id}")
-        if st.button("Purge History"): st.warning("Purged ✔️")
-        if st.button("Export CSV"): st.toast("Saved ✔️")
-        if st.button("Cloud Backup"): st.success("Backed up ✔️")
-        if st.button("Generate Key"): st.code("RSA-VERSO-PRO ✔️")
-        if st.button("Integrity Check"): st.toast("Verified ✔️")
         st.info(f"Build: 14.5.4 (vID: {v_id})")
-    
     st.success("System Optimized")
 
 # --- HOME ---
