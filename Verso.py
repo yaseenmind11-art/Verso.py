@@ -128,8 +128,8 @@ with st.sidebar:
 
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you wnt to correct...")
+    st.markdown('<h1>Smart Verso Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you want to correct...")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
@@ -157,7 +157,7 @@ if choice == "✍️ Grammar Checker":
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner Pro")
     plag_text = st.text_area("Paste text to scan:", placeholder="Paste text here...", height=250)
-    if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
+    if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
                 time.sleep(2.5)
@@ -190,19 +190,18 @@ elif choice == "📒 Study Assistant":
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Deep Teacher"])
         blob = TextBlob(raw_content)
-        # FIXED: keywords logic is now separate from a 'data' dictionary to avoid KeyError
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
         while len(words) < 25:
             words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
         
         with t1:
-            st.markdown("### Core Academic Keywords")
             cols = st.columns(2)
+            # Fixed loop to use "words" variable instead of missing "data" key
             for i, phrase in enumerate(words[:20]): 
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
         with t2:
-            st.markdown("### Interactive Content Quiz")
+            st.markdown("### Interactive Content Quiz (10 Questions)")
             total_q = 10
             if st.session_state.quiz_step < total_q:
                 curr_q = st.session_state.quiz_step
@@ -211,20 +210,19 @@ elif choice == "📒 Study Assistant":
                 st.write(f"Question **{curr_q + 1}** of **{total_q}**")
                 
                 if q_type == 0:
-                    q_html = f'Which term from the source text is most accurately defined as: <b>"{target}"</b>?'
+                    st.markdown(f'<div class="notebook-card">Which term from the source text is most accurately defined as: <b>"{target}"</b>?</div>', unsafe_allow_html=True)
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                     random.shuffle(opts)
                 elif q_type == 1:
                     fake_target = random.choice([x.title() for x in words if x.title() != target])
-                    q_html = f'Does the provided material state that <b>"{target}"</b> is functionally equivalent to <b>"{fake_target}"</b>?'
+                    st.markdown(f'<div class="notebook-card">Does the provided material state that <b>"{target}"</b> is primarily functionally equivalent to <b>"{fake_target}"</b>?</div>', unsafe_allow_html=True)
                     opts = ["No, they are distinct", "Yes, they are the same"]
                     target = "No, they are distinct"
                 else:
-                    q_html = f'Fill in the blank: "Based on your notes, the mechanism underlying <b>___________</b> is central to the overall argument."'
+                    st.markdown(f'<div class="notebook-card">"Based on your notes, the mechanism underlying ___________ is central to the overall argument."</div>', unsafe_allow_html=True)
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                     random.shuffle(opts)
 
-                st.markdown(f'<div class="notebook-card">{q_html}</div>', unsafe_allow_html=True)
                 choice_q = st.radio("Choose correct answer:", opts, key=f"q_step_{curr_q}", index=None)
                 if st.button("Submit & Continue", use_container_width=True):
                     if choice_q == target:
@@ -238,6 +236,7 @@ elif choice == "📒 Study Assistant":
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
+            # --- FIXED FLASHCARDS: REMOVED FRAGMENTATION & KEY ERRORS ---
             st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
@@ -247,24 +246,28 @@ elif choice == "📒 Study Assistant":
                 
                 fc_type = curr_idx % 4
                 if fc_type == 0:
-                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
+                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of **'{curr_word}'**?"
+                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor. It serves to validate the primary claims by providing the necessary conceptual grounding described in the text."
                 elif fc_type == 1:
-                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
+                    q_text = f"If you had to apply **'{curr_word}'** to a practical scenario following the logic of the source, what would be the intended outcome?"
+                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation of '{curr_word}' leads to a more robust result, specifically bridging the gap between theoretical input and real-world execution."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
-                    q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your study content?"
+                    q_text = f"Analyze the connection between **'{curr_word}'** and **'{other_word}'**. How do they interact within your study content?"
+                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'. They are functionally linked, meaning the effectiveness of one directly impacts the reliability of the other."
                 else:
-                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
+                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of **'{curr_word}'**?"
+                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable. Its presence is highlighted to ensure the user understands the structural dependency of the entire topic on this specific point."
 
-                # FIXED: Force the question into a single HTML div to prevent fragmentation
-                st.markdown(f'<div class="notebook-card" style="min-height:200px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem;">{q_text}</div>', unsafe_allow_html=True)
+                # Single, clear integrated question box
+                st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
-                else:
-                    st.success(f"Analysis for: {curr_word}")
-                    st.info("Source Analysis: This concept is central to the IB MYP2 standards identified in your material.")
+                
+                if st.session_state.reveal_fc:
+                    st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#cbd5e1; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
@@ -279,11 +282,15 @@ elif choice == "📒 Study Assistant":
         with t4:
             st.markdown(f"""
                 <div class="teacher-board">
-                <h2>AI DEEP TEACHER</h2>
-                <h3>Core Concept</h3>
-                <p>The central pillar of this material is <b>{words[0].title()}</b>.</p>
-                <h3>Contextual Impact</h3>
-                <p>Analyzing <b>{words[1].title()}</b> reveals its importance to <b>{words[2].title()}</b>.</p>
+                <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
+                <h3>I. Executive Core Concept</h3>
+                <p>The central pillar is <b>{words[0].title()}</b>. This dictates how <b>{words[1].title()}</b> is applied.</p>
+                <h3>II. Technical Mechanics & Workflow</h3>
+                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>. Without <b>{words[4].title()}</b>, the objective would fail.</p>
+                <h3>III. Deep Contextual Impact</h3>
+                <p>Analyzing <b>{words[5].title()}</b> reveals a deeper layer. It acts as a bridge to <b>{words[6].title()}</b>.</p>
+                <h3>IV. Critical Synthesis</h3>
+                <p><b>{words[8].title()}</b> is deeply connected to <b>{words[9].title()}</b> and <b>{words[10].title()}</b>.</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -317,7 +324,7 @@ elif choice == "⚙️ Settings":
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        st.info(f"Build: 14.6.2 (vID: {v_id})")
+        st.info(f"Build: 14.5.8 (vID: {v_id})")
 
 # --- HOME ---
 elif choice == "🏠 Home":
