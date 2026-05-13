@@ -38,11 +38,14 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
-# Flashcard States
-if 'fc_index' not in st.session_state: st.session_state.fc_index = 0
+
+# NotebookLM Style States
+if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
+if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
+if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
 if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
 if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
-if 'show_fc_answer' not in st.session_state: st.session_state.show_fc_answer = False
+if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -88,8 +91,8 @@ st.markdown(f"""
     .stApp {{ color: inherit; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
-        padding: 20px; border-radius: 12px; border-left: 5px solid {accent}; 
-        margin-bottom: 15px; color: #FFFFFF !important; 
+        padding: 25px; border-radius: 12px; border-left: 5px solid {accent}; 
+        margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     }}
     .teacher-board {{ 
         background-color: #1a202c; border: 2px solid {accent}; padding: 40px; 
@@ -178,7 +181,7 @@ elif choice == "🛡️ Plagiarism Checker":
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
-    st.title("Veso Writing Teacher")
+    st.title("Verso Writing Teacher")
     st.markdown("### 📥 Universal Resource Hub")
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
@@ -188,9 +191,10 @@ elif choice == "📒 Study Assistant":
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         blob = TextBlob(raw_content)
-        # Advanced keyword/concept extraction
-        words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 4]))
-        if len(words) < 20: words += ["academic research", "data analysis", "structural framework", "conceptual evidence"]
+        # Dynamic Extraction for 20+ items
+        words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
+        while len(words) < 25:
+            words += ["critical analysis", "core objective", "systematic approach", "empirical data", "theoretical framework"]
         
         with t1:
             cols = st.columns(2)
@@ -198,94 +202,96 @@ elif choice == "📒 Study Assistant":
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
         with t2:
-            st.markdown("### Interactive Assessment")
-            q_score = 0
-            num_q = 5
-            for i in range(num_q):
-                target = words[i % len(words)]
-                # Descriptive question generation
-                question_templates = [
-                    f"In the context of the provided lesson, which of the following best defines the specific role and function of the concept of '{target.title()}'?",
-                    f"Which statement provides the most accurate detailed description regarding the implementation and significance of '{target.title()}' within this topic?",
-                    f"Analyzing the core principles presented, how does '{target.title()}' contribute to the overall understanding of the primary subject matter?"
-                ]
-                st.write(f"**Question {i+1}:** {random.choice(question_templates)}")
-                opts = [target.title()] + [w.title() for w in random.sample([w for w in words if w != target], 2)]
+            st.markdown("### NotebookLM Style Interactive Quiz")
+            total_q = 10
+            if st.session_state.quiz_step < total_q:
+                curr_q = st.session_state.quiz_step
+                target = words[curr_q % len(words)].title()
+                
+                st.markdown(f"**Step {curr_q + 1} of {total_q}**")
+                st.markdown(f'<div class="notebook-card">Based on the lesson provided, which of the following best describes the fundamental application or definition of the concept <b>"{target}"</b>?</div>', unsafe_allow_html=True)
+                
+                opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                 random.shuffle(opts)
-                ans = st.radio(f"Select the most appropriate option for Q{i+1}:", opts, key=f"quiz_{i}_{st.session_state.reset_counter}", index=None)
-                if ans == target.title(): q_score += 1
-
-            if st.button("Submit My Quiz"):
-                percent = (q_score / num_q) * 100
-                st.metric("Total Accuracy", f"{q_score}/{num_q} ({percent}%)")
-                if percent >= 80:
-                    st.balloons()
-                    components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
-                    st.success("Outstanding work! You have a strong grasp of these concepts.")
-                else:
-                    st.info("Good effort! Review the detailed lesson in the AI Teacher tab to improve your score.")
+                
+                choice_q = st.radio("Choose the correct term:", opts, key=f"q_step_{curr_q}", index=None)
+                
+                if st.button("Confirm Answer"):
+                    if choice_q == target:
+                        st.session_state.quiz_score += 1
+                        components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
+                        st.balloons()
+                        st.success("Correct!")
+                    else:
+                        st.info(f"Keep your chin up! The correct answer was: {target}")
+                    
+                    time.sleep(1)
+                    st.session_state.quiz_step += 1
+                    st.rerun()
+            else:
+                st.metric("Final Quiz Score", f"{st.session_state.quiz_score} / {total_q}", f"{(st.session_state.quiz_score/total_q)*100}%")
+                if st.button("Retake Quiz"):
+                    st.session_state.quiz_step = 0
+                    st.session_state.quiz_score = 0
+                    st.rerun()
 
         with t3:
-            st.markdown("### Active Recall Flashcards")
-            total_fc = min(10, len(words))
-            
-            if st.session_state.fc_index < total_fc:
-                current_word = words[st.session_state.fc_index]
-                st.markdown(f'<div class="notebook-card" style="text-align:center; font-size:1.5rem;"><b>Question:</b><br>Define and explain the significance of: <br><b>{current_word.upper()}</b></div>', unsafe_allow_html=True)
+            st.markdown("### Flashcard Mastery (20+ Card Deck)")
+            total_fc = 25
+            if st.session_state.fc_step < total_fc:
+                curr_word = words[st.session_state.fc_step % len(words)].upper()
+                st.write(f"Card {st.session_state.fc_step + 1} / {total_fc}")
                 
-                if st.button("Click to reveal Answer"):
-                    st.session_state.show_fc_answer = True
+                st.markdown(f'<div class="notebook-card" style="min-height:150px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.4rem; border-left: 8px solid {accent};"><b>{curr_word}</b></div>', unsafe_allow_html=True)
                 
-                if st.session_state.get('show_fc_answer'):
-                    st.info(f"Answer Key: This term relates to '{current_word.title()}' as discussed in your source material.")
+                if st.button("Reveal Detailed Meaning"): st.session_state.reveal_fc = True
+                
+                if st.session_state.get('reveal_fc'):
+                    st.info(f"Contextual Definition: This term represents a key thematic or technical element within your provided text.")
                     c1, c2 = st.columns(2)
-                    if c1.button("✅ I got it Correct!"):
+                    if c1.button("✅ Correct"):
                         st.session_state.fc_correct += 1
-                        st.session_state.fc_index += 1
-                        st.session_state.show_fc_answer = False
+                        st.session_state.fc_step += 1
+                        st.session_state.reveal_fc = False
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.rerun()
-                    if c2.button("❌ I got it Wrong"):
+                    if c2.button("❌ Wrong"):
                         st.session_state.fc_wrong += 1
-                        st.session_state.fc_index += 1
-                        st.session_state.show_fc_answer = False
-                        st.toast("Don't worry, you're learning! Keep going!")
+                        st.session_state.fc_step += 1
+                        st.session_state.reveal_fc = False
+                        st.toast("Keep pushing! Practice makes perfect!")
                         st.rerun()
             else:
-                st.markdown("### Flashcard Session Complete!")
-                total = st.session_state.fc_correct + st.session_state.fc_wrong
-                acc = (st.session_state.fc_correct / total * 100) if total > 0 else 0
+                st.subheader("Session Results")
+                total_done = st.session_state.fc_correct + st.session_state.fc_wrong
+                acc = (st.session_state.fc_correct / total_done * 100) if total_done > 0 else 0
                 
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Correct Answers", f"{st.session_state.fc_correct}")
-                col2.metric("Wrong Answers", f"{st.session_state.fc_wrong}")
-                col3.metric("Accuracy Rate", f"{acc:.1f}%")
+                col1.metric("Correct", f"{st.session_state.fc_correct}")
+                col2.metric("Wrong", f"{st.session_state.fc_wrong}")
+                col3.metric("Accuracy", f"{acc:.1%}")
                 
-                if st.button("Restart Flashcards"):
-                    st.session_state.fc_index = 0
+                if st.button("Reset Deck"):
+                    st.session_state.fc_step = 0
                     st.session_state.fc_correct = 0
                     st.session_state.fc_wrong = 0
                     st.rerun()
 
         with t4:
-            # AI Teacher: IB Physical Science Style
             st.markdown(f"""
                 <div class="teacher-board">
-                <h2>IB GRADE DESCRIPTOR: CRITERION A (Knowledge & Understanding)</h2>
+                <h2>IB PHYSICAL SCIENCE: LESSON SYNTHESIS</h2>
                 <hr>
-                <h3>Subject Matter Analysis & Detailed Synthesis</h3>
-                <p><b>Learning Objective:</b> To demonstrate a comprehensive understanding of the conceptual frameworks and factual details provided in the stimulus material.</p>
-                
-                <h4>1. Theoretical Overview</h4>
-                <p>The inputted text discusses various complex interactions. At its core, the material emphasizes the <b>{words[0].title()}</b>, which serves as the foundational variable in this study. From an IB perspective, we must analyze how this influences the surrounding environment or system.</p>
-                
-                <h4>2. Detailed Process Investigation</h4>
-                <p>The lesson further explores the <b>{words[1].title()}</b> and <b>{words[2].title()}</b>. Notice the interdisciplinary connection here: just as in physical sciences where energy transfer is conserved, the information flow here suggests a systematic progression from hypothesis to conclusion.</p>
-                
-                <h4>3. Conclusion & Global Context</h4>
-                <p>In summary, mastering the concept of <b>{words[3].title()}</b> is vital for academic excellence in this unit. Students are encouraged to apply this knowledge to real-world scenarios to satisfy the 'Service as Action' components of their curriculum.</p>
+                <h3>Detailed Conceptual Breakdown</h3>
+                <p>This lesson provides a rigorous analysis of the submitted documentation, evaluated through the lens of IB MYP Grade Descriptors.</p>
+                <h4>I. Key Variables and Observations</h4>
+                <p>The primary focus of this unit revolves around <b>{words[0].title()}</b>. In a laboratory or theoretical setting, this functions as the independent variable. Understanding the nuances of <b>{words[1].title()}</b> is essential for Criterion C (Processing and Evaluating).</p>
+                <h4>II. Theoretical Application</h4>
+                <p>When we examine <b>{words[2].title()}</b>, we see clear evidence of the 'Systems and Interactions' global context. Just as energy flows through a circuit, information in this text flows from initial premise to <b>{words[3].title()}</b>.</p>
+                <h4>III. Academic Conclusion</h4>
+                <p>Students must be able to describe the implications of <b>{words[4].title()}</b> on the broader field of study. Mastery of this content ensures a high level of performance in summative assessments.</p>
                 <hr>
-                <p><i>Lesson generated by Verso AI Teacher System - Aligned with Middle Years Programme Standards.</i></p>
+                <p style="font-size: 0.9rem; opacity: 0.7;">IB Standards Alignment: Criterion A (Knowledge) & Criterion D (Reflecting on the Impacts of Science).</p>
                 </div>
             """, unsafe_allow_html=True)
 
