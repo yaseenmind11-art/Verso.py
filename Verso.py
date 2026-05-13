@@ -191,10 +191,10 @@ elif choice == "📒 Study Assistant":
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Teacher"])
         blob = TextBlob(raw_content)
-        # Dynamic Extraction for 20+ items
+        # Extraction for full deck size
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
         while len(words) < 25:
-            words += ["critical analysis", "core objective", "systematic approach", "empirical data", "theoretical framework"]
+            words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
         
         with t1:
             cols = st.columns(2)
@@ -202,76 +202,79 @@ elif choice == "📒 Study Assistant":
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
         with t2:
-            st.markdown("### NotebookLM Style Interactive Quiz")
+            st.markdown("### NotebookLM Interactive Quiz (10 Questions)")
             total_q = 10
             if st.session_state.quiz_step < total_q:
                 curr_q = st.session_state.quiz_step
                 target = words[curr_q % len(words)].title()
                 
-                st.markdown(f"**Step {curr_q + 1} of {total_q}**")
-                st.markdown(f'<div class="notebook-card">Based on the lesson provided, which of the following best describes the fundamental application or definition of the concept <b>"{target}"</b>?</div>', unsafe_allow_html=True)
+                st.write(f"Question **{curr_q + 1}** of **{total_q}**")
+                st.markdown(f'<div class="notebook-card" style="font-size:1.1rem;">In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>"{target}"</b>?</div>', unsafe_allow_html=True)
                 
                 opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                 random.shuffle(opts)
                 
-                choice_q = st.radio("Choose the correct term:", opts, key=f"q_step_{curr_q}", index=None)
+                choice_q = st.radio("Select the most accurate response:", opts, key=f"q_step_{curr_q}", index=None)
                 
-                if st.button("Confirm Answer"):
+                if st.button("Submit & Next"):
                     if choice_q == target:
                         st.session_state.quiz_score += 1
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.balloons()
                         st.success("Correct!")
                     else:
-                        st.info(f"Keep your chin up! The correct answer was: {target}")
+                        st.info(f"That's a tough one! The correct answer is: **{target}**")
                     
                     time.sleep(1)
                     st.session_state.quiz_step += 1
                     st.rerun()
             else:
-                st.metric("Final Quiz Score", f"{st.session_state.quiz_score} / {total_q}", f"{(st.session_state.quiz_score/total_q)*100}%")
-                if st.button("Retake Quiz"):
+                st.metric("Final Result", f"{st.session_state.quiz_score} / {total_q}", f"{(st.session_state.quiz_score/total_q)*100}%")
+                if st.button("Reset Quiz"):
                     st.session_state.quiz_step = 0
                     st.session_state.quiz_score = 0
                     st.rerun()
 
         with t3:
-            st.markdown("### Flashcard Mastery (20+ Card Deck)")
+            st.markdown("### Active Recall Deck (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
                 curr_word = words[st.session_state.fc_step % len(words)].upper()
-                st.write(f"Card {st.session_state.fc_step + 1} / {total_fc}")
+                st.write(f"Card **{st.session_state.fc_step + 1}** of **{total_fc}**")
                 
-                st.markdown(f'<div class="notebook-card" style="min-height:150px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.4rem; border-left: 8px solid {accent};"><b>{curr_word}</b></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="notebook-card" style="min-height:180px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.6rem; border-left: 10px solid {accent};"><b>{curr_word}</b></div>', unsafe_allow_html=True)
                 
-                if st.button("Reveal Detailed Meaning"): st.session_state.reveal_fc = True
+                if not st.session_state.reveal_fc:
+                    if st.button("Reveal Answer"):
+                        st.session_state.reveal_fc = True
+                        st.rerun()
                 
-                if st.session_state.get('reveal_fc'):
-                    st.info(f"Contextual Definition: This term represents a key thematic or technical element within your provided text.")
+                if st.session_state.reveal_fc:
+                    st.info("Study Note: This concept is central to the lesson logic. Verify your mental definition against the source text.")
                     c1, c2 = st.columns(2)
-                    if c1.button("✅ Correct"):
+                    if c1.button("✅ I Got It Right"):
                         st.session_state.fc_correct += 1
                         st.session_state.fc_step += 1
                         st.session_state.reveal_fc = False
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.rerun()
-                    if c2.button("❌ Wrong"):
+                    if c2.button("❌ I Was Wrong"):
                         st.session_state.fc_wrong += 1
                         st.session_state.fc_step += 1
                         st.session_state.reveal_fc = False
-                        st.toast("Keep pushing! Practice makes perfect!")
+                        st.toast("Keep going! You'll get it next time!")
                         st.rerun()
             else:
-                st.subheader("Session Results")
+                st.subheader("Performance Summary")
                 total_done = st.session_state.fc_correct + st.session_state.fc_wrong
                 acc = (st.session_state.fc_correct / total_done * 100) if total_done > 0 else 0
                 
                 col1, col2, col3 = st.columns(3)
-                col1.metric("Correct", f"{st.session_state.fc_correct}")
-                col2.metric("Wrong", f"{st.session_state.fc_wrong}")
-                col3.metric("Accuracy", f"{acc:.1%}")
+                col1.metric("Total Correct", f"{st.session_state.fc_correct}")
+                col2.metric("Total Wrong", f"{st.session_state.fc_wrong}")
+                col3.metric("Final Accuracy", f"{acc:.1f}%")
                 
-                if st.button("Reset Deck"):
+                if st.button("Restart Deck"):
                     st.session_state.fc_step = 0
                     st.session_state.fc_correct = 0
                     st.session_state.fc_wrong = 0
