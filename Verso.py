@@ -196,7 +196,6 @@ elif choice == "📒 Study Assistant":
         
         with t1:
             cols = st.columns(2)
-            # FIXED: Uses 'words' to prevent KeyError
             for i, phrase in enumerate(words[:20]): 
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
@@ -236,7 +235,6 @@ elif choice == "📒 Study Assistant":
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
-            # --- FIXED FLASHCARDS: REMOVED STARS & FRAGMENTATION ---
             st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
@@ -247,18 +245,19 @@ elif choice == "📒 Study Assistant":
                 fc_type = curr_idx % 4
                 if fc_type == 0:
                     q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor. It serves to validate the primary claims by providing the necessary conceptual grounding described in the text."
+                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor."
                 elif fc_type == 1:
                     q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
-                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation of '{curr_word}' leads to a more robust result, specifically bridging the gap between theoretical input and real-world execution."
+                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation of '{curr_word}' leads to a more robust result."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
                     q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your study content?"
-                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'. They are functionally linked, meaning the effectiveness of one directly impacts the reliability of the other."
+                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite for '{other_word}'."
                 else:
                     q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable. Its presence is highlighted to ensure the user understands the structural dependency of the entire topic on this specific point."
+                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
 
+                # SINGLE UNIT RENDERING - PREVENTS FRAGMENTATION
                 st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
@@ -283,13 +282,9 @@ elif choice == "📒 Study Assistant":
                 <div class="teacher-board">
                 <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
                 <h3>I. Executive Core Concept</h3>
-                <p>The central pillar is <b>{words[0].title()}</b>. This dictates how <b>{words[1].title()}</b> is applied.</p>
+                <p>The central pillar is <b>{words[0].title()}</b>.</p>
                 <h3>II. Technical Mechanics & Workflow</h3>
-                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>. Without <b>{words[4].title()}</b>, the objective would fail.</p>
-                <h3>III. Deep Contextual Impact</h3>
-                <p>Analyzing <b>{words[5].title()}</b> reveals a deeper layer. It acts as a bridge to <b>{words[6].title()}</b>.</p>
-                <h3>IV. Critical Synthesis</h3>
-                <p><b>{words[8].title()}</b> is deeply connected to <b>{words[9].title()}</b> and <b>{words[10].title()}</b>.</p>
+                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>.</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -323,7 +318,7 @@ elif choice == "⚙️ Settings":
         st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
     with c3:
         st.write("### 🔐 Security")
-        st.info(f"Build: 14.5.9 (vID: {v_id})")
+        st.info(f"Build: 14.6.1 (vID: {v_id})")
 
 # --- HOME ---
 elif choice == "🏠 Home":
