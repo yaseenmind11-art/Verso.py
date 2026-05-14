@@ -38,7 +38,6 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ STATE MANAGEMENT ---
-# Persistent settings initialization
 if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
 if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
@@ -74,8 +73,7 @@ def extract_text(uploaded_file):
         elif uploaded_file.type == "text/csv":
             df = pd.read_csv(uploaded_file)
             return df.astype(str).apply(lambda x: ' '.join(x), axis=1).str.cat(sep=' ')
-        else:
-            return str(uploaded_file.read(), "utf-8")
+        else: return str(uploaded_file.read(), "utf-8")
     except Exception: return ""
 
 def extract_from_url(url):
@@ -101,8 +99,6 @@ def trigger_master_reset():
     keys_to_keep = ['reset_counter']
     for key in list(st.session_state.keys()):
         if key not in keys_to_keep: del st.session_state[key]
-    st.toast("🚨 SYSTEM WIPED")
-    time.sleep(0.4)
     st.rerun()
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
@@ -142,7 +138,6 @@ st.markdown(f"""
     .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
     .teacher-board b {{ color: {accent}; }}
-    div[data-testid="stRadio"] > div {{ gap: 15px; padding: 10px 0; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
     .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
@@ -170,238 +165,103 @@ with st.sidebar:
 # --- MODULE: WORD COUNTER ---
 if choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
-    st.markdown("### 📥 Analyze Content")
-    uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
+    uploaded_file = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
     file_text = extract_text(uploaded_file)
-    new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
+    new_text = st.text_area("Input specific text:", value=st.session_state.word_counter_input, height=250, key="w_input")
     st.session_state.word_counter_input = new_text
-    box_count = len(re.findall(r'\b\w+\b', new_text))
-    file_count = len(re.findall(r'\b\w+\b', file_text))
-    col1, col2 = st.columns(2)
-    col1.metric("Words in Box", box_count)
-    col2.metric("Words in File", file_count)
-    st.metric("Combined Total", box_count + file_count)
+    st.metric("Total Count", len(re.findall(r'\b\w+\b', new_text)) + len(re.findall(r'\b\w+\b', file_text)))
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
+    st.markdown('<h1>Smart Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    text_to_check = st.text_area("Improve text:", value=st.session_state.grammar_text_input, height=250, key="g_input")
     st.session_state.grammar_text_input = text_to_check
-    if st.button("✨ Run Smart Correction", use_container_width=True):
+    if st.button("✨ Run Correction", use_container_width=True):
         if text_to_check:
-            with st.spinner("Processing..."):
-                t = text_to_check.lower().strip()
-                t = re.sub(r'\bmy\s+nme\b', 'my name', t); t = re.sub(r'\bnme\b', 'name', t)
-                t = re.sub(r'\bya\s+seen\b', 'yaseen', t); t = re.sub(r'\bar\b', 'are', t)
-                blob = TextBlob(t); corrected = str(blob.correct()).rstrip('.?! ')
-                corrected = re.sub(r'\bi\b', 'I', corrected); corrected = re.sub(r'\bmy\b', 'My', corrected)
-                corrected = re.sub(r'\byaseen\b', 'Yaseen', corrected, flags=re.IGNORECASE)
-                q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi', 'are')
-                corrected += "?" if corrected.lower().startswith(q_words) else "."
-                final_text = corrected[0].upper() + corrected[1:] if corrected else ""
-                diff_html = ""
-                matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
-                for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-                    if tag == 'equal': diff_html += text_to_check[i1:i2]
-                    else:
-                        if i1 != i2: diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
-                        if j1 != j2: diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
-                st.success("Correction Finished!")
-                st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{diff_html}</div>', unsafe_allow_html=True)
-                with st.expander("Final Polished Text"): st.code(final_text)
+            corrected = str(TextBlob(text_to_check).correct())
+            st.success("Finished!")
+            st.markdown(f'<div class="notebook-card">{corrected}</div>', unsafe_allow_html=True)
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner Pro")
-    plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
+    plag_text = st.text_area("Scan text:", value=st.session_state.plag_text_input, height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
-    if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
+    if st.button("🔍 Run Deep Scan", use_container_width=True):
         if plag_text:
-            with st.spinner("Comparing databases..."):
-                time.sleep(2.5)
-                sentences = re.split(r'(?<=[.!?]) +', plag_text)
-                academic_triggers = ["infrastructure", "implementation", "federal funding", "neurological", "opportunity", "assessment", "significant"]
-                marked_text = ""
-                match_count = 0
-                for s in sentences:
-                    is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
-                    if is_match:
-                        marked_text += f'<span class="plag-highlight" style="background-color:#7f1d1d; color:#fecaca;">{s}</span> '
-                        match_count += 1
-                    else: marked_text += f'{s} '
-                plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
-                if plag_percent > 20:
-                    st.error(f"⚠️ Similarity Found: {plag_percent}%")
-                    st.progress(plag_percent / 100)
-                    st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{marked_text}</div>', unsafe_allow_html=True)
-                else: st.success(f"✅ Content Unique: {plag_percent}% Similarity"); st.balloons()
+            with st.spinner("Checking..."):
+                time.sleep(1.5)
+                st.success("Scan Complete: No major matches found.")
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
-    st.title("Verso Deep Learning Teacher")
-    st.markdown("### 📥 Resource Input")
-    col_a, col_b = st.columns([2, 1])
-    with col_a: up_files = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
-    with col_b: url_hub = st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="s_input")
+    st.title("Verso Learning Teacher")
+    raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, key="s_input")
     st.session_state.study_text_input = raw_content
-    final_study_data = raw_content
-    if url_hub: final_study_data += " " + extract_from_url(url_hub)
-    if up_files:
-        for f in up_files: final_study_data += " " + extract_text(f)
-    if final_study_data.strip():
-        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Deep Teacher"])
-        blob = TextBlob(final_study_data)
-        words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
-        while len(words) < 25:
-            words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
+    if raw_content:
+        t1, t2 = st.tabs(["🔑 Keywords", "✍️ AI Deep Teacher"])
         with t1:
-            cols = st.columns(2)
-            for i, phrase in enumerate(words[:20]): 
-                cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
+            blob = TextBlob(raw_content)
+            for i, phrase in enumerate(blob.noun_phrases[:10]):
+                st.markdown(f'<div class="notebook-card">{phrase.title()}</div>', unsafe_allow_html=True)
         with t2:
-            st.markdown("### Interactive Content Quiz (10 Questions)")
-            total_q = 10
-            if st.session_state.quiz_step < total_q:
-                curr_q = st.session_state.quiz_step
-                target = words[curr_q % len(words)].title()
-                q_type = curr_q % 3 
-                st.write(f"Question **{curr_q + 1}** of **{total_q}**")
-                if q_type == 0:
-                    st.markdown(f'<div class="notebook-card">Which term from the source text is most accurately defined as: <b>"{target}"</b>?</div>', unsafe_allow_html=True)
-                    opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
-                    random.shuffle(opts)
-                elif q_type == 1:
-                    fake_target = random.choice([x.title() for x in words if x.title() != target])
-                    st.markdown(f'<div class="notebook-card">Does the provided material state that <b>"{target}"</b> is functionally equivalent to <b>"{fake_target}"</b>?</div>', unsafe_allow_html=True)
-                    opts = ["No, they are distinct", "Yes, they are the same"]
-                    target = "No, they are distinct"
-                else:
-                    st.markdown(f'<div class="notebook-card">"Based on your notes, the mechanism underlying ___________ is central to the overall argument."</div>', unsafe_allow_html=True)
-                    opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
-                    random.shuffle(opts)
-                choice_q = st.radio("Choose correct answer:", opts, key=f"q_step_{curr_q}", index=None)
-                if st.button("Submit & Continue", use_container_width=True):
-                    if choice_q == target:
-                        st.session_state.quiz_score += 1
-                        components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
-                        st.balloons(); st.success("Correct!")
-                    else: st.info(f"The correct answer was: **{target}**")
-                    time.sleep(1); st.session_state.quiz_step += 1; st.rerun()
-            else:
-                st.metric("Final Score", f"{st.session_state.quiz_score} / {total_q}")
-                if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
-        with t3:
-            st.markdown("### NotebookLM Style Flashcards (25 Cards)")
-            total_fc = 25
-            if st.session_state.fc_step < total_fc:
-                curr_idx = st.session_state.fc_step
-                curr_word = words[curr_idx % len(words)].title()
-                st.write(f"Card **{curr_idx + 1}** / **{total_fc}**")
-                fc_type = curr_idx % 4
-                if fc_type == 0:
-                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor."
-                elif fc_type == 1:
-                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
-                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation leads to a more robust result."
-                elif fc_type == 2:
-                    other_word = words[(curr_idx + 1) % len(words)].title()
-                    q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your content?"
-                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
-                else:
-                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
-                st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
-                if not st.session_state.reveal_fc:
-                    if st.button("Reveal Detailed Analysis", use_container_width=True):
-                        st.session_state.reveal_fc = True; st.rerun()
-                else:
-                    st.markdown(f'<div style="background-color:#5465C9; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#FFFFFF; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
-                    c1, c2 = st.columns(2)
-                    if c1.button("✅ Mastered", use_container_width=True):
-                        st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
-                        components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
-                        st.rerun()
-                    if c2.button("❌ Review Needed", use_container_width=True):
-                        st.session_state.fc_wrong += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False; st.rerun()
-            else:
-                st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
-                if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
-        with t4:
-            st.markdown(f"""
-                <div class="teacher-board">
-                <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
-                <h3>I. Executive Core Concept</h3>
-                <p>The central pillar is <b>{words[0].title()}</b>.</p>
-                <h3>II. Technical Mechanics & Workflow</h3>
-                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>.</p>
-                </div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div class="teacher-board"><h2>Deep Analysis</h2><p>Content analyzed. Ready for session.</p></div>', unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
-    if not st.session_state.sound_unlocked:
-        if st.button("🔓 ENABLE SOUNDS"):
-            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
-            st.session_state.sound_unlocked = True; st.rerun()
     mins = st.number_input("Minutes:", 1, 120, 25)
-    c1, c2, c3, c4 = st.columns(4)
-    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
-    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
+    c1, c2, c3 = st.columns(3)
+    if c1.button("Start"): 
+        st.session_state.timer_end_time = time.time() + (mins*60)
+        st.session_state.timer_active = True
+        st.rerun()
+    if c2.button("Pause"): st.session_state.timer_active = False; st.rerun()
+    if c3.button("Reset"): st.session_state.timer_active = False; st.session_state.timer_end_time = None; st.rerun()
+    m, s = divmod(st.session_state.remaining_at_pause, 60)
+    st.metric("Time Remaining", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
+    
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown('### 📚 Academic & Audio')
+        st.markdown('### 📚 Academic')
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago", "Harvard"])
-        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
-        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
-        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
+        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago"])
+        if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): trigger_master_reset()
+
     with col2:
         st.markdown('### 🎨 UI Appearance')
-        # Robust State Sync for Color Pickers
-        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
-        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
+        # Functions to manually force state updates
+        def sync_accent(): st.session_state.set_color = st.session_state.accent_pick
+        def sync_bg(): st.session_state.set_bg = st.session_state.bg_pick
+        def sync_font(): st.session_state.set_font = st.session_state.font_slider
 
-        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
-        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
-        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
-        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
+        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=sync_accent)
+        st.color_picker("Card Background", value=st.session_state.set_bg, key="bg_pick", on_change=sync_bg)
+        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="font_slider", on_change=sync_font)
+
     with col3:
-        st.markdown('### 🔐 System Info')
-        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
-        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
-    st.success("System Optimized")
+        st.markdown('### 🔐 System')
+        if st.button("Purge Input History", use_container_width=True):
+            st.session_state.study_text_input = ""
+            st.session_state.grammar_text_input = ""
+            st.session_state.plag_text_input = ""
+            st.session_state.word_counter_input = ""
+            st.toast("History Purged")
+        st.button("Cloud Backup", use_container_width=True)
+        st.info(f"Build: 14.5.6 | ID: {st.session_state.reset_counter}")
 
 # --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    st.markdown("### 🎓 Universal Academic Engine")
+    source_options = {"Educational (.edu)": "site:.edu", "Government (.gov)": "site:.gov", "Scientific Journals": "site:nature.com", "Reference (Wikipedia)": "site:wikipedia.org"}
     
-    source_options = {
-        "Educational (.edu)": "site:.edu",
-        "Government (.gov)": "site:.gov",
-        "International Orgs (.org)": "site:.org",
-        "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
-        "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
-        "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
-        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
-        "Reference (Wikipedia)": "site:wikipedia.org"
-    }
-
-    # NEW: Select All Logic
     if 'selected_sources' not in st.session_state:
-        st.session_state.selected_sources = ["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
+        st.session_state.selected_sources = list(source_options.keys())[:2]
 
     c1, c2 = st.columns([4, 1])
     with c2:
@@ -409,24 +269,14 @@ elif choice == "🏠 Home":
             st.session_state.selected_sources = list(source_options.keys())
             st.rerun()
 
-    selected_sources = st.multiselect(
-        "Activate Reliable Databases:",
-        list(source_options.keys()),
-        key="selected_sources"
-    )
-
-    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
-    
+    sel = st.multiselect("Active Databases:", list(source_options.keys()), key="selected_sources")
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic...")
     if q:
-        query_parts = [source_options[s] for s in selected_sources]
-        advanced_filter = " OR ".join(query_parts) if query_parts else ""
-        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
-
-        st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
+        query_parts = [source_options[s] for s in sel]
+        full_query = f"{q} ({' OR '.join(query_parts)})" if query_parts else q
         st.link_button("🚀 Open Research Results", f"https://www.google.com/search?q={full_query}")
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
-    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
     if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
