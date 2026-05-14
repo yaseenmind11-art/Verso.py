@@ -145,7 +145,7 @@ st.markdown(f"""
     div[data-testid="stRadio"] > div {{ gap: 15px; padding: 10px 0; }}
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
-    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
+    .diff-add {{ background-color: #4E3F91; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
     .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
     .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     </style>
