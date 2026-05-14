@@ -38,6 +38,11 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ STATE MANAGEMENT ---
+# Persistent settings initialization
+if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
+if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
+if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
+
 if 'reset_counter' not in st.session_state: st.session_state.reset_counter = 0
 if 'timer_end_time' not in st.session_state: st.session_state.timer_end_time = None
 if 'timer_active' not in st.session_state: st.session_state.timer_active = False
@@ -49,11 +54,6 @@ if 'study_text_input' not in st.session_state: st.session_state.study_text_input
 if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_input = ""
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
-
-# FIX: Logic to prevent settings from resetting on every click
-if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
-if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
-if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
 
 if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
 if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
@@ -98,9 +98,9 @@ KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
 
 def trigger_master_reset():
     st.session_state.reset_counter += 1
+    keys_to_keep = ['reset_counter']
     for key in list(st.session_state.keys()):
-        if key != 'reset_counter': del st.session_state[key]
-    st.session_state.selected_alarm_tone = "Double Beep"
+        if key not in keys_to_keep: del st.session_state[key]
     st.toast("🚨 SYSTEM WIPED")
     time.sleep(0.4)
     st.rerun()
@@ -317,7 +317,6 @@ elif choice == "📒 Study Assistant":
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 else:
-                    # FIX: Color set to #5465C9
                     st.markdown(f'<div style="background-color:#5465C9; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#FFFFFF; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
@@ -370,14 +369,18 @@ elif choice == "⚙️ Settings":
         st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
     with col2:
         st.markdown('### 🎨 UI Appearance')
-        st.color_picker("Accent Color", st.session_state.set_color, key="set_color")
-        st.color_picker("Card BG", st.session_state.set_bg, key="set_bg")
-        st.slider("Font Scale", 0.8, 2.0, st.session_state.set_font, key="set_font")
+        # Robust State Sync for Color Pickers
+        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
+        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
+
+        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
+        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
+        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
         st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
     with col3:
         st.markdown('### 🔐 System Info')
         st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
-        st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
+        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
 # --- HOME ---
@@ -396,10 +399,20 @@ elif choice == "🏠 Home":
         "Reference (Wikipedia)": "site:wikipedia.org"
     }
 
+    # NEW: Select All Logic
+    if 'selected_sources' not in st.session_state:
+        st.session_state.selected_sources = ["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
+
+    c1, c2 = st.columns([4, 1])
+    with c2:
+        if st.button("Select All", use_container_width=True):
+            st.session_state.selected_sources = list(source_options.keys())
+            st.rerun()
+
     selected_sources = st.multiselect(
         "Activate Reliable Databases:",
         list(source_options.keys()),
-        default=["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
+        key="selected_sources"
     )
 
     q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
@@ -410,7 +423,6 @@ elif choice == "🏠 Home":
         full_query = f"{q} ({advanced_filter})" if advanced_filter else q
 
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
-        # FIX: Iframe removed, only link remains
         st.link_button("🚀 Open Research Results", f"https://www.google.com/search?q={full_query}")
 
 # --- GLOBAL TRIGGERS ---
