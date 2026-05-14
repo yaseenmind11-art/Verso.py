@@ -145,7 +145,7 @@ st.markdown(f"""
     <style>
     .stApp {{ color: inherit; }}
       .notebook-card {{ 
-        background-color: #040720; 
+        background-color: #D3D3D3; 
         padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
         margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
     }}
