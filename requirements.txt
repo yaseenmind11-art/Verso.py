@@ -6,3 +6,6 @@ requests
 beautifulsoup4
 pandas
 openpyxl
+docx2txt
+PyPDF2
+
