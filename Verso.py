@@ -7,20 +7,6 @@ import re
 import difflib
 import streamlit.components.v1 as components
 
-# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
-def inject_ga():
-    ga_id = "G-030XWBG97P"
-    ga_code = f"""
-    <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){{dataLayer.push(arguments);}}
-        gtag('js', new Date());
-        gtag('config', '{ga_id}', {{ 'debug_mode': true }});
-    </script>
-    """
-    components.html(ga_code, height=0)
-
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
 def setup_system():
@@ -309,22 +295,36 @@ elif choice == "⏱️ Time Tracker":
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
-    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
+    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): trigger_master_reset()
+    
+    st.divider()
+    
     v_id = st.session_state.reset_counter
     c1, c2, c3 = st.columns(3)
+    
     with c1:
-        st.write("### 📚 Academic & Audio")
+        st.subheader("📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         st.slider("Font Scale", 0.8, 2.0, st.session_state.set_font, key="set_font")
+        st.toggle("AI Audio Feedback", value=True)
+        st.toggle("Auto-Skip Mastered Cards", value=False)
+        st.button("🔊 Test Current Alarm", use_container_width=True)
+
     with c2:
-        st.write("### 🎨 UI Appearance")
+        st.subheader("🎨 UI Appearance")
         st.color_picker("Accent Color", st.session_state.set_color, key="set_color")
         st.color_picker("Card Background", st.session_state.set_bg, key="set_bg")
+        st.radio("UI Theme Mode", ["Standard", "High Contrast", "OLED Dark"], horizontal=True)
+        st.checkbox("Show Study Balloons", value=True)
+        st.checkbox("Enable Navigation Tooltips", value=True)
+
     with c3:
-        st.write("### 🔐 System Info")
+        st.subheader("🔐 System Info")
         st.info(f"Build: 14.6.5 (vID: {v_id})")
-        st.write("Current Settings:")
+        st.write("Current Configuration Ledger:")
         st.code(f"Font: {st.session_state.set_font}x\nAccent: {st.session_state.set_color}\nBG: {st.session_state.set_bg}")
+        st.button("📂 Export Study Session Data", use_container_width=True)
+        st.button("☁️ Sync with GitHub Repository", use_container_width=True)
 
 # --- HOME ---
 elif choice == "🏠 Home":
