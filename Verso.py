@@ -132,35 +132,22 @@ st.markdown(f"""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    
-    # Updated navigation options to include Word Counter as a full member
     nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
-    
     choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
 
-# --- MODULE: WORD COUNTER (NEW SCREEN) ---
+# --- MODULE: WORD COUNTER ---
 if choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
+    st.markdown("### 📥 Analyze Content")
     
-    # Calculated automatic count from other screens
-    session_text = f"{st.session_state.study_text_input} {st.session_state.grammar_text_input} {st.session_state.plag_text_input}"
-    auto_count = len(re.findall(r'\w+', session_text))
-    
-    st.markdown("### 📊 Live Session Statistics")
-    st.markdown(f'<div class="notebook-card" style="border-left-color: #10b981;"><b>Current Session Words Detected:</b> {auto_count}</div>', unsafe_allow_html=True)
-    
-    st.write("---")
-    st.markdown("### 📥 Analyze New Content")
-    col_a, col_b = st.columns([2, 1])
-    with col_a: st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'txt'], key="word_upload")
-    with col_b: st.text_input("Source URL", placeholder="Paste URL to count...", key="word_url")
+    st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'txt'], key="word_upload")
     
     new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
     st.session_state.word_counter_input = new_text
     
+    # Calculate count purely based on the input box
     specific_count = len(re.findall(r'\w+', new_text))
     st.metric("Words in Box", specific_count)
-    st.metric("Combined Total", auto_count + specific_count)
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
@@ -249,7 +236,6 @@ elif choice == "📒 Study Assistant":
                 target = words[curr_q % len(words)].title()
                 q_type = curr_q % 3 
                 st.write(f"Question **{curr_q + 1}** of **{total_q}**")
-                
                 if q_type == 0:
                     st.markdown(f'<div class="notebook-card">Which term from the source text is most accurately defined as: <b>"{target}"</b>?</div>', unsafe_allow_html=True)
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
@@ -283,7 +269,6 @@ elif choice == "📒 Study Assistant":
                 curr_idx = st.session_state.fc_step
                 curr_word = words[curr_idx % len(words)].title()
                 st.write(f"Card **{curr_idx + 1}** / **{total_fc}**")
-                
                 fc_type = curr_idx % 4
                 if fc_type == 0:
                     q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
@@ -347,73 +332,25 @@ elif choice == "⏱️ Time Tracker":
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
-    
-    st.write("") 
-    v_id = st.session_state.reset_counter
-    
     col1, col2, col3 = st.columns(3)
-    
     with col1:
         st.markdown('### 📚 Academic & Audio')
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"):
-             components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        
-        st.markdown("Citation Style")
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago", "Harvard"], label_visibility="collapsed")
-        
-        st.markdown("Tone Level")
-        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"], label_visibility="collapsed")
-        
-        st.markdown("Lesson Complexity")
-        st.radio("Complexity", ["Brief", "Standard", "Deep"], label_visibility="collapsed", index=1)
-        
-        st.checkbox("Auto-Bibliography", value=True)
-        st.checkbox("Logic Validation", value=True)
-        st.checkbox("Source Cross-Check")
-        st.checkbox("IB Alignment")
-        st.button("Export Citations")
-
+        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
+        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago", "Harvard"])
+        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
+        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
+        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
     with col2:
         st.markdown('### 🎨 UI Appearance')
-        st.markdown("Accent Color")
-        st.color_picker("Accent", st.session_state.set_color, key="set_color", label_visibility="collapsed")
-        
-        st.markdown("Card Background")
-        st.color_picker("Card BG", st.session_state.set_bg, key="set_bg", label_visibility="collapsed")
-        
-        st.markdown(f"Font Scale <span style='color:red;'>{st.session_state.set_font:.2f}</span>", unsafe_allow_html=True)
-        st.slider("Font Scale", 0.8, 2.0, st.session_state.set_font, key="set_font", label_visibility="collapsed")
-        
-        st.checkbox("High Contrast")
-        st.checkbox("Compact")
-        st.checkbox("Force Dark", value=True)
-        st.checkbox("Glassmorphism")
-        st.checkbox("Nav Hints")
-        
-        if st.button("Rebuild Cache"): st.toast("🔄 Cache Cleared")
-        if st.button("Toggle Fullscreen"): components.html("<script>window.parent.document.documentElement.requestFullscreen();</script>")
-
+        st.color_picker("Accent Color", st.session_state.set_color, key="set_color")
+        st.color_picker("Card BG", st.session_state.set_bg, key="set_bg")
+        st.slider("Font Scale", 0.8, 2.0, st.session_state.set_font, key="set_font")
+        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
     with col3:
         st.markdown('### 🔐 System Info')
-        st.checkbox("Encryption")
-        st.checkbox("Privacy Shield")
-        st.checkbox("Study Logs")
-        st.checkbox("Auto-Delete")
-        
-        st.write("")
-        if st.button("Purge History"): st.toast("🗑️ History Deleted")
-        if st.button("Export CSV"): st.toast("📥 Data Exported")
-        if st.button("Cloud Backup"): st.toast("☁️ Syncing to Cloud...")
-        if st.button("Generate Key"): st.code(f"VER-PRO-{random.randint(1000,9999)}-X")
-        if st.button("Integrity Check"): st.toast("🛡️ All Systems Normal")
-        
-        st.write("")
-        st.info(f"Build: 14.5.4 (vID: {v_id})")
-        
-        st.write("Current Settings:")
-        st.code(f"Font: {st.session_state.set_font}x\nAccent: {st.session_state.set_color}\nBG: {st.session_state.set_bg}")
-
+        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
+        st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
 # --- HOME ---
