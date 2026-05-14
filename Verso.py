@@ -39,17 +39,14 @@ if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_p
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 
-# Global Persistence for Text Inputs (Prevents clearing when switching tabs)
 if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
 if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_input = ""
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 
-# Settings Persistance
 if 'set_color' not in st.session_state: st.session_state.set_color = "#3b82f6"
 if 'set_bg' not in st.session_state: st.session_state.set_bg = "#1e293b"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
 
-# NotebookLM Style States
 if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
 if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
 if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
@@ -135,23 +132,44 @@ with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
     
-    # Word Counter Logic for the Sidebar Button
-    def get_current_word_count():
-        # Scans all active text inputs for a total count
-        text = f"{st.session_state.study_text_input} {st.session_state.grammar_text_input} {st.session_state.plag_text_input}"
-        return len(text.split())
-
+    # Navigation list exactly matching your requirements
     nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker"]
     
-    # Navigation Radio
-    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"])
+    # Custom CSS to make the Word Counter Button look like a Nav Item
+    st.markdown("""
+        <style>
+        div.stButton > button:first-child {
+            border: none;
+            background-color: transparent;
+            color: #FFFFFF;
+            text-align: left;
+            padding: 0px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+        div.stButton > button:first-child:hover {
+            color: #3b82f6;
+            background-color: transparent;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    st.write("---")
-    # WORD COUNT BUTTON - POSITIONED UNDER TIMER AND ABOVE SETTINGS
-    if st.button("📝 WORD COUNTER", use_container_width=True):
-        count = get_current_word_count()
-        st.toast(f"Total Words Across App: {count}")
-        st.sidebar.info(f"Current Session: {count} words")
+    # Initial Radio for primary navigation
+    if 'main_nav' not in st.session_state: st.session_state.main_nav = "🏠 Home"
+    
+    choice = st.radio("Menu", nav_options, label_visibility="collapsed")
+
+    # WORD COUNTER POSITIONED UNDER TIMER AND ABOVE SETTINGS
+    if st.button("📝 Word Counter"):
+        all_text = f"{st.session_state.study_text_input} {st.session_state.grammar_text_input} {st.session_state.plag_text_input}"
+        count = len(re.findall(r'\w+', all_text))
+        st.toast(f"Total Session Count: {count} words")
+        st.sidebar.info(f"Words detected: {count}")
+
+    # Settings separated as requested
+    if st.radio("System", ["⚙️ Settings"], label_visibility="collapsed", index=None):
+        choice = "⚙️ Settings"
 
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
@@ -339,7 +357,7 @@ elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
     
-    st.write("") # Spacer
+    st.write("") 
     v_id = st.session_state.reset_counter
     
     col1, col2, col3 = st.columns(3)
