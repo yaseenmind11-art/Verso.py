@@ -7,6 +7,20 @@ import re
 import difflib
 import streamlit.components.v1 as components
 
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
+def inject_ga():
+    ga_id = "G-030XWBG97P"
+    ga_code = f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{ga_id}', {{ 'debug_mode': true }});
+    </script>
+    """
+    components.html(ga_code, height=0)
+
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
 def setup_system():
@@ -24,11 +38,6 @@ if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
-
-# Settings Persistance
-if 'set_color' not in st.session_state: st.session_state.set_color = "#3b82f6"
-if 'set_bg' not in st.session_state: st.session_state.set_bg = "#1e293b"
-if 'set_font' not in st.session_state: st.session_state.set_font = 1.1
 
 # NotebookLM Style States
 if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
@@ -68,9 +77,9 @@ if st.session_state.timer_active and st.session_state.timer_end_time:
         st.session_state.remaining_at_pause = diff
 
 # --- 🎨 STYLING ---
-accent = st.session_state.set_color
-bg_card = st.session_state.set_bg
-f_scale = st.session_state.set_font
+accent = st.session_state.get('set_color', "#3b82f6")
+bg_card = st.session_state.get('set_bg', "#1e293b")
+f_scale = st.session_state.get('set_font', 1.1)
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
@@ -119,8 +128,8 @@ with st.sidebar:
 
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you want to correct...")
+    st.markdown('<h1>Smart Google Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you wnt to correct...")
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
@@ -148,7 +157,7 @@ if choice == "✍️ Grammar Checker":
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner Pro")
     plag_text = st.text_area("Paste text to scan:", placeholder="Paste text here...", height=250)
-    if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
+    if st.button("🔍 Deep Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
                 time.sleep(2.5)
@@ -187,6 +196,7 @@ elif choice == "📒 Study Assistant":
         
         with t1:
             cols = st.columns(2)
+            # Fixed loop to use "words" variable instead of missing "data" key
             for i, phrase in enumerate(words[:20]): 
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
@@ -205,7 +215,7 @@ elif choice == "📒 Study Assistant":
                     random.shuffle(opts)
                 elif q_type == 1:
                     fake_target = random.choice([x.title() for x in words if x.title() != target])
-                    st.markdown(f'<div class="notebook-card">Does the provided material state that <b>"{target}"</b> is functionally equivalent to <b>"{fake_target}"</b>?</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="notebook-card">Does the provided material state that <b>"{target}"</b> is primarily functionally equivalent to <b>"{fake_target}"</b>?</div>', unsafe_allow_html=True)
                     opts = ["No, they are distinct", "Yes, they are the same"]
                     target = "No, they are distinct"
                 else:
@@ -226,6 +236,7 @@ elif choice == "📒 Study Assistant":
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
+            # --- FIXED FLASHCARDS: REMOVED FRAGMENTATION & KEY ERRORS ---
             st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
@@ -235,25 +246,27 @@ elif choice == "📒 Study Assistant":
                 
                 fc_type = curr_idx % 4
                 if fc_type == 0:
-                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor."
+                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of **'{curr_word}'**?"
+                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor. It serves to validate the primary claims by providing the necessary conceptual grounding described in the text."
                 elif fc_type == 1:
-                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
-                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation leads to a more robust result."
+                    q_text = f"If you had to apply **'{curr_word}'** to a practical scenario following the logic of the source, what would be the intended outcome?"
+                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation of '{curr_word}' leads to a more robust result, specifically bridging the gap between theoretical input and real-world execution."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
-                    q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your content?"
-                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
+                    q_text = f"Analyze the connection between **'{curr_word}'** and **'{other_word}'**. How do they interact within your study content?"
+                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'. They are functionally linked, meaning the effectiveness of one directly impacts the reliability of the other."
                 else:
-                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
+                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of **'{curr_word}'**?"
+                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable. Its presence is highlighted to ensure the user understands the structural dependency of the entire topic on this specific point."
 
+                # Single, clear integrated question box
                 st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
-                else:
+                
+                if st.session_state.reveal_fc:
                     st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#cbd5e1; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
@@ -271,9 +284,13 @@ elif choice == "📒 Study Assistant":
                 <div class="teacher-board">
                 <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
                 <h3>I. Executive Core Concept</h3>
-                <p>The central pillar is <b>{words[0].title()}</b>.</p>
+                <p>The central pillar is <b>{words[0].title()}</b>. This dictates how <b>{words[1].title()}</b> is applied.</p>
                 <h3>II. Technical Mechanics & Workflow</h3>
-                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>.</p>
+                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>. Without <b>{words[4].title()}</b>, the objective would fail.</p>
+                <h3>III. Deep Contextual Impact</h3>
+                <p>Analyzing <b>{words[5].title()}</b> reveals a deeper layer. It acts as a bridge to <b>{words[6].title()}</b>.</p>
+                <h3>IV. Critical Synthesis</h3>
+                <p><b>{words[8].title()}</b> is deeply connected to <b>{words[9].title()}</b> and <b>{words[10].title()}</b>.</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -295,41 +312,24 @@ elif choice == "⏱️ Time Tracker":
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("Verso Control Center")
-    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): trigger_master_reset()
-    
-    st.divider()
-    
+    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
     v_id = st.session_state.reset_counter
     c1, c2, c3 = st.columns(3)
-    
     with c1:
-        st.subheader("📚 Academic & Audio")
+        st.write("### 📚 Academic & Audio")
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        st.slider("Font Scale", 0.8, 2.0, st.session_state.set_font, key="set_font")
-        st.toggle("AI Audio Feedback", value=True)
-        st.toggle("Auto-Skip Mastered Cards", value=False)
-        st.button("🔊 Test Current Alarm", use_container_width=True)
-
     with c2:
-        st.subheader("🎨 UI Appearance")
-        st.color_picker("Accent Color", st.session_state.set_color, key="set_color")
-        st.color_picker("Card Background", st.session_state.set_bg, key="set_bg")
-        st.radio("UI Theme Mode", ["Standard", "High Contrast", "OLED Dark"], horizontal=True)
-        st.checkbox("Show Study Balloons", value=True)
-        st.checkbox("Enable Navigation Tooltips", value=True)
-
+        st.write("### 🎨 UI")
+        st.color_picker("Accent", accent, key=f"s11_{v_id}")
+        st.color_picker("Card BG", bg_card, key=f"s12_{v_id}")
     with c3:
-        st.subheader("🔐 System Info")
-        st.info(f"Build: 14.6.5 (vID: {v_id})")
-        st.write("Current Configuration Ledger:")
-        st.code(f"Font: {st.session_state.set_font}x\nAccent: {st.session_state.set_color}\nBG: {st.session_state.set_bg}")
-        st.button("📂 Export Study Session Data", use_container_width=True)
-        st.button("☁️ Sync with GitHub Repository", use_container_width=True)
+        st.write("### 🔐 Security")
+        st.info(f"Build: 14.5.8 (vID: {v_id})")
 
 # --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Type what you want to search for here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Search...")
     if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True,)
 
 # --- GLOBAL TRIGGERS ---
