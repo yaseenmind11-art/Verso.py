@@ -203,7 +203,7 @@ if choice == "🏠 Home":
     st.markdown("### 🎓 Universal Academic Engine")
     
     # --- BIG VISIBLE SELECT ALL BUTTON ---
-    if st.button("🏃 ACTIVATE ALL reliable websites", use_container_width=True):
+    if st.button("🏃 ACTIVATE ALL RELIABLE WEBSITES", use_container_width=True):
         st.session_state.home_selected_sources = list(SOURCE_OPTIONS.keys())
         st.rerun()
 
