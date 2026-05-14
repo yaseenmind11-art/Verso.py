@@ -170,17 +170,12 @@ with st.sidebar:
 if choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
     st.markdown("### 📥 Analyze Content")
-    
     uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
-    
     file_text = extract_text(uploaded_file)
     new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
     st.session_state.word_counter_input = new_text
-    
-    # Boundary-aware counting to better align with professional tools
     box_count = len(re.findall(r'\b\w+\b', new_text))
     file_count = len(re.findall(r'\b\w+\b', file_text))
-    
     col1, col2 = st.columns(2)
     col1.metric("Words in Box", box_count)
     col2.metric("Words in File", file_count)
@@ -191,7 +186,6 @@ elif choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Verso Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
-    
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
@@ -220,7 +214,6 @@ elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner Pro")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
-    
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
@@ -249,28 +242,22 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: up_files = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: url_hub = st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    
     raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="s_input")
     st.session_state.study_text_input = raw_content
-    
-    # Process files and links directly into the study engine
     final_study_data = raw_content
     if url_hub: final_study_data += " " + extract_from_url(url_hub)
     if up_files:
         for f in up_files: final_study_data += " " + extract_text(f)
-    
     if final_study_data.strip():
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Deep Teacher"])
         blob = TextBlob(final_study_data)
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
         while len(words) < 25:
             words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
-        
         with t1:
             cols = st.columns(2)
             for i, phrase in enumerate(words[:20]): 
                 cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
-        
         with t2:
             st.markdown("### Interactive Content Quiz (10 Questions)")
             total_q = 10
@@ -292,7 +279,6 @@ elif choice == "📒 Study Assistant":
                     st.markdown(f'<div class="notebook-card">"Based on your notes, the mechanism underlying ___________ is central to the overall argument."</div>', unsafe_allow_html=True)
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                     random.shuffle(opts)
-
                 choice_q = st.radio("Choose correct answer:", opts, key=f"q_step_{curr_q}", index=None)
                 if st.button("Submit & Continue", use_container_width=True):
                     if choice_q == target:
@@ -304,7 +290,6 @@ elif choice == "📒 Study Assistant":
             else:
                 st.metric("Final Score", f"{st.session_state.quiz_score} / {total_q}")
                 if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
-
         with t3:
             st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
@@ -326,9 +311,7 @@ elif choice == "📒 Study Assistant":
                 else:
                     q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
                     a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
-
                 st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
-                
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
@@ -344,7 +327,6 @@ elif choice == "📒 Study Assistant":
             else:
                 st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
-
         with t4:
             st.markdown(f"""
                 <div class="teacher-board">
@@ -396,11 +378,56 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
-# --- HOME ---
+# --- HOME (UPGRADED WITH ALL RELIABLE SOURCES) ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    q = st.text_input("🔍 Search Database:", placeholder="Type what you want to search for here...")
-    if q: st.markdown(f'<div style="height:600px; overflow:hidden;"><iframe src="https://www.google.com/search?q={q}&igu=1" style="width:100%; height:800px; border:none; margin-top:-120px;"></iframe></div>', unsafe_allow_html=True,)
+    st.markdown("### 🎓 Universal Academic Engine")
+    
+    # Selection for a truly comprehensive reliable source list
+    source_options = {
+        "Educational (.edu)": "site:.edu",
+        "Government (.gov)": "site:.gov",
+        "International Orgs (.org)": "site:.org",
+        "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
+        "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
+        "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
+        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
+    }
+
+    selected_sources = st.multiselect(
+        "Activate Reliable Databases:",
+        list(source_options.keys()),
+        default=["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
+    )
+
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
+    
+    if q:
+        # Build query parts based on selection
+        query_parts = [source_options[s] for s in selected_sources]
+        
+        if query_parts:
+            advanced_filter = " OR ".join(query_parts)
+            full_query = f"{q} ({advanced_filter})"
+        else:
+            full_query = q 
+
+        st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
+        
+        # Display the iframe
+        st.markdown(
+            f'''
+            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
+                <iframe src="https://www.google.com/search?q={full_query}&igu=1" 
+                        style="width:100%; height:800px; border:none; margin-top:-120px;">
+                </iframe>
+            </div>
+            ''', 
+            unsafe_allow_html=True
+        )
+        
+        # Safe open link
+        st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
