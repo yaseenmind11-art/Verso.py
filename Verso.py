@@ -39,6 +39,9 @@ if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_p
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 
+# Persistence for Study Content (Prevents clearing when switching tabs)
+if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
+
 # Settings Persistance
 if 'set_color' not in st.session_state: st.session_state.set_color = "#3b82f6"
 if 'set_bg' not in st.session_state: st.session_state.set_bg = "#1e293b"
@@ -113,8 +116,6 @@ st.markdown(f"""
     .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
     .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
     .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
-    /* Custom Slider CSS */
-    .stSlider > div > div > div > div {{ color: #ef4444 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -192,7 +193,10 @@ elif choice == "📒 Study Assistant":
     col_a, col_b = st.columns([2, 1])
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
-    raw_content = st.text_area("Input Content:", height=200, placeholder="Paste content here...")
+    
+    # Text input with Session State to prevent resetting
+    raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="study_input")
+    st.session_state.study_text_input = raw_content
     
     if raw_content:
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Deep Teacher"])
@@ -306,9 +310,20 @@ elif choice == "⏱️ Time Tracker":
     if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
     if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
+    
+    # --- WORD COUNTER BUTTON (Added right under the timer buttons as requested) ---
+    st.divider()
+    if st.button("📝 Word Counter", use_container_width=True):
+        if st.session_state.study_text_input:
+            wc = len(st.session_state.study_text_input.split())
+            cc = len(st.session_state.study_text_input)
+            st.info(f"Words: {wc} | Characters: {cc}")
+        else:
+            st.warning("No text found in Study Assistant.")
+    
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS (REBUILT TO MATCH IMAGES) ---
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
