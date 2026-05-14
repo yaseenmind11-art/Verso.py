@@ -50,7 +50,7 @@ if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_i
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
 
-# Set default colors to White and Grey as requested
+# Set default colors
 if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
 if 'set_bg' not in st.session_state: st.session_state.set_bg = "#808080"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
@@ -159,7 +159,6 @@ st.markdown(f"""
     .teacher-board b {{ color: {accent}; }}
     div[data-testid="stRadio"] > div {{ gap: 15px; padding: 10px 0; }}
     
-    /* CUSTOM STYLE FOR BIG SELECT ALL BUTTON */
     .stButton > button:has(div:contains("ACTIVATE ALL DATABASES")) {{
         background-color: #f8f9fa !important;
         color: #1e293b !important;
@@ -190,7 +189,7 @@ st.markdown(f"""
     </audio>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Updated: Words Detected Box Removed) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
@@ -202,7 +201,6 @@ if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
     
-    # --- BIG VISIBLE SELECT ALL BUTTON ---
     if st.button("🚀 ACTIVATE ALL DATABASES", use_container_width=True):
         st.session_state.home_selected_sources = list(SOURCE_OPTIONS.keys())
         st.rerun()
@@ -216,23 +214,8 @@ if choice == "🏠 Home":
     q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
     
     if q:
-        query_parts = [SOURCE_OPTIONS[s] for s in selected_sources]
-        advanced_filter = " OR ".join(query_parts) if query_parts else ""
-        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
-
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
-        
-        st.markdown(
-            f'''
-            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
-                <iframe src="https://www.google.com/search?q={full_query}&igu=1" 
-                        style="width:100%; height:800px; border:none; margin-top:-120px;">
-                </iframe>
-            </div>
-            ''', 
-            unsafe_allow_html=True
-        )
-        st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
+        # Google part erased as requested.
 
 # --- MODULE: WORD COUNTER ---
 elif choice == "📝 Word Counter":
@@ -384,70 +367,8 @@ elif choice == "📒 Study Assistant":
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 else:
+                    # REVERTED TO NAVY BLACK (#0f172a)
                     st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#cbd5e1; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
-                        st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
-                        components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
-                        st.rerun()
-                    if c2.button("❌ Review Needed", use_container_width=True):
-                        st.session_state.fc_wrong += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False; st.rerun()
-            else:
-                st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
-                if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
-        with t4:
-            st.markdown(f"""
-                <div class="teacher-board">
-                <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
-                <h3>I. Executive Core Concept</h3>
-                <p>The central pillar is <b>{words[0].title()}</b>.</p>
-                <h3>II. Technical Mechanics & Workflow</h3>
-                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>.</p>
-                </div>
-            """, unsafe_allow_html=True)
-
-# --- MODULE: TIME TRACKER ---
-elif choice == "⏱️ Time Tracker":
-    st.title("Focus Timer")
-    if not st.session_state.sound_unlocked:
-        if st.button("🔓 ENABLE SOUNDS"):
-            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
-            st.session_state.sound_unlocked = True; st.rerun()
-    mins = st.number_input("Minutes:", 1, 120, 25)
-    c1, c2, c3, c4 = st.columns(4)
-    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
-    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
-    if st.session_state.timer_active: time.sleep(1); st.rerun()
-
-# --- MODULE: SETTINGS ---
-elif choice == "⚙️ Settings":
-    st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown('### 📚 Academic & Audio')
-        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago", "Harvard"])
-        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
-        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
-        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
-    with col2:
-        st.markdown('### 🎨 UI Appearance')
-        st.color_picker("Accent Color", st.session_state.set_color, key="set_color")
-        st.color_picker("Card BG", st.session_state.set_bg, key="set_bg")
-        st.slider("Font Scale", 0.8, 2.0, st.session_state.set_font, key="set_font")
-        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
-    with col3:
-        st.markdown('### 🔐 System Info')
-        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
-        st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
-    st.success("System Optimized")
-
-# --- GLOBAL TRIGGERS ---
-if st.session_state.get('timer_finished_trigger'):
-    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
-    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-    if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
+                        st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state
