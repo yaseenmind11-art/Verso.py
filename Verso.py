@@ -42,6 +42,7 @@ if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alar
 if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
 if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_input = ""
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
+if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
 
 if 'set_color' not in st.session_state: st.session_state.set_color = "#3b82f6"
 if 'set_bg' not in st.session_state: st.session_state.set_bg = "#1e293b"
@@ -132,47 +133,37 @@ with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
     
-    # Navigation list exactly matching your requirements
-    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker"]
+    # Updated navigation options to include Word Counter as a full member
+    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
     
-    # Custom CSS to make the Word Counter Button look like a Nav Item
-    st.markdown("""
-        <style>
-        div.stButton > button:first-child {
-            border: none;
-            background-color: transparent;
-            color: #FFFFFF;
-            text-align: left;
-            padding: 0px;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-        }
-        div.stButton > button:first-child:hover {
-            color: #3b82f6;
-            background-color: transparent;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
 
-    # Initial Radio for primary navigation
-    if 'main_nav' not in st.session_state: st.session_state.main_nav = "🏠 Home"
+# --- MODULE: WORD COUNTER (NEW SCREEN) ---
+if choice == "📝 Word Counter":
+    st.title("Verso Word Metrics")
     
-    choice = st.radio("Menu", nav_options, label_visibility="collapsed")
-
-    # WORD COUNTER POSITIONED UNDER TIMER AND ABOVE SETTINGS
-    if st.button("📝 Word Counter"):
-        all_text = f"{st.session_state.study_text_input} {st.session_state.grammar_text_input} {st.session_state.plag_text_input}"
-        count = len(re.findall(r'\w+', all_text))
-        st.toast(f"Total Session Count: {count} words")
-        st.sidebar.info(f"Words detected: {count}")
-
-    # Settings separated as requested
-    if st.radio("System", ["⚙️ Settings"], label_visibility="collapsed", index=None):
-        choice = "⚙️ Settings"
+    # Calculated automatic count from other screens
+    session_text = f"{st.session_state.study_text_input} {st.session_state.grammar_text_input} {st.session_state.plag_text_input}"
+    auto_count = len(re.findall(r'\w+', session_text))
+    
+    st.markdown("### 📊 Live Session Statistics")
+    st.markdown(f'<div class="notebook-card" style="border-left-color: #10b981;"><b>Current Session Words Detected:</b> {auto_count}</div>', unsafe_allow_html=True)
+    
+    st.write("---")
+    st.markdown("### 📥 Analyze New Content")
+    col_a, col_b = st.columns([2, 1])
+    with col_a: st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'txt'], key="word_upload")
+    with col_b: st.text_input("Source URL", placeholder="Paste URL to count...", key="word_url")
+    
+    new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
+    st.session_state.word_counter_input = new_text
+    
+    specific_count = len(re.findall(r'\w+', new_text))
+    st.metric("Words in Box", specific_count)
+    st.metric("Combined Total", auto_count + specific_count)
 
 # --- MODULE: GRAMMAR CHECKER ---
-if choice == "✍️ Grammar Checker":
+elif choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Verso Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
@@ -368,7 +359,7 @@ elif choice == "⚙️ Settings":
         if st.button("Test Tone"):
              components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
         
-        st.markdown("Citations Style")
+        st.markdown("Citation Style")
         st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago", "Harvard"], label_visibility="collapsed")
         
         st.markdown("Tone Level")
