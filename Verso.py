@@ -143,9 +143,9 @@ st.markdown(f"""
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
     .teacher-board b {{ color: {accent}; }}
     div[data-testid="stRadio"] > div {{ gap: 15px; padding: 10px 0; }}
-    .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
+    .time-up-banner {{ background-color: #4E3F91; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
-    .diff-add {{ background-color: #4E3F91; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
+    .diff-add {{ background-color: #4E3F91; color: #4E3F91; padding: 2px 4px; border-radius: 4px; }}
     .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
     .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     </style>
