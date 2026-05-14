@@ -62,6 +62,21 @@ if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
 if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
 if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
 
+# Database state for Home page
+SOURCE_OPTIONS = {
+    "Educational (.edu)": "site:.edu",
+    "Government (.gov)": "site:.gov",
+    "International Orgs (.org)": "site:.org",
+    "Scientific Journals": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
+    "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
+    "Encyclopedias": "(site:britannica.com OR site:worldhistory.org)",
+    "Academic News": "(site:theconversation.com OR site:smithsonianmag.com)",
+    "Reference (Wikipedia)": "site:wikipedia.org"
+}
+
+if 'home_selected_sources' not in st.session_state:
+    st.session_state.home_selected_sources = ["Educational (.edu)", "Government (.gov)", "Scientific Journals", "Encyclopedias"]
+
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
     if uploaded_file is None: return ""
@@ -143,6 +158,21 @@ st.markdown(f"""
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
     .teacher-board b {{ color: {accent}; }}
     div[data-testid="stRadio"] > div {{ gap: 15px; padding: 10px 0; }}
+    
+    /* CUSTOM STYLE FOR BIG SELECT ALL BUTTON */
+    .stButton > button:has(div:contains("ACTIVATE ALL DATABASES")) {{
+        background-color: #f8f9fa !important;
+        color: #1e293b !important;
+        border: 3px solid {accent} !important;
+        height: 65px !important;
+        font-size: 20px !important;
+        font-weight: 900 !important;
+        border-radius: 15px !important;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.3) !important;
+        margin-bottom: 20px !important;
+        letter-spacing: 1px !important;
+    }}
+    
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
     .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
@@ -167,8 +197,45 @@ with st.sidebar:
     nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
     choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
 
+# --- HOME (Comprehensive Academic Engine) ---
+if choice == "🏠 Home":
+    st.title("VERSO RESEARCH")
+    st.markdown("### 🎓 Universal Academic Engine")
+    
+    # --- BIG VISIBLE SELECT ALL BUTTON ---
+    if st.button("🚀 ACTIVATE ALL DATABASES", use_container_width=True):
+        st.session_state.home_selected_sources = list(SOURCE_OPTIONS.keys())
+        st.rerun()
+
+    selected_sources = st.multiselect(
+        "Individual Database Selection:",
+        list(SOURCE_OPTIONS.keys()),
+        key="home_selected_sources"
+    )
+
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
+    
+    if q:
+        query_parts = [SOURCE_OPTIONS[s] for s in selected_sources]
+        advanced_filter = " OR ".join(query_parts) if query_parts else ""
+        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
+
+        st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
+        
+        st.markdown(
+            f'''
+            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
+                <iframe src="https://www.google.com/search?q={full_query}&igu=1" 
+                        style="width:100%; height:800px; border:none; margin-top:-120px;">
+                </iframe>
+            </div>
+            ''', 
+            unsafe_allow_html=True
+        )
+        st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
+
 # --- MODULE: WORD COUNTER ---
-if choice == "📝 Word Counter":
+elif choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
     st.markdown("### 📥 Analyze Content")
     uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
@@ -378,55 +445,6 @@ elif choice == "⚙️ Settings":
         st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
         st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
-
-# --- HOME (Comprehensive Academic Engine) ---
-elif choice == "🏠 Home":
-    st.title("VERSO RESEARCH")
-    st.markdown("### 🎓 Universal Academic Engine")
-    
-    # Selection for a truly comprehensive reliable source list
-    source_options = {
-        "Educational (.edu)": "site:.edu",
-        "Government (.gov)": "site:.gov",
-        "International Orgs (.org)": "site:.org",
-        "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
-        "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
-        "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
-        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
-        "Reference (Wikipedia)": "site:wikipedia.org"
-    }
-
-    selected_sources = st.multiselect(
-        "Activate Reliable Databases:",
-        list(source_options.keys()),
-        default=["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
-    )
-
-    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
-    
-    if q:
-        query_parts = [source_options[s] for s in selected_sources]
-        
-        if query_parts:
-            advanced_filter = " OR ".join(query_parts)
-            full_query = f"{q} ({advanced_filter})"
-        else:
-            full_query = q 
-
-        st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
-        
-        st.markdown(
-            f'''
-            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
-                <iframe src="https://www.google.com/search?q={full_query}&igu=1" 
-                        style="width:100%; height:800px; border:none; margin-top:-120px;">
-                </iframe>
-            </div>
-            ''', 
-            unsafe_allow_html=True
-        )
-        
-        st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
