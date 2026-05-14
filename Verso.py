@@ -6,9 +6,12 @@ import random
 import re
 import difflib
 import streamlit.components.v1 as components
-import docx2txt  # Added for Word files
-import PyPDF2    # Added for PDF files
+import docx2txt
+import PyPDF2
+import pandas as pd
 import io
+import requests
+from bs4 import BeautifulSoup
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
@@ -57,6 +60,31 @@ if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
 if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
 if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
 if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
+
+# --- 🛠️ EXTRACTION HELPERS ---
+def extract_text(uploaded_file):
+    if uploaded_file is None: return ""
+    try:
+        if uploaded_file.type == "application/pdf":
+            reader = PyPDF2.PdfReader(uploaded_file)
+            return " ".join([page.extract_text() or "" for page in reader.pages])
+        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            return docx2txt.process(uploaded_file)
+        elif uploaded_file.type == "text/csv":
+            df = pd.read_csv(uploaded_file)
+            return df.astype(str).apply(lambda x: ' '.join(x), axis=1).str.cat(sep=' ')
+        else:
+            return str(uploaded_file.read(), "utf-8")
+    except Exception: return ""
+
+def extract_from_url(url):
+    if not url: return ""
+    try:
+        res = requests.get(url, timeout=5)
+        soup = BeautifulSoup(res.content, 'html.parser')
+        for s in soup(['script', 'style']): s.decompose()
+        return soup.get_text(separator=' ', strip=True)
+    except: return ""
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -143,28 +171,15 @@ if choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
     st.markdown("### 📥 Analyze Content")
     
-    uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'txt'], key="word_upload")
+    uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
     
-    file_text = ""
-    if uploaded_file is not None:
-        try:
-            if uploaded_file.type == "application/pdf":
-                pdf_reader = PyPDF2.PdfReader(uploaded_file)
-                for page in pdf_reader.pages:
-                    file_text += page.extract_text() or ""
-            elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                file_text = docx2txt.process(uploaded_file)
-            elif uploaded_file.type == "text/plain":
-                file_text = str(uploaded_file.read(), "utf-8")
-        except Exception as e:
-            st.error(f"Error reading file: {e}")
-
+    file_text = extract_text(uploaded_file)
     new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
     st.session_state.word_counter_input = new_text
     
-    # Calculate counts
-    box_count = len(re.findall(r'\w+', new_text))
-    file_count = len(re.findall(r'\w+', file_text))
+    # Boundary-aware counting to better align with professional tools
+    box_count = len(re.findall(r'\b\w+\b', new_text))
+    file_count = len(re.findall(r'\b\w+\b', file_text))
     
     col1, col2 = st.columns(2)
     col1.metric("Words in Box", box_count)
@@ -232,15 +247,21 @@ elif choice == "📒 Study Assistant":
     st.title("Verso Deep Learning Teacher")
     st.markdown("### 📥 Resource Input")
     col_a, col_b = st.columns([2, 1])
-    with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
-    with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
+    with col_a: up_files = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
+    with col_b: url_hub = st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
     
     raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="s_input")
     st.session_state.study_text_input = raw_content
     
-    if raw_content:
+    # Process files and links directly into the study engine
+    final_study_data = raw_content
+    if url_hub: final_study_data += " " + extract_from_url(url_hub)
+    if up_files:
+        for f in up_files: final_study_data += " " + extract_text(f)
+    
+    if final_study_data.strip():
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "✍️ AI Deep Teacher"])
-        blob = TextBlob(raw_content)
+        blob = TextBlob(final_study_data)
         words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
         while len(words) < 25:
             words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
