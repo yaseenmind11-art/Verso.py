@@ -8,4 +8,3 @@ pandas
 openpyxl
 docx2txt
 PyPDF2
-
