@@ -39,8 +39,10 @@ if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_p
 if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 
-# Persistence for Study Content (Prevents clearing when switching tabs)
+# Global Persistence for Text Inputs (Prevents clearing when switching tabs)
 if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
+if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_input = ""
+if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 
 # Settings Persistance
 if 'set_color' not in st.session_state: st.session_state.set_color = "#3b82f6"
@@ -132,12 +134,31 @@ st.markdown(f"""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    choice = st.radio("Navigation", ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "⚙️ Settings"])
+    
+    # Word Counter Logic for the Sidebar Button
+    def get_current_word_count():
+        # Scans all active text inputs for a total count
+        text = f"{st.session_state.study_text_input} {st.session_state.grammar_text_input} {st.session_state.plag_text_input}"
+        return len(text.split())
+
+    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker"]
+    
+    # Navigation Radio
+    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"])
+
+    st.write("---")
+    # WORD COUNT BUTTON - POSITIONED UNDER TIMER AND ABOVE SETTINGS
+    if st.button("📝 WORD COUNTER", use_container_width=True):
+        count = get_current_word_count()
+        st.toast(f"Total Words Across App: {count}")
+        st.sidebar.info(f"Current Session: {count} words")
 
 # --- MODULE: GRAMMAR CHECKER ---
 if choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Verso Auto-Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", height=250, placeholder="Please input the text you want to correct...")
+    text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
+    st.session_state.grammar_text_input = text_to_check
+    
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
@@ -164,7 +185,9 @@ if choice == "✍️ Grammar Checker":
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner Pro")
-    plag_text = st.text_area("Paste text to scan:", placeholder="Paste text here...", height=250)
+    plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
+    st.session_state.plag_text_input = plag_text
+    
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
@@ -194,8 +217,7 @@ elif choice == "📒 Study Assistant":
     with col_a: st.file_uploader("Upload Files", type=['pdf', 'docx', 'pptx', 'xlsx', 'csv', 'txt', 'png', 'jpg'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
     
-    # Text input with Session State to prevent resetting
-    raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="study_input")
+    raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="s_input")
     st.session_state.study_text_input = raw_content
     
     if raw_content:
@@ -310,17 +332,6 @@ elif choice == "⏱️ Time Tracker":
     if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
     if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
     m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
-    
-    # --- WORD COUNTER BUTTON (Added right under the timer buttons as requested) ---
-    st.divider()
-    if st.button("📝 Word Counter", use_container_width=True):
-        if st.session_state.study_text_input:
-            wc = len(st.session_state.study_text_input.split())
-            cc = len(st.session_state.study_text_input)
-            st.info(f"Words: {wc} | Characters: {cc}")
-        else:
-            st.warning("No text found in Study Assistant.")
-    
     if st.session_state.timer_active: time.sleep(1); st.rerun()
 
 # --- MODULE: SETTINGS ---
