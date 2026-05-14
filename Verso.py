@@ -382,11 +382,23 @@ elif choice == "⚙️ Settings":
 # --- HOME (Comprehensive Academic Engine) ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-
+   st.markdown("### 🎓 Universal Academic Engine")
+    
+    # Selection for a truly comprehensive reliable source list
+    source_options = {
+        "Educational (.edu)": "site:.edu",
+        "Government (.gov)": "site:.gov",
+        "International Orgs (.org)": "site:.org",
+        "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
+        "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
+        "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
+        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
+        "Reference (Wikipedia)": "site:wikipedia.org"
     selected_sources = st.multiselect(
         "Activate Reliable Databases:",
         list(source_options.keys()),
         default=["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
+    }
     )
 
     q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
