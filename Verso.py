@@ -50,8 +50,9 @@ if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_i
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
 
-if 'set_color' not in st.session_state: st.session_state.set_color = "#3b82f6"
-if 'set_bg' not in st.session_state: st.session_state.set_bg = "#1e293b"
+# Set default colors to White and Grey as requested
+if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
+if 'set_bg' not in st.session_state: st.session_state.set_bg = "#808080"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
 
 if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
@@ -159,7 +160,7 @@ st.markdown(f"""
     </audio>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR ---
+# --- SIDEBAR (Updated: Words Detected Box Removed) ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
@@ -378,23 +379,12 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
-# --- HOME (UPGRADED WITH ALL RELIABLE SOURCES) ---
-# --- SIDEBAR (Updated: Status Box Removed) ---
-with st.sidebar:
-    st.image("z.png", width=80)
-    st.title("VERSO PRO")
-    
-    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
-    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
-    
-    # The "Words detected" block that was here has been removed.
-
-# --- HOME (Universal Academic Engine) ---
-if choice == "🏠 Home":
+# --- HOME (Comprehensive Academic Engine) ---
+elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
     
-    # Truly comprehensive reliable source list
+    # Selection for a truly comprehensive reliable source list
     source_options = {
         "Educational (.edu)": "site:.edu",
         "Government (.gov)": "site:.gov",
@@ -415,7 +405,6 @@ if choice == "🏠 Home":
     q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
     
     if q:
-        # Build query parts based on selection
         query_parts = [source_options[s] for s in selected_sources]
         
         if query_parts:
@@ -426,7 +415,6 @@ if choice == "🏠 Home":
 
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
         
-        # Display the iframe
         st.markdown(
             f'''
             <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
@@ -439,6 +427,7 @@ if choice == "🏠 Home":
         )
         
         st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
+
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
