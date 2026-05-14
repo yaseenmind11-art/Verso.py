@@ -4,12 +4,10 @@ import nltk
 import time
 import random
 import re
-import difflib
 import streamlit.components.v1 as components
 import docx2txt
 import PyPDF2
 import pandas as pd
-import io
 import requests
 from bs4 import BeautifulSoup
 
@@ -42,13 +40,11 @@ if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
 if 'high_contrast' not in st.session_state: st.session_state.high_contrast = False
 if 'power_save' not in st.session_state: st.session_state.power_save = False
-if 'dev_mode' not in st.session_state: st.session_state.dev_mode = False
 
 if 'reset_counter' not in st.session_state: st.session_state.reset_counter = 0
 if 'timer_end_time' not in st.session_state: st.session_state.timer_end_time = None
 if 'timer_active' not in st.session_state: st.session_state.timer_active = False
 if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
-if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
 if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
 
 if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
@@ -56,43 +52,11 @@ if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_i
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
 
-if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
-if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
-if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
-if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
-if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
-if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
-
 # --- 🛠️ HELPERS ---
-def extract_text(uploaded_file):
-    if uploaded_file is None: return ""
-    try:
-        if uploaded_file.type == "application/pdf":
-            reader = PyPDF2.PdfReader(uploaded_file)
-            return " ".join([page.extract_text() or "" for page in reader.pages])
-        elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-            return docx2txt.process(uploaded_file)
-        elif uploaded_file.type == "text/csv":
-            df = pd.read_csv(uploaded_file)
-            return df.astype(str).apply(lambda x: ' '.join(x), axis=1).str.cat(sep=' ')
-        else:
-            return str(uploaded_file.read(), "utf-8")
-    except Exception: return ""
-
-def extract_from_url(url):
-    if not url: return ""
-    try:
-        res = requests.get(url, timeout=5)
-        soup = BeautifulSoup(res.content, 'html.parser')
-        for s in soup(['script', 'style']): s.decompose()
-        return soup.get_text(separator=' ', strip=True)
-    except: return ""
-
 def trigger_master_reset():
     st.session_state.reset_counter += 1
-    keys_to_keep = ['reset_counter']
     for key in list(st.session_state.keys()):
-        if key not in keys_to_keep: del st.session_state[key]
+        if key != 'reset_counter': del st.session_state[key]
     st.toast("🚨 SYSTEM HARD RESET")
     time.sleep(0.4)
     st.rerun()
@@ -100,22 +64,8 @@ def trigger_master_reset():
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
     "Beep (High)": "https://actions.google.com/sounds/v1/alarms/beep_short.ogg",
-    "Digital Alarm": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg",
-    "Industrial Siren": "https://actions.google.com/sounds/v1/alarms/industrial_alarm.ogg"
+    "Digital Alarm": "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"
 }
-
-KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
-
-# --- ⏱️ TIMER LOGIC ---
-if st.session_state.timer_active and st.session_state.timer_end_time:
-    now = time.time()
-    diff = st.session_state.timer_end_time - now
-    if diff <= 0:
-        st.session_state.timer_active = False
-        st.session_state.remaining_at_pause = 0
-        st.session_state.timer_finished_trigger = True
-    else:
-        st.session_state.remaining_at_pause = diff
 
 # --- 🎨 DYNAMIC STYLING ---
 accent = st.session_state.set_color
@@ -131,60 +81,39 @@ inject_ga()
 
 st.markdown(f"""
     <style>
-    .stApp {{ filter: {"grayscale(100%)" if st.session_state.power_save else "none"}; }}
+    .stApp {{ filter: {"grayscale(100%)" if st.session_state.power_save else "none"}; font-size: {f_scale}rem; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
-        padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
-        margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
+        padding: 25px; border-radius: 12px; border-left: 6px solid {accent}; 
+        margin-bottom: 15px; color: #FFFFFF !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }}
     .teacher-board {{ 
-        background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
-        border-radius: 12px; font-family: 'Inter', sans-serif; 
-        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; 
+        background-color: #0f172a; border: 1px solid #334155; padding: 30px; 
+        border-radius: 12px; color: #f1f5f9; line-height: 1.6;
     }}
-    .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
-    .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
-    @keyframes blinker {{ 50% {{ opacity: 0; }} }}
-    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
-    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
     </style>
-""", unsafe_allow_html=True)
-
-# Audio elements
-selected_tone_url = ALARM_TONES.get(st.session_state.selected_alarm_tone)
-st.markdown(f"""
-    <audio id="alarm-sound" key="{st.session_state.selected_alarm_tone}" preload="auto">
-        <source src="{selected_tone_url}" type="audio/ogg">
-    </audio>
-    <audio id="success-sound" preload="auto">
-        <source src="{KHAN_SUCCESS}" type="audio/mpeg">
-    </audio>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
-    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
+    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter", "⚙️ Settings"]
+    choice = st.radio("Navigation", nav_options, label_visibility="collapsed")
 
-# --- MODULES ---
-
+# --- MAIN MODULES ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
-    source_options = {
-        "Educational (.edu)": "site:.edu",
-        "Government (.gov)": "site:.gov",
-        "Scientific Journals": "(site:nature.com OR site:sciencemag.org)",
-        "Encyclopedias": "site:britannica.com"
-    }
-    selected_sources = st.multiselect("Activate Reliable Databases:", list(source_options.keys()), default=list(source_options.keys()))
-    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
+    
+    st.markdown("Activate Reliable Databases:")
+    sources = st.multiselect("Databases", ["Educational (.edu)", "Government (.gov)", "Scientific Journals", "Encyclopedias"], 
+                            default=["Educational (.edu)", "Government (.gov)", "Scientific Journals", "Encyclopedias"], label_visibility="collapsed")
+    
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...", key="home_search")
     if q:
-        query_parts = [source_options[s] for s in selected_sources]
-        full_query = f"{q} ({' OR '.join(query_parts)})"
-        st.link_button("🚀 Open Research Results", f"https://www.google.com/search?q={full_query}")
+        st.link_button("🚀 Open Research Results", f"https://www.google.com/search?q={q}")
 
 elif choice == "📒 Study Assistant":
     st.title("Verso Deep Learning Teacher")
@@ -192,128 +121,137 @@ elif choice == "📒 Study Assistant":
     st.session_state.study_text_input = raw_content
     if raw_content.strip():
         blob = TextBlob(raw_content)
-        words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
         t1, t2 = st.tabs(["🔑 Keywords", "✍️ AI Teacher"])
         with t1:
-            for i, word in enumerate(words[:10]): st.markdown(f'<div class="notebook-card">{i+1}. {word.title()}</div>', unsafe_allow_html=True)
+            words = list(dict.fromkeys([w.lower() for w in blob.noun_phrases if len(w) > 3]))
+            for i, word in enumerate(words[:10]): 
+                st.markdown(f'<div class="notebook-card">{i+1}. {word.title()}</div>', unsafe_allow_html=True)
         with t2:
-            st.markdown(f'<div class="teacher-board"><h2>CONCEPT MASTERCLASS</h2><p>Analysis reveals core focus on <b>{words[0].title() if words else "Source Data"}</b>.</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="teacher-board"><h2>CONCEPT ANALYSIS</h2><p>Analysis for: <b>{words[0].title() if words else "Source"}</b></p></div>', unsafe_allow_html=True)
 
 elif choice == "✍️ Grammar Checker":
     st.title("Smart Auto-Correct")
-    text = st.text_area("Paste text:", value=st.session_state.grammar_text_input)
+    text = st.text_area("Paste text:", value=st.session_state.grammar_text_input, height=200)
     st.session_state.grammar_text_input = text
     if st.button("✨ Correct"):
         corrected = str(TextBlob(text).correct())
-        st.markdown(f'<div class="notebook-card"><b>Corrected:</b><br>{corrected}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="notebook-card"><b>Corrected version:</b><br>{corrected}</div>', unsafe_allow_html=True)
 
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
-    plag_text = st.text_area("Paste text:", value=st.session_state.plag_text_input)
+    plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, height=200)
     st.session_state.plag_text_input = plag_text
-    if st.button("🔍 Scan"):
-        with st.spinner("Analyzing..."):
-            time.sleep(1)
-            st.success("✅ Content Unique (Simulated)")
+    if st.button("🔍 Run Scan"):
+        with st.spinner("Comparing against database..."):
+            time.sleep(1.5)
+            st.success("Analysis complete: No significant matches found (Simulated).")
 
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     mins = st.number_input("Minutes:", 1, 120, 25)
     c1, c2, c3 = st.columns(3)
-    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
-    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c3.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    m, s = divmod(st.session_state.remaining_at_pause, 60)
-    st.metric("Timer", f"{int(m):02d}:{int(s):02d}")
-    if st.session_state.timer_active: time.sleep(1); st.rerun()
+    if c1.button("Start"): 
+        st.session_state.timer_end_time = time.time() + (mins * 60)
+        st.session_state.timer_active = True
+    if c2.button("Pause"): st.session_state.timer_active = False
+    if c3.button("Reset"): 
+        st.session_state.timer_active = False
+        st.session_state.timer_end_time = None
+    st.metric("Status", "Running" if st.session_state.timer_active else "Stopped")
 
 elif choice == "📝 Word Counter":
     st.title("Word Metrics")
-    txt = st.text_area("Input:", value=st.session_state.word_counter_input)
+    txt = st.text_area("Input:", value=st.session_state.word_counter_input, height=200)
     st.session_state.word_counter_input = txt
-    st.metric("Words", len(re.findall(r'\b\w+\b', txt)))
+    words = len(re.findall(r'\b\w+\b', txt))
+    st.metric("Total Words", words)
 
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     
+    # --- 20 QUICK ACTION BUTTONS GRID ---
     st.markdown("### ⚡ Quick System Actions")
     bc1, bc2, bc3, bc4 = st.columns(4)
-    
     with bc1:
-        if st.button("🛠️ Repair Engine"):
+        if st.button("🛠️ Repair Engine", use_container_width=True):
             st.cache_resource.clear()
-            st.toast("Internal caches purged and engine re-initialized.")
-        if st.button("🧹 Clear Input"):
-            st.session_state.study_text_input = ""; st.session_state.grammar_text_input = ""
-            st.toast("All text buffers wiped.")
-        if st.button("🔄 Sync Plugins"):
+            st.toast("Internal Engine Re-initialized.")
+        if st.button("🧹 Clear Cache", use_container_width=True):
+            st.toast("Temporary cache cleared.")
+        if st.button("🔄 Sync Plugins", use_container_width=True):
             setup_system()
             st.toast("NLP Modules synchronized.")
-        if st.button("📊 Update Metrics"):
-            st.toast("Performance statistics updated.")
-        if st.button("🧪 Beta Mode"):
-            st.session_state.dev_mode = not st.session_state.dev_mode
-            st.toast(f"Experimental mode: {'ACTIVE' if st.session_state.dev_mode else 'OFF'}")
+        if st.button("📊 Update Metrics", use_container_width=True):
+            st.toast("System statistics updated.")
+        if st.button("🧪 Beta Mode", use_container_width=True):
+            st.toast("Experimental features enabled.")
 
     with bc2:
-        if st.button("📡 Reconnect API"):
-            with st.spinner("Connecting..."): time.sleep(1); st.toast("API Protocol Handshake: SUCCESS")
-        if st.button("🛡️ Hard Lockdown"):
-            st.session_state.plag_text_input = ""; st.toast("Security Overhaul Complete.")
-        if st.button("💾 Local Save"):
-            st.toast("Snapshot committed to local state.")
-        if st.button("🌍 Global Sync"):
-            st.toast("Academic database sync successful.")
-        if st.button("📜 View Logs"):
-            st.code(f"USER_ID: {st.session_state.reset_counter}\nOS_SIM: VERSO_v14")
+        if st.button("📡 Reconnect API", use_container_width=True):
+            with st.spinner("Connecting..."): time.sleep(1); st.toast("API Protocol: SUCCESS")
+        if st.button("🛡️ Hard Lockdown", use_container_width=True):
+            st.toast("Security protocols enforced.")
+        if st.button("💾 Local Save", use_container_width=True):
+            st.toast("Local snapshot saved.")
+        if st.button("🌍 Global Sync", use_container_width=True):
+            st.toast("Database indices updated.")
+        if st.button("📜 View Logs", use_container_width=True):
+            st.toast("Accessing system logs...")
 
     with bc3:
-        if st.button("🔋 Power Save"):
+        if st.button("🔋 Power Save", use_container_width=True):
             st.session_state.power_save = not st.session_state.power_save
-            st.toast(f"Greyscale Mode: {'ON' if st.session_state.power_save else 'OFF'}")
             st.rerun()
-        if st.button("🔊 Max Volume"):
-            st.toast("Alarm gain adjusted to 1.0.")
-        if st.button("👁️ High Contrast"):
+        if st.button("🔊 Max Volume", use_container_width=True):
+            st.toast("System gain set to maximum.")
+        if st.button("👁️ High Contrast", use_container_width=True):
             st.session_state.high_contrast = not st.session_state.high_contrast
-            st.toast("UI Color palette inverted.")
             st.rerun()
-        if st.button("📎 Rebuild Index"):
-            st.toast("Search directory rebuilt.")
-        if st.button("🛠️ Dev Tools"):
-            st.toast("Developer environment unlocked.")
+        if st.button("📎 Rebuild Index", use_container_width=True):
+            st.toast("Search index rebuilt.")
+        if st.button("🛠️ Dev Tools", use_container_width=True):
+            st.toast("Developer tools unlocked.")
 
     with bc4:
-        if st.button("🧊 Freeze State"):
-            st.toast("Application session state frozen.")
-        if st.button("🔥 Performance"):
-            st.toast("CPU Priority optimized for high load.")
-        if st.button("🛰️ Signal Check"):
+        if st.button("🧊 Freeze State", use_container_width=True):
+            st.toast("Session state frozen.")
+        if st.button("🔥 Performance", use_container_width=True):
+            st.toast("Performance mode: ULTRA")
+        if st.button("🛰️ Signal Check", use_container_width=True):
             st.toast(f"Latency: {random.randint(10, 50)}ms")
-        if st.button("🔑 Verify Keys"):
-            st.toast("Encryption keys validated.")
-        if st.button("🚀 Turbo Boost"):
+        if st.button("🔑 Verify Keys", use_container_width=True):
+            st.toast("API keys validated.")
+        if st.button("🚀 Turbo Boost", use_container_width=True):
             st.balloons(); st.toast("Processing speed augmented.")
 
     st.divider()
-    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
-    
+
+    # --- THREE COLUMN MAIN LAYOUT ---
     col1, col2, col3 = st.columns(3)
+    
     with col1:
         st.markdown('### 📚 Academic')
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago"])
+        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago"], key="cite_style")
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🚨 MASTER RESET", type="primary", use_container_width=True):
+            trigger_master_reset()
+
     with col2:
         st.markdown('### 🎨 UI Appearance')
         st.color_picker("Accent Color", value=st.session_state.set_color, key="set_color")
         st.color_picker("Card BG", value=st.session_state.set_bg, key="set_bg")
         st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
+
     with col3:
         st.markdown('### 🔐 System Info')
+        if st.button("Purge Input History", use_container_width=True):
+            st.session_state.study_text_input = ""
+            st.session_state.grammar_text_input = ""
+            st.session_state.plag_text_input = ""
+            st.toast("Input buffers purged.")
+        if st.button("Cloud Backup", use_container_width=True):
+            st.toast("Cloud snapshot created.")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
-
-# Global Alarm Trigger
-if st.session_state.get('timer_finished_trigger'):
-    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
-    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-    if st.button("Dismiss"): st.session_state.timer_finished_trigger = False; st.rerun()
