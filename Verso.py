@@ -379,11 +379,22 @@ elif choice == "⚙️ Settings":
     st.success("System Optimized")
 
 # --- HOME (UPGRADED WITH ALL RELIABLE SOURCES) ---
-elif choice == "🏠 Home":
+# --- SIDEBAR (Updated: Status Box Removed) ---
+with st.sidebar:
+    st.image("z.png", width=80)
+    st.title("VERSO PRO")
+    
+    nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
+    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
+    
+    # The "Words detected" block that was here has been removed.
+
+# --- HOME (Universal Academic Engine) ---
+if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
     
-    # Selection for a truly comprehensive reliable source list
+    # Truly comprehensive reliable source list
     source_options = {
         "Educational (.edu)": "site:.edu",
         "Government (.gov)": "site:.gov",
@@ -392,6 +403,7 @@ elif choice == "🏠 Home":
         "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
         "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
         "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
+        "Reference (Wikipedia)": "site:wikipedia.org"
     }
 
     selected_sources = st.multiselect(
@@ -426,9 +438,7 @@ elif choice == "🏠 Home":
             unsafe_allow_html=True
         )
         
-        # Safe open link
         st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
-
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
