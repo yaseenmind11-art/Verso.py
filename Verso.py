@@ -7,6 +7,20 @@ import re
 import difflib
 import streamlit.components.v1 as components
 
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
+def inject_ga():
+    ga_id = "G-030XWBG97P"
+    ga_code = f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{ga_id}', {{ 'debug_mode': true }});
+    </script>
+    """
+    components.html(ga_code, height=0)
+
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
 def setup_system():
