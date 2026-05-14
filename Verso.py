@@ -6,6 +6,9 @@ import random
 import re
 import difflib
 import streamlit.components.v1 as components
+import docx2txt  # Added for Word files
+import PyPDF2    # Added for PDF files
+import io
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
@@ -140,14 +143,33 @@ if choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
     st.markdown("### 📥 Analyze Content")
     
-    st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'txt'], key="word_upload")
+    uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'txt'], key="word_upload")
     
+    file_text = ""
+    if uploaded_file is not None:
+        try:
+            if uploaded_file.type == "application/pdf":
+                pdf_reader = PyPDF2.PdfReader(uploaded_file)
+                for page in pdf_reader.pages:
+                    file_text += page.extract_text() or ""
+            elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                file_text = docx2txt.process(uploaded_file)
+            elif uploaded_file.type == "text/plain":
+                file_text = str(uploaded_file.read(), "utf-8")
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
+
     new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
     st.session_state.word_counter_input = new_text
     
-    # Calculate count purely based on the input box
-    specific_count = len(re.findall(r'\w+', new_text))
-    st.metric("Words in Box", specific_count)
+    # Calculate counts
+    box_count = len(re.findall(r'\w+', new_text))
+    file_count = len(re.findall(r'\w+', file_text))
+    
+    col1, col2 = st.columns(2)
+    col1.metric("Words in Box", box_count)
+    col2.metric("Words in File", file_count)
+    st.metric("Combined Total", box_count + file_count)
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
