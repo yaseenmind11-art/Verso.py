@@ -50,9 +50,9 @@ if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_i
 if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
 if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
 
-# Set default colors to White and Grey as requested
+# FIX: Logic to prevent settings from resetting on every click
 if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
-if 'set_bg' not in st.session_state: st.session_state.set_bg = "#808080"
+if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
 
 if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
@@ -160,7 +160,7 @@ st.markdown(f"""
     </audio>
 """, unsafe_allow_html=True)
 
-# --- SIDEBAR (Updated: Words Detected Box Removed) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
@@ -317,7 +317,8 @@ elif choice == "📒 Study Assistant":
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 else:
-                    st.markdown(f'<div style="background-color:#0f172a; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#cbd5e1; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
+                    # FIX: Color set to #5465C9
+                    st.markdown(f'<div style="background-color:#5465C9; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#FFFFFF; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
@@ -379,12 +380,11 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.4 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
-# --- HOME (Comprehensive Academic Engine) ---
+# --- HOME ---
 elif choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
     
-    # Selection for a truly comprehensive reliable source list
     source_options = {
         "Educational (.edu)": "site:.edu",
         "Government (.gov)": "site:.gov",
@@ -406,27 +406,12 @@ elif choice == "🏠 Home":
     
     if q:
         query_parts = [source_options[s] for s in selected_sources]
-        
-        if query_parts:
-            advanced_filter = " OR ".join(query_parts)
-            full_query = f"{q} ({advanced_filter})"
-        else:
-            full_query = q 
+        advanced_filter = " OR ".join(query_parts) if query_parts else ""
+        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
 
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
-        
-        st.markdown(
-            f'''
-            <div style="height:600px; overflow:hidden; border: 2px solid {accent}; border-radius: 12px;">
-                <iframe src="https://www.google.com/search?q={full_query}&igu=1" 
-                        style="width:100%; height:800px; border:none; margin-top:-120px;">
-                </iframe>
-            </div>
-            ''', 
-            unsafe_allow_html=True
-        )
-        
-        st.link_button("Open Full Results in New Tab", f"https://www.google.com/search?q={full_query}")
+        # FIX: Iframe removed, only link remains
+        st.link_button("🚀 Open Research Results", f"https://www.google.com/search?q={full_query}")
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
