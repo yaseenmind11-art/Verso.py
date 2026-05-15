@@ -64,7 +64,7 @@ st.markdown(f"""
         padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
         margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
     }}
-    /* FLASHCARD FIX: Prevents text overlap and centers content */
+    /* FLASHCARD FIX: Centered content with no overlap */
     .flashcard-box {{
         background-color: {bg_card}; 
         padding: 50px 30px; border-radius: 12px; border: 2px solid {accent}; 
@@ -73,18 +73,21 @@ st.markdown(f"""
         display: block; width: 100%; min-height: 200px;
         box-sizing: border-box;
     }}
-    /* GOOGLE IFRAME CLEANUP: Clips the bottom to hide location/footer */
-    .iframe-wrapper {{
+    /* IFRAME CLEANUP: Hides the bottom location bar and privacy footer */
+    .google-frame-container {{
+        width: 100%;
+        height: 750px;
         overflow: hidden;
+        position: relative;
         border-radius: 12px;
         border: 1px solid #334155;
-        height: 750px; 
-        width: 100%;
     }}
-    .iframe-content {{
-        margin-top: -50px; /* Optional: adjust if top bar needs clipping */
-        height: 850px;
+    .google-frame-content {{
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
+        height: 850px; /* Taller than container to cut off the bottom artifacts */
     }}
     .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     </style>
@@ -97,7 +100,7 @@ with st.sidebar:
     nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
     choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
 
-# --- MODULE: HOME (GOOGLE INTEGRATED) ---
+# --- MODULE: HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
@@ -112,14 +115,21 @@ if choice == "🏠 Home":
         "Reference": "site:wikipedia.org"
     }
 
-    # "CHOOSE ALL" FUNCTIONALITY
+    # "CHOOSE ALL" BUTTONS
     all_keys = list(source_options.keys())
-    select_all = st.checkbox("✅ Select All Databases")
-    
+    col_btns1, col_btns2 = st.columns([1, 4])
+    with col_btns1:
+        if st.button("✨ Select All"):
+            st.session_state.selected_db = all_keys
+    with col_btns2:
+        if st.button("🧹 Clear"):
+            st.session_state.selected_db = []
+
     selected_sources = st.multiselect(
         "Active Reliable Databases:",
         all_keys,
-        default=all_keys if select_all else ["Educational (.edu)", "Government (.gov)"]
+        key="selected_db",
+        default=["Educational (.edu)", "Government (.gov)"]
     )
 
     q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
@@ -129,13 +139,15 @@ if choice == "🏠 Home":
         advanced_filter = " OR ".join(query_parts) if query_parts else ""
         full_query = f"{q} ({advanced_filter})" if advanced_filter else q
         
-        # UI FIX: No "Open Research Results" button; cleans location footer artifacts
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
         search_url = f"https://www.google.com/search?q={full_query.replace(' ', '+')}&igu=1"
         
-        st.markdown('<div class="iframe-wrapper">', unsafe_allow_html=True)
-        components.iframe(search_url, height=800, scrolling=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Display cleaned iframe (No redirect button, No bottom footer)
+        st.markdown(f"""
+            <div class="google-frame-container">
+                <iframe src="{search_url}" class="google-frame-content" frameborder="0"></iframe>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "📒 Study Assistant":
@@ -154,65 +166,58 @@ elif choice == "📒 Study Assistant":
                 st.markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
         
         with t2:
-            # QUIZ FIX: Selection is stable until button press
             total_q = 5
             if st.session_state.quiz_step < total_q:
                 curr_q = st.session_state.quiz_step
                 target = words[curr_q % len(words)].title()
                 st.markdown(f'<div class="notebook-card">Identify the term: <b>"{target}"</b></div>', unsafe_allow_html=True)
-                
                 opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                 random.shuffle(opts)
-                
-                user_choice = st.radio("Pick your answer:", opts, key=f"q_{curr_q}", index=None)
-                if st.button("Confirm Answer"):
+                user_choice = st.radio("Pick answer:", opts, key=f"q_{curr_q}", index=None)
+                if st.button("Confirm"):
                     if user_choice == target: st.session_state.quiz_score += 1
                     st.session_state.quiz_step += 1
                     st.rerun()
             else:
-                st.metric("Final Score", f"{st.session_state.quiz_score} / {total_q}")
+                st.metric("Score", f"{st.session_state.quiz_score} / {total_q}")
                 if st.button("Restart"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
 
         with t3:
-            # FLASHCARD FIX: High readability with no overlapping text
             curr_idx = st.session_state.fc_step
             w1 = words[curr_idx % len(words)].title()
             w2 = words[(curr_idx + 1) % len(words)].title()
-            
             card_text = f"Analyze the connection between <br><b>'{w1}'</b> and <b>'{w2}'</b>.<br><br>How do they interact?"
             st.markdown(f'<div class="flashcard-box">{card_text}</div>', unsafe_allow_html=True)
-            
             if st.button("Next Flashcard", use_container_width=True):
                 st.session_state.fc_step += 1
                 st.rerun()
 
-# --- MODULE: GRAMMAR CHECKER ---
+# --- REMAINING MODULES ---
 elif choice == "✍️ Grammar Checker":
     st.title("Smart Auto-Correct")
-    text_to_check = st.text_area("Paste text:", value=st.session_state.grammar_text_input, height=250)
-    st.session_state.grammar_text_input = text_to_check
+    text = st.text_area("Paste text:", value=st.session_state.grammar_text_input, height=250)
+    st.session_state.grammar_text_input = text
     if st.button("✨ Run Correction"):
-        if text_to_check:
-            corrected = str(TextBlob(text_to_check).correct())
-            st.markdown(f'<div class="notebook-card">{corrected}</div>', unsafe_allow_html=True)
+        corrected = str(TextBlob(text).correct())
+        st.markdown(f'<div class="notebook-card">{corrected}</div>', unsafe_allow_html=True)
 
-# --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
     st.title("Integrity Scanner")
     plag_text = st.text_area("Paste text:", value=st.session_state.plag_text_input, height=250)
     st.session_state.plag_text_input = plag_text
-    if st.button("🔍 Run Scan"):
-        st.success("No external matches found.")
+    if st.button("🔍 Run Scan"): st.success("No external matches found.")
 
-# --- MODULE: WORD COUNTER ---
 elif choice == "📝 Word Counter":
     st.title("Word Metrics")
-    new_text = st.text_area("Input text:", value=st.session_state.word_counter_input, height=250)
-    st.session_state.word_counter_input = new_text
-    count = len(re.findall(r'\b\w+\b', new_text))
+    wc_text = st.text_area("Input text:", value=st.session_state.word_counter_input, height=250)
+    st.session_state.word_counter_input = wc_text
+    count = len(re.findall(r'\b\w+\b', wc_text))
     st.metric("Total Words", count)
 
-# --- MODULE: SETTINGS ---
+elif choice == "⏱️ Time Tracker":
+    st.title("Focus Timer")
+    st.info("Timer module active.")
+
 elif choice == "⚙️ Settings":
     st.title("Verso Settings")
     st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick")
