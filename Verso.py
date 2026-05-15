@@ -38,7 +38,6 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ STATE MANAGEMENT ---
-# Persistent settings initialization
 if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
 if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
 if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
@@ -142,7 +141,25 @@ st.markdown(f"""
     .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
     .teacher-board b {{ color: {accent}; }}
-    div[data-testid="stRadio"] > div {{ gap: 15px; padding: 10px 0; }}
+    
+    /* NEW: CLEAN GOOGLE IFRAME STYLING */
+    .google-container {{
+        width: 100%;
+        height: 800px;
+        overflow: hidden;
+        position: relative;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        background-color: white;
+    }}
+    .google-iframe {{
+        position: absolute;
+        top: -65px; /* Clips top Google branding */
+        left: 0;
+        width: 100%;
+        height: 950px; /* Cuts off footer artifacts */
+    }}
+    
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
     .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
@@ -167,8 +184,56 @@ with st.sidebar:
     nav_options = ["🏠 Home", "📒 Study Assistant", "✍️ Grammar Checker", "🛡️ Plagiarism Checker", "⏱️ Time Tracker", "📝 Word Counter"]
     choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
 
+# --- HOME ---
+if choice == "🏠 Home":
+    st.title("VERSO RESEARCH")
+    st.markdown("### 🎓 Universal Academic Engine")
+    
+    source_options = {
+        "Educational (.edu)": "site:.edu",
+        "Government (.gov)": "site:.gov",
+        "International Orgs (.org)": "site:.org",
+        "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
+        "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
+        "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
+        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
+        "Reference (Wikipedia)": "site:wikipedia.org"
+    }
+
+    if 'selected_sources' not in st.session_state:
+        st.session_state.selected_sources = ["Educational (.edu)", "Government (.gov)"]
+
+    c1, c2 = st.columns([4, 1])
+    with c2:
+        if st.button("Select All", use_container_width=True):
+            st.session_state.selected_sources = list(source_options.keys())
+            st.rerun()
+
+    selected_sources = st.multiselect(
+        "Active Reliable Databases:",
+        list(source_options.keys()),
+        key="selected_sources"
+    )
+
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
+    
+    if q:
+        query_parts = [source_options[s] for s in selected_sources]
+        advanced_filter = " OR ".join(query_parts) if query_parts else ""
+        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
+        
+        st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
+        
+        # EMBEDDED CLEAN GOOGLE INTERFACE
+        search_url = f"https://www.google.com/search?q={full_query.replace(' ', '+')}&igu=1"
+        st.markdown(f"""
+            <div class="google-container">
+                <iframe src="{search_url}" class="google-iframe" frameborder="0"></iframe>
+            </div>
+        """, unsafe_allow_html=True)
+
 # --- MODULE: WORD COUNTER ---
-if choice == "📝 Word Counter":
+elif choice == "📝 Word Counter":
     st.title("Verso Word Metrics")
     st.markdown("### 📥 Analyze Content")
     uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
@@ -369,10 +434,8 @@ elif choice == "⚙️ Settings":
         st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
     with col2:
         st.markdown('### 🎨 UI Appearance')
-        # Robust State Sync for Color Pickers
         def update_accent(): st.session_state.set_color = st.session_state.accent_pick
         def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
-
         st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
         st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
         st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
@@ -382,48 +445,6 @@ elif choice == "⚙️ Settings":
         st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
         st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
-
-# --- HOME ---
-elif choice == "🏠 Home":
-    st.title("VERSO RESEARCH")
-    st.markdown("### 🎓 Universal Academic Engine")
-    
-    source_options = {
-        "Educational (.edu)": "site:.edu",
-        "Government (.gov)": "site:.gov",
-        "International Orgs (.org)": "site:.org",
-        "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
-        "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
-        "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
-        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
-        "Reference (Wikipedia)": "site:wikipedia.org"
-    }
-
-    # NEW: Select All Logic
-    if 'selected_sources' not in st.session_state:
-        st.session_state.selected_sources = ["Educational (.edu)", "Government (.gov)", "Scientific Journals (Nature/Science)", "Encyclopedias (Britannica/WorldHistory)"]
-
-    c1, c2 = st.columns([4, 1])
-    with c2:
-        if st.button("Select All", use_container_width=True):
-            st.session_state.selected_sources = list(source_options.keys())
-            st.rerun()
-
-    selected_sources = st.multiselect(
-        "Activate Reliable Databases:",
-        list(source_options.keys()),
-        key="selected_sources"
-    )
-
-    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
-    
-    if q:
-        query_parts = [source_options[s] for s in selected_sources]
-        advanced_filter = " OR ".join(query_parts) if query_parts else ""
-        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
-
-        st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
-        st.link_button("🚀 Open Research Results", f"https://www.google.com/search?q={full_query}")
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
