@@ -133,7 +133,7 @@ st.markdown(f"""
         padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
         margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
     }}
-    .flashcard-q {{
+    .flashcard-box {{
         background-color: {bg_card}; 
         padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
         margin-bottom: 15px; color: #FFFFFF !important;
@@ -273,7 +273,6 @@ elif choice == "📒 Study Assistant":
                 q_type = curr_q % 3 
                 st.write(f"Question **{curr_q + 1}** of **{total_q}**")
                 
-                # Setup options based on type
                 if q_type == 0:
                     st.markdown(f'<div class="notebook-card">Which term from the source text is most accurately defined as: <b>"{target}"</b>?</div>', unsafe_allow_html=True)
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
@@ -286,12 +285,9 @@ elif choice == "📒 Study Assistant":
                     st.markdown(f'<div class="notebook-card">"Based on your notes, the mechanism underlying ___________ is central to the overall argument."</div>', unsafe_allow_html=True)
                     opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
                 
-                # Persistence logic: Use a unique key and store result in session state
-                ans_key = f"ans_val_{curr_q}"
-                if ans_key not in st.session_state: st.session_state[ans_key] = None
-                
                 random.shuffle(opts)
-                choice_q = st.radio("Choose correct answer:", opts, key=f"q_radio_{curr_q}")
+                # QUIZ FIX: radio selection persists until manual submit
+                choice_q = st.radio("Choose correct answer:", opts, key=f"q_radio_{curr_q}", index=None)
                 
                 if st.button("Submit & Continue", use_container_width=True):
                     if choice_q == target:
@@ -325,8 +321,8 @@ elif choice == "📒 Study Assistant":
                     q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
                     a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
                 
-                # Formatting fix for lines/scattering
-                st.markdown(f'<div class="flashcard-q">{q_text}</div>', unsafe_allow_html=True)
+                # FLASHCARD FIX: text in lines, not scattered
+                st.markdown(f'<div class="flashcard-box">{q_text}</div>', unsafe_allow_html=True)
                 
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
@@ -434,10 +430,10 @@ elif choice == "🏠 Home":
         advanced_filter = " OR ".join(query_parts) if query_parts else ""
         full_query = f"{q} ({advanced_filter})" if advanced_filter else q
         
-        # UI fix: Removed the button, now opens directly from app state
+        # HOME FIX: Embedded Google results inside app via iframe
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
-        js = f'window.open("https://www.google.com/search?q={full_query}", "_blank").focus();'
-        st.components.v1.html(f'<script>{js}</script>', height=0)
+        search_url = f"https://www.google.com/search?q={full_query}&igu=1"
+        st.components.v1.iframe(search_url, height=800, scrolling=True)
 
 # --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
