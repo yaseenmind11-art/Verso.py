@@ -46,9 +46,9 @@ setup_system()
 # --- ⚙️ STATE MANAGEMENT ---
 def initialize_states(force=False):
     defaults = {
-        'set_color': "#FFFFFF",
-        'set_bg': "#5465C9",
-        'set_font': 1.10,
+        'set_color': "#F0F2F6",
+        'set_bg': "#FFFFFF",
+        'set_font': 1.0,
         'reset_counter': random.randint(1, 1000),
         'timer_end_time': None,
         'timer_active': False,
@@ -79,7 +79,6 @@ initialize_states()
 
 # --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
 try:
-    # Safely extract key from Streamlit secrets config instead of exposing hardcoded text strings
     API_KEY = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=API_KEY)
 except Exception:
@@ -249,25 +248,22 @@ st.markdown(f"""
     .stApp {{ color: inherit; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
-        padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
-        margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
+        padding: 20px; border-radius: 8px; border: 1px solid {accent}; 
+        margin-bottom: 15px; color: inherit;
     }}
     .teacher-board {{ 
-        background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
-        border-radius: 12px; font-family: 'Inter', sans-serif; 
-        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
+        background-color: #F8F9FA; border: 1px solid #E9ECEF; padding: 30px; 
+        border-radius: 8px; font-family: inherit; 
+        color: #212529; line-height: 1.6; font-size: {f_scale}rem; white-space: pre-wrap;
     }}
-    .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
-    .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
-    .teacher-board b {{ color: {accent}; }}
     
     .google-container {{
         width: 100%;
         height: 800px;
         overflow: hidden;
         position: relative;
-        border-radius: 12px;
-        border: 1px solid #334155;
+        border-radius: 8px;
+        border: 1px solid #E9ECEF;
         background-color: white;
     }}
     .google-iframe {{
@@ -280,55 +276,33 @@ st.markdown(f"""
     
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
-    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
-    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
-    .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
+    .diff-add {{ background-color: #D1E7DD; color: #0F5132; padding: 2px 4px; border-radius: 4px; }}
+    .diff-remove {{ background-color: #F8D7DA; color: #842029; text-decoration: line-through; padding: 2px 4px; }}
+    .pro-badge {{ background-color: #6C757D; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     
     .audio-panel {{
-        background: linear-gradient(135deg, #1e293b, #0f172a);
-        border: 1px solid #475569;
+        background: #F8F9FA;
+        border: 1px solid #E9ECEF;
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 20px;
+        color: #212529;
     }}
     
     .audio-btn {{
-        background-color: {bg_card} !important;
+        background-color: #0D6EFD !important;
         color: white !important;
-        border: 1px solid {accent} !important;
-        padding: 10px 24px;
-        font-size: 15px;
-        font-weight: bold;
-        border-radius: 6px;
+        border: none !important;
+        padding: 8px 20px;
+        font-size: 14px;
+        border-radius: 4px;
         cursor: pointer;
         margin-right: 10px;
-        transition: opacity 0.2s;
         display: inline-block;
     }}
-    .audio-btn:hover {{ opacity: 0.85; }}
-    .audio-btn-pause {{
-        background-color: #eab308 !important;
-        border: 1px solid #facc15 !important;
-    }}
-    .audio-btn-stop {{
-        background-color: #ef4444 !important;
-        border: 1px solid #f87171 !important;
-    }}
-    
-    [data-testid="stSidebar"] div.stRadio > div {{
-        background: transparent !important;
-        padding: 0px !important;
-    }}
-    [data-testid="stSidebar"] div.stRadio label {{
-        padding: 6px 0px !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        margin-bottom: 4px !important;
-    }}
-    [data-testid="stSidebar"] div.stRadio label:hover {{
-        background-color: transparent !important;
-    }}
+    .audio-btn:hover {{ opacity: 0.9; }}
+    .audio-btn-pause {{ background-color: #FFC107 !important; color: #212529 !important; }}
+    .audio-btn-stop {{ background-color: #DC3545 !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -343,10 +317,9 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>VERSO PRO</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
     
-    # Visual fallback validation checking inside interface wrapper
     if client is None:
         st.error("🔑 API Key Configuration Missing")
         st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
@@ -470,7 +443,7 @@ elif choice == "🛡️ Plagiarism Checker":
                 for s in sentences:
                     is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
                     if is_match:
-                        marked_text += f'<span class="plag-highlight" style="background-color:#7f1d1d; color:#fecaca;">{s}</span> '
+                        marked_text += f'<span class="plag-highlight" style="background-color:#F8D7DA; color:#842029;">{s}</span> '
                         match_count += 1
                     else: marked_text += f'{s} '
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
@@ -620,7 +593,7 @@ elif choice == "📒 Study Assistant":
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 else:
-                    st.markdown(f'<div style="background-color:#5465C9; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#FFFFFF; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background-color:#E9ECEF; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:inherit; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
@@ -646,17 +619,16 @@ elif choice == "📒 Study Assistant":
             if st.session_state.generated_lecture_text:
                 raw_generated_lesson = st.session_state.generated_lecture_text
                 
-                # Sanitize out any newlines, quotes, or markdown icons that break JavaScript rendering
                 clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
+                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js)
 
                 tts_component_code = f"""
-                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
+                <div class="audio-panel">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                         <span>
                             <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
-                            <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
+                            <select id='voiceSelect' style='background: white; color: black; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px;'></select>
                         </span>
                     </div>
                     <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
@@ -680,7 +652,6 @@ elif choice == "📒 Study Assistant":
                             option.textContent = `${{voice.name}} (${{voice.lang}})`;
                             option.value = index;
                             
-                            // Explicitly set Google US English as the chosen choice if available
                             if (voice.name.includes('Google') && voice.lang === 'en-US') {{
                                 defaultIndex = index;
                             }}
@@ -750,20 +721,19 @@ elif choice == "⚙️ Settings":
     
     st.markdown('<div class="notebook-card">💡 Changes made here modify the global layout styling configurations used across your active modules.</div>', unsafe_allow_html=True)
     
-    # --- Custom Theme Design Controls ---
     c1, c2, c3 = st.columns(3)
     
     with c1:
         new_accent = st.color_picker(
             "Accent Border Color", 
             value=st.session_state.set_color, 
-            help="Modifies the highlight side-borders on your notebook display cards."
+            help="Modifies the highlight elements on your notebook display components."
         )
     with c2:
         new_bg = st.color_picker(
             "Card Background Color", 
             value=st.session_state.set_bg, 
-            help="Changes the body theme color for information cards."
+            help="Changes the body theme color for information blocks."
         )
     with c3:
         new_scale = st.slider(
@@ -774,7 +744,6 @@ elif choice == "⚙️ Settings":
             help="Changes text size scaling inside the AI Voice Teacher output board."
         )
 
-    # --- Citation Preferences Dropdown ---
     st.markdown("---")
     st.markdown("### 📚 Reference Preferences")
     citation_formats = ["APA 7th Generation", "APA 6th Generation", "MLA 9th Edition", "Harvard System", "Chicago Manual Style"]
@@ -792,7 +761,6 @@ elif choice == "⚙️ Settings":
         value=st.session_state.get("auto_bibliography", True)
     )
 
-    # --- Alarm System Management Dropdown ---
     st.markdown("---")
     st.markdown("### ⏱️ Time Tracker Notification Options")
     
@@ -805,7 +773,6 @@ elif choice == "⚙️ Settings":
         index=current_tone_idx
     )
 
-    # --- Active Save & Reset Logic Actions ---
     st.markdown("---")
     st.markdown("### 🛠️ Maintenance & Commit Actions")
     action_col1, action_col2 = st.columns(2)
