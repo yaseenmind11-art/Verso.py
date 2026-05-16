@@ -428,7 +428,7 @@ elif choice == "📝 Word Counter":
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
-    st.markdown(Smart Verso Auto Correct)
+    st.markdown('Smart Verso Auto Correct', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
     if st.button("✨ Run Smart Correction", use_container_width=True):
