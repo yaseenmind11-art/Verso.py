@@ -428,7 +428,7 @@ elif choice == "📝 Word Counter":
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    st.markdown(Smart Verso Auto Correct)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
     if st.button("✨ Run Smart Correction", use_container_width=True):
@@ -456,7 +456,7 @@ elif choice == "✍️ Grammar Checker":
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
-    st.title("Integrity Scanner Pro")
+    st.title("Plagiarism Pro Scanner")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
