@@ -13,6 +13,8 @@ import io
 import requests
 from bs4 import BeautifulSoup
 import urllib3
+from google import genai
+from google.genai import types
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -73,6 +75,37 @@ def initialize_states(force=False):
             st.session_state[key] = value
 
 initialize_states()
+
+# --- 🤖 GEMINI CLIENT INITIALIZATION ---
+# Using the dedicated API token provided for direct authentication integration
+API_KEY = "AIzaSyCO4k7wHpkWtvFWJWQI4vnVjjOwIRvwM1U"
+client = genai.Client(api_key=API_KEY)
+
+def teach_source_material(source_text: str):
+    system_instruction = """
+    You are an expert, engaging teacher. Your job is to take the provided source 
+    material and teach it as a complete lesson. 
+    
+    Structure the lesson exactly like this:
+    1. 🎯 Lesson Objective: What the students will learn.
+    2. 📖 Introduction: A simple, engaging hook about the topic.
+    3. 🧠 Core Concepts: Breakdown of the main ideas.
+    4. 💡 Example: A real-world or relatable example.
+    5. 📝 Check for Understanding: 2-3 interactive questions.
+    """
+    prompt = f"Please teach the following source material as a lesson:\n\n{source_text}"
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7
+            )
+        )
+        return response.text
+    except Exception as e:
+        return f"An error occurred while generating the live lecture format: {e}"
 
 # --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
 CAMPUS_HEADERS = {
@@ -215,7 +248,7 @@ st.markdown(f"""
     .teacher-board {{ 
         background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
         border-radius: 12px; font-family: 'Inter', sans-serif; 
-        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; 
+        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; whitespace: pre-wrap;
     }}
     .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
@@ -587,29 +620,18 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            # --- 🎙️ NOTEBOOKLM-STYLE ACTIVE AI VOICE TEACHER ---
-            prime_concept = words[0].title() if len(words) > 0 else "Primary Subject"
-            sub_concept_a = words[1].title() if len(words) > 1 else "Secondary Factor"
-            sub_concept_b = words[2].title() if len(words) > 2 else "Operational Parameter"
-            sub_concept_c = words[3].title() if len(words) > 3 else "Structural Framework"
-
-            st.markdown("### 🎙️ Audio Synthesizer Lecture Mode")
+            st.markdown("### 🎙️ NotebookLM Live Gemini Engine Lecture")
             
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # Formatted deep NotebookLM-style dynamic explanation lesson script
-            full_speech_script = f"""
-            Welcome to your deep-dive study briefing. Let us break down the core revelations and biggest takeaways hidden inside your uploaded source material. 
-            If you want to understand the main driving idea behind this entire source, it all starts with {prime_concept}. The material sets this up not just as a casual fact, but as the master key that connects all the other concepts together. 
-            As you read deeper, the source material answers a fascinating question: how does {prime_concept} actually change things in the real world? It does this by unpacking a direct chain-reaction that leads straight into {sub_concept_a}. 
-            Instead of just giving definitions, the material shows how {sub_concept_a} acts as the immediate engine causing real-world impacts.
-            But here is where the source takes a truly compelling turn. It shifts our attention to a powerful friction point, exploring the dynamic interplay between {sub_concept_b} and {sub_concept_c}. 
-            The material reveals that you cannot change the parameters of {sub_concept_b} without instantly causing a ripple effect throughout the entire framework of {sub_concept_c}. 
-            To bring this lesson together, the source wraps up with a reality check on these findings. It points out that while this system works brilliantly under perfect conditions, it faces deep structural boundaries when applied in unpredictable scenarios. 
-            Ultimately, this text gives you a masterclass on balancing {prime_concept} and its variables, offering a highly connected roadmap that links abstract theory to a practical, actionable plan.
-            """.replace('"', '\\"').replace('\n', ' ')
+            # Dynamically execute Gemini content generation from input text metrics
+            with st.spinner("Generating structured structured audio presentation flow via Gemini Pro..."):
+                raw_generated_lesson = teach_source_material(final_study_data)
+                
+            # Sanitize output quotes and line breaks for proper javascript string insertion compliance
+            clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ')
 
             tts_component_code = f"""
             <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
@@ -628,7 +650,7 @@ elif choice == "📒 Study Assistant":
 
             <script>
                 var msg = new SpeechSynthesisUtterance();
-                var fullText = "{full_speech_script}";
+                var fullText = "{clean_speech_js}";
                 msg.text = fullText;
                 
                 var pausedIndex = 0;
@@ -714,19 +736,11 @@ elif choice == "📒 Study Assistant":
             """
             components.html(tts_component_code, height=110)
             
-            # Dynamic NotebookLM Style Dashboard lesson layout
+            # Print the live, fully formed lecture content inside the clean teacher canvas block
             st.markdown(f"""
                 <div class="teacher-board">
-                <h2>🔊 SOURCE MATERIAL DEEP BRIEFING</h2>
-                
-                <h3>🎙️ Section 1: The Core Driving Engine</h3>
-                <p>Welcome to your deep-dive study briefing. Let us break down the core revelations and biggest takeaways hidden inside your uploaded source material. If you want to understand the main driving idea behind this entire source, it all starts with <b>{prime_concept}</b>. The material sets this up not just as a casual fact, but as the master key that connects all the other concepts together. As you read deeper, the source material answers a fascinating question: how does <b>{prime_concept}</b> actually change things in the real world? It does this by unpacking a direct chain-reaction that leads straight into <b>{sub_concept_a}</b>. Instead of just giving dry text definitions, the material shows how <b>{sub_concept_a}</b> acts as the immediate operational engine causing real-world impacts.</p>
-                
-                <h3>🎙️ Section 2: Unpacking the Friction Points</h3>
-                <p>But here is where the source takes a truly compelling turn. It shifts our attention to a powerful friction point, exploring the dynamic interplay between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. The material reveals that you cannot change the parameters of <b>{sub_concept_b}</b> without instantly causing a massive ripple effect throughout the entire framework of <b>{sub_concept_c}</b>. It is like looking at a finely tuned machine; the text maps out the core data points to prove that when these variables pull against each other, they dictate whether the overall system stays strong or collapses completely under pressure.</p>
-                
-                <h3>🎙️ Section 3: The Big Reality Check</h3>
-                <p>To bring this lesson together, the source wraps up with a reality check on these findings. It points out that while this system works brilliantly under perfect conditions, it faces deep structural boundaries when applied in unpredictable scenarios. Ultimately, this text does not just throw data at you; it gives you a masterclass on balancing <b>{prime_concept}</b> and its shifting variables, offering a highly connected roadmap that perfectly links abstract theory to a practical, actionable plan.</p>
+                <h2>🔊 LIVE NOTEBOOKLM GENERATED LECTURE FLOW</h2>
+                {raw_generated_lesson}
                 </div>
             """, unsafe_allow_html=True)
 
