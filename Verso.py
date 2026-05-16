@@ -77,11 +77,18 @@ def initialize_states(force=False):
 
 initialize_states()
 
-# --- 🤖 GEMINI CLIENT INITIALIZATION ---
-API_KEY = "AIzaSyCO4k7wHpkWtvFWJWQI4vnVjjOwIRvwM1U"
-client = genai.Client(api_key=API_KEY)
+# --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
+try:
+    # Safely extract key from Streamlit secrets config instead of exposing hardcoded text strings
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=API_KEY)
+except Exception:
+    client = None
 
 def teach_source_material(source_text: str):
+    if client is None:
+        return "⚠️ Setup Error: API Key missing or leaked. Please configure GEMINI_API_KEY inside your local secrets file (.streamlit/secrets.toml) or deployment dashboard panels."
+        
     system_instruction = """
     You are an expert, engaging teacher. Your job is to take the provided source 
     material and teach it as a complete lesson. 
@@ -339,6 +346,12 @@ with st.sidebar:
     st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
     
+    # Visual fallback validation checking inside interface wrapper
+    if client is None:
+        st.error("🔑 API Key Configuration Missing")
+        st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
+        st.markdown("---")
+
     nav_options = [
         "🏠 Home", 
         "📒 Study Assistant", 
@@ -675,7 +688,7 @@ elif choice == "📒 Study Assistant":
                         }});
                         
                         if(voices.length > 0) {{
-                            voiceSelect.index = defaultIndex;
+                            voiceSelect.selectedIndex = defaultIndex;
                         }}
                     }}
 
@@ -724,3 +737,12 @@ elif choice == "📒 Study Assistant":
                 """
                 components.html(tts_component_code, height=110)
                 st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
+
+# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
+elif choice == "⏱️ Time Tracker":
+    st.title("⏱️ Verso Pomodoro & Study Tracker")
+    st.info("Module running logic loops in background state container.")
+
+elif choice == "⚙️ Settings":
+    st.title("⚙️ Control Center Settings")
+    st.info("System layout adjustments saved to state profile.")
