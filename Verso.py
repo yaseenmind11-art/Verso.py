@@ -86,55 +86,54 @@ def extract_from_url(url):
         return soup.get_text(separator=' ', strip=True)
     except: return ""
 
-# --- 📜 SCRIBBR-STYLE CITATION ENGINE MECHANICS ---
+# --- 📜 FUNCTIONAL SCRIBBR-STYLE CITATION ENGINE ---
 def generate_scribbr_citation(url, style_format):
-    if not url:
-        return "Please input a valid URL to generate a citation."
+    if not url: return "Please enter a valid URL in the Link Hub to cite."
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         res = requests.get(url, headers=headers, timeout=4)
         soup = BeautifulSoup(res.content, 'html.parser')
         
-        # Metadata parsing
-        title = soup.find('meta', property='og:title')
-        title = title['content'] if title else (soup.title.string if soup.title else "Web Page Title")
+        title_tag = soup.find('meta', property='og:title')
+        title = title_tag['content'] if title_tag else (soup.title.string if soup.title else "Web Page Reference")
         title = title.strip()
         
-        site_name = soup.find('meta', property='og:site_name')
-        site_name = site_name['content'] if site_name else ""
+        site_tag = soup.find('meta', property='og:site_name')
+        site_name = site_tag['content'] if site_tag else ""
         if not site_name:
             domain_match = re.search(r'https?://(?:www\.)?([^/]+)', url)
-            site_name = domain_match.group(1).capitalize() if domain_match else "Website"
+            site_name = domain_match.group(1).capitalize() if domain_match else "Website Source"
             
-        author = soup.find('meta', name='author')
-        author_name = author['content'].strip() if author else ""
+        auth_tag = soup.find('meta', name='author')
+        author_name = auth_tag['content'].strip() if auth_tag else ""
         
         current_year = time.strftime("%Y")
-        current_date = time.strftime("%d %b. %Y")
+        access_date = time.strftime("%d %b. %Y")
         
-        # Style logic formatting matching Scribbr engine outputs
         if "APA" in style_format:
-            auth_fmt = f"{author_name}." if author_name else "Scribbr Analysis Draft."
+            author_fmt = f"{author_name}." if author_name else "Scribbr Engine Draft."
             if "7th" in style_format:
-                return f"{auth_fmt} ({current_year}). *{title}*. {site_name}. {url}"
+                return f"{author_fmt} ({current_year}). *{title}*. {site_name}. {url}"
+            elif "6th" in style_format:
+                return f"{author_fmt} ({current_year}). *{title}*. Retrieved from {url}"
             else:
-                return f"{auth_fmt} ({current_year}). *{title}*. Retrieved from {url}"
+                return f"{author_fmt} ({current_year}). *{title}*. {url}"
                 
         elif "Chicago" in style_format:
-            auth_fmt = f"{author_name}," if author_name else f'"{site_name}",'
-            if "17th (Notes & Bibliography)" in style_format:
-                return f'{auth_fmt} "{title}," {site_name}, last modified {current_year}, {url}.'
+            author_fmt = f"{author_name}," if author_name else f'"{site_name}",'
+            if "Notes" in style_format:
+                return f'{author_fmt} "{title}," {site_name}, last modified {current_year}, {url}.'
             else:
-                return f'{auth_fmt} {current_year}. "{title}." {site_name}. {url}.'
+                return f'{author_fmt} {current_year}. "{title}." {site_name}. {url}.'
                 
         elif "Harvard" in style_format:
-            auth_fmt = f"{author_name}" if author_name else f"{site_name}"
-            return f"{auth_fmt}, {current_year}. *{title}*. [online] Available at: {url} [Accessed {current_date}]."
+            author_fmt = f"{author_name}" if author_name else f"{site_name}"
+            return f"{author_fmt}, {current_year}. *{title}*. [online] Available at: {url} [Accessed {access_date}]."
             
-        else: # Default fallback to base MLA/APA format rules
+        else:
             return f'"{title}." *{site_name}*, {current_year}, {url}.'
     except:
-        return f"Scribbr Draft Concept. ({time.strftime('%Y')}). *Academic Reference Resource Pool*. Retrieved from {url}"
+        return f"Scribbr Draft Format. ({time.strftime('%Y')}). *Academic Reference Portal*. Retrieved from {url}"
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -359,13 +358,13 @@ elif choice == "📒 Study Assistant":
     with col_a: up_files = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: url_hub = st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
     
-    # NEW FUNCTIONALITY: LIVE SCRIBBR-STYLE CITATION TRIGGER BUTTON
+    # LIVE WORKSPACE ENGINE BLOCK: Render citation instantly right here inside your link hub section
     if url_hub:
-        if st.button("📋 Cite Source with Scribbr Engine", use_container_width=True):
-            current_style = st.session_state.get("cite_style", "APA 7th Edition")
-            generated_cite = generate_scribbr_citation(url_hub, current_style)
-            st.markdown(f"**Generated Reference ({current_style}):**")
-            st.info(generated_cite)
+        if st.button("📋 Generate Scribbr-Style Citation", use_container_width=True):
+            style_chosen = st.session_state.get("selected_citation_format", "APA 7th Generation")
+            citation_output = generate_scribbr_citation(url_hub, style_chosen)
+            st.markdown(f"**Generated Reference Citation ({style_chosen}):**")
+            st.info(citation_output)
             
     raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="s_input")
     st.session_state.study_text_input = raw_content
@@ -488,16 +487,17 @@ elif choice == "⚙️ Settings":
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
         
-        # EXTENDED CONFIGURATION: Added ALL generation variations for APA, Chicago, and Harvard
+        # EXTENDED SELECTBOX CONFIGURATION: Contains all generations/variations of requested formats
         st.selectbox("Citation Style", [
-            "APA 7th Edition", 
-            "APA 6th Edition", 
+            "APA 7th Generation", 
+            "APA 6th Generation", 
+            "APA 5th Generation",
             "MLA 9th Edition", 
             "Chicago 17th (Notes & Bibliography)", 
             "Chicago 17th (Author-Date)",
             "Harvard (Standard UK)",
             "Harvard (Australia)"
-        ], key="cite_style")
+        ], key="selected_citation_format")
         
         st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
         st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
