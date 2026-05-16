@@ -91,7 +91,6 @@ def extract_from_url(url):
 def generate_scribbr_citation(url, style_format):
     if not url: return "Please enter a valid URL or reference title."
     
-    # Pre-parse format attributes safely to handle fallbacks seamlessly
     title = "Web Page Reference"
     site_name = "Website Source"
     author_name = ""
@@ -116,7 +115,6 @@ def generate_scribbr_citation(url, style_format):
         auth_tag = soup.find('meta', name='author')
         author_name = auth_tag['content'].strip() if auth_tag else ""
     except:
-        # Fallback parsing directly from the URL link patterns if scrape fails
         domain_match = re.search(r'https?://(?:www\.)?([^/]+)', url)
         if domain_match:
             site_name = domain_match.group(1).split('.')[0].capitalize()
@@ -124,15 +122,12 @@ def generate_scribbr_citation(url, style_format):
         if path_segments and len(path_segments) > 1:
             title = path_segments[-1].replace('-', ' ').replace('_', ' ').capitalize()
 
-    # Dynamic Formatting Router matching exact engine standards
     if "APA" in style_format:
         author_fmt = f"{author_name}." if author_name else f"{site_name}."
-        if "7th" in style_format:
-            return f"{author_fmt} ({current_year}). *{title}*. {site_name}. {url}"
-        elif "6th" in style_format:
+        if "6th" in style_format:
             return f"{author_fmt} ({current_year}). *{title}*. Retrieved from {url}"
         else:
-            return f"{author_fmt} ({current_year}). *{title}*. {url}"
+            return f"{author_fmt} ({current_year}). *{title}*. {site_name}. {url}"
             
     elif "Chicago" in style_format:
         author_fmt = f"{author_name}," if author_name else f'"{site_name}",'
@@ -220,10 +215,10 @@ st.markdown(f"""
     }}
     .google-iframe {{
         position: absolute;
-        top: -65px; 
+        top: -125px; 
         left: 0;
         width: 100%;
-        height: 950px; 
+        height: 1025px; 
     }}
     
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
@@ -263,6 +258,7 @@ if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
     
+    # Wikipedia option completely removed from reliable options
     source_options = {
         "Educational (.edu)": "site:.edu",
         "Government (.gov)": "site:.gov",
@@ -270,8 +266,7 @@ if choice == "🏠 Home":
         "Scientific Journals (Nature/Science)": "(site:nature.com OR site:sciencemag.org OR site:sciencedirect.com)",
         "Libraries (JSTOR/PubMed)": "(site:jstor.org OR site:pubmed.ncbi.nlm.nih.gov)",
         "Encyclopedias (Britannica/WorldHistory)": "(site:britannica.com OR site:worldhistory.org)",
-        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)",
-        "Reference (Wikipedia)": "site:wikipedia.org"
+        "Academic News (The Conversation/Smithsonian)": "(site:theconversation.com OR site:smithsonianmag.com)"
     }
 
     if 'selected_sources' not in st.session_state:
@@ -294,7 +289,9 @@ if choice == "🏠 Home":
     if q:
         query_parts = [source_options[s] for s in selected_sources]
         advanced_filter = " OR ".join(query_parts) if query_parts else ""
-        full_query = f"{q} ({advanced_filter})" if advanced_filter else q
+        
+        # Enforces a strict filter to make sure Wikipedia doesn't pop up
+        full_query = f"{q} ({advanced_filter}) -site:wikipedia.org" if advanced_filter else f"{q} -site:wikipedia.org"
         
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
         
@@ -526,7 +523,6 @@ elif choice == "⚙️ Settings":
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
         
-        # Extended formatting list fully restored
         st.selectbox("Citation Style", [
             "APA 7th Generation", 
             "APA 6th Generation", 
