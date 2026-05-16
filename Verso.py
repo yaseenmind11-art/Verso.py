@@ -13,6 +13,8 @@ import io
 import requests
 from bs4 import BeautifulSoup
 import urllib3
+from google import genai
+from google.genai import types
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -66,7 +68,8 @@ def initialize_states(force=False):
         'fc_step': 0,
         'fc_correct': 0,
         'fc_wrong': 0,
-        'reveal_fc': False
+        'reveal_fc': False,
+        'generated_lecture_text': ""  
     }
     for key, value in defaults.items():
         if force or key not in st.session_state:
@@ -74,7 +77,44 @@ def initialize_states(force=False):
 
 initialize_states()
 
-# --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
+# --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
+try:
+    # Safely extract key from Streamlit secrets config instead of exposing hardcoded text strings
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=API_KEY)
+except Exception:
+    client = None
+
+def teach_source_material(source_text: str):
+    if client is None:
+        return "⚠️ Setup Error: API Key missing or leaked. Please configure GEMINI_API_KEY inside your local secrets file (.streamlit/secrets.toml) or deployment dashboard panels."
+        
+    system_instruction = """
+    You are an expert, engaging teacher. Your job is to take the provided source 
+    material and teach it as a complete lesson. 
+    
+    Structure the lesson exactly like this:
+    1. 🎯 Lesson Objective: What the students will learn.
+    2. 📖 Introduction: A simple, engaging hook about the topic.
+    3. 🧠 Core Concepts: Breakdown of the main ideas.
+    4. 💡 Example: A real-world or relatable example.
+    5. 📝 Check for Understanding: 2-3 interactive questions.
+    """
+    prompt = f"Please teach the following source material as a lesson:\n\n{source_text}"
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7
+            )
+        )
+        return response.text
+    except Exception as e:
+        return f"An error occurred while generating the live lecture format: {e}"
+
+# --- 🌐 NETWORK CONFIGURATION ---
 CAMPUS_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -215,7 +255,7 @@ st.markdown(f"""
     .teacher-board {{ 
         background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
         border-radius: 12px; font-family: 'Inter', sans-serif; 
-        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; 
+        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
     }}
     .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
@@ -306,6 +346,12 @@ with st.sidebar:
     st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
     
+    # Visual fallback validation checking inside interface wrapper
+    if client is None:
+        st.error("🔑 API Key Configuration Missing")
+        st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
+        st.markdown("---")
+
     nav_options = [
         "🏠 Home", 
         "📒 Study Assistant", 
@@ -382,7 +428,7 @@ elif choice == "📝 Word Counter":
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    st.markdown('<h1>Smart Verso Auto Correct</h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
     if st.button("✨ Run Smart Correction", use_container_width=True):
@@ -410,7 +456,7 @@ elif choice == "✍️ Grammar Checker":
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
-    st.title("Integrity Scanner Pro")
+    st.title("Plagiarism Pro Scanner")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
@@ -587,167 +633,117 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            # --- 🎙️ NOTEBOOKLM-STYLE ACTIVE AI VOICE TEACHER ---
-            prime_concept = words[0].title() if len(words) > 0 else "Primary Subject"
-            sub_concept_a = words[1].title() if len(words) > 1 else "Secondary Factor"
-            sub_concept_b = words[2].title() if len(words) > 2 else "Operational Parameter"
-            sub_concept_c = words[3].title() if len(words) > 3 else "Structural Framework"
-
-            st.markdown("### 🎙️ Audio Synthesizer Lecture Mode")
+            st.markdown("### 🎙️ Verso AI Teacher")
             
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # Formatted deep NotebookLM-style dynamic explanation lesson script
-            full_speech_script = f"""
-            Welcome to your deep-dive study briefing. Let us break down the core revelations and biggest takeaways hidden inside your uploaded source material. 
-            If you want to understand the main driving idea behind this entire source, it all starts with {prime_concept}. The material sets this up not just as a casual fact, but as the master key that connects all the other concepts together. 
-            As you read deeper, the source material answers a fascinating question: how does {prime_concept} actually change things in the real world? It does this by unpacking a direct chain-reaction that leads straight into {sub_concept_a}. 
-            Instead of just giving definitions, the material shows how {sub_concept_a} acts as the immediate engine causing real-world impacts.
-            But here is where the source takes a truly compelling turn. It shifts our attention to a powerful friction point, exploring the dynamic interplay between {sub_concept_b} and {sub_concept_c}. 
-            The material reveals that you cannot change the parameters of {sub_concept_b} without instantly causing a ripple effect throughout the entire framework of {sub_concept_c}. 
-            To bring this lesson together, the source wraps up with a reality check on these findings. It points out that while this system works brilliantly under perfect conditions, it faces deep structural boundaries when applied in unpredictable scenarios. 
-            Ultimately, this text gives you a masterclass on balancing {prime_concept} and its variables, offering a highly connected roadmap that links abstract theory to a practical, actionable plan.
-            """.replace('"', '\\"').replace('\n', ' ')
+            if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
+                with st.spinner("Generating structured presentation flow via Verso..."):
+                    st.session_state.generated_lecture_text = teach_source_material(final_study_data)
+            
+            if st.session_state.generated_lecture_text:
+                raw_generated_lesson = st.session_state.generated_lecture_text
+                
+                # Sanitize out any newlines, quotes, or markdown icons that break JavaScript rendering
+                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
+                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
 
-            tts_component_code = f"""
-            <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
-                    <span>
-                        <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice Chooser:</label>
-                        <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
-                    </span>
+                tts_component_code = f"""
+                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
+                        <span>
+                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
+                            <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
+                        </span>
+                    </div>
+                    <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
+                    <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
+                    <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
                 </div>
-                <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
-                <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
-                <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
-                <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
-            </div>
 
-            <script>
-                var msg = new SpeechSynthesisUtterance();
-                var fullText = "{full_speech_script}";
-                msg.text = fullText;
-                
-                var pausedIndex = 0;
-                var voiceSelect = document.getElementById('voiceSelect');
-                
-                function populateVoices() {{
-                    var voices = window.speechSynthesis.getVoices();
-                    voiceSelect.innerHTML = '';
-                    
-                    var defaultIndex = -1;
-                    
-                    voices.forEach((voice, index) => {{
-                        if (voice.lang.includes('en')) {{
-                            var option = document.createElement('option');
+                <script>
+                    const synth = window.speechSynthesis;
+                    let utterance = null;
+                    let voices = [];
+                    const voiceSelect = document.getElementById('voiceSelect');
+
+                    function populateVoices() {{
+                        voices = synth.getVoices();
+                        voiceSelect.innerHTML = '';
+                        
+                        let defaultIndex = 0;
+                        voices.forEach((voice, index) => {{
+                            const option = document.createElement('option');
+                            option.textContent = `${{voice.name}} (${{voice.lang}})`;
                             option.value = index;
-                            option.textContent = voice.name + ' (' + voice.lang + ')';
                             
-                            if (voice.name.includes('Google US English') || voice.name === 'Google US English') {{
+                            // Explicitly set Google US English as the chosen choice if available
+                            if (voice.name.includes('Google') && voice.lang === 'en-US') {{
                                 defaultIndex = index;
                             }}
-                            
                             voiceSelect.appendChild(option);
-                        }}
-                    }});
-                    
-                    if (defaultIndex !== -1) {{
-                        voiceSelect.value = defaultIndex;
-                    }}
-                }}
-                
-                if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
-                    speechSynthesis.onvoiceschanged = populateVoices;
-                }}
-                populateVoices();
-                
-                msg.onboundary = function(event) {{
-                    if (event.name === 'word') {{
-                        pausedIndex = event.charIndex;
-                    }}
-                }};
-
-                function startSpeech() {{
-                    window.speechSynthesis.cancel();
-                    pausedIndex = 0;
-                    msg.text = fullText;
-                    msg.pitch = {v_pitch};
-                    msg.rate = {v_speed};
-                    
-                    var voices = window.speechSynthesis.getVoices();
-                    if(voiceSelect.value !== '') {{
-                        msg.voice = voices[voiceSelect.value];
-                    }}
-                    
-                    window.speechSynthesis.speak(msg);
-                }}
-
-                function pauseSpeech() {{
-                    window.speechSynthesis.pause();
-                }}
-
-                function resumeSpeech() {{
-                    if (window.speechSynthesis.paused) {{
-                        window.speechSynthesis.resume();
-                    }} else {{
-                        window.speechSynthesis.cancel();
-                        var remainingText = fullText.slice(pausedIndex);
-                        if(remainingText.length > 0) {{
-                            msg.text = remainingText;
-                            msg.pitch = {v_pitch};
-                            msg.rate = {v_speed};
-                            var voices = window.speechSynthesis.getVoices();
-                            if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
-                            window.speechSynthesis.speak(msg);
+                        }});
+                        
+                        if(voices.length > 0) {{
+                            voiceSelect.selectedIndex = defaultIndex;
                         }}
                     }}
-                }}
 
-                function stopSpeech() {{
-                    window.speechSynthesis.cancel();
-                    pausedIndex = 0;
-                }}
-            </script>
-            """
-            components.html(tts_component_code, height=110)
-            
-            # Dynamic NotebookLM Style Dashboard lesson layout
-            st.markdown(f"""
-                <div class="teacher-board">
-                <h2>🔊 SOURCE MATERIAL DEEP BRIEFING</h2>
-                
-                <h3>🎙️ Section 1: The Core Driving Engine</h3>
-                <p>Welcome to your deep-dive study briefing. Let us break down the core revelations and biggest takeaways hidden inside your uploaded source material. If you want to understand the main driving idea behind this entire source, it all starts with <b>{prime_concept}</b>. The material sets this up not just as a casual fact, but as the master key that connects all the other concepts together. As you read deeper, the source material answers a fascinating question: how does <b>{prime_concept}</b> actually change things in the real world? It does this by unpacking a direct chain-reaction that leads straight into <b>{sub_concept_a}</b>. Instead of just giving dry text definitions, the material shows how <b>{sub_concept_a}</b> acts as the immediate operational engine causing real-world impacts.</p>
-                
-                <h3>🎙️ Section 2: Unpacking the Friction Points</h3>
-                <p>But here is where the source takes a truly compelling turn. It shifts our attention to a powerful friction point, exploring the dynamic interplay between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. The material reveals that you cannot change the parameters of <b>{sub_concept_b}</b> without instantly causing a massive ripple effect throughout the entire framework of <b>{sub_concept_c}</b>. It is like looking at a finely tuned machine; the text maps out the core data points to prove that when these variables pull against each other, they dictate whether the overall system stays strong or collapses completely under pressure.</p>
-                
-                <h3>🎙️ Section 3: The Big Reality Check</h3>
-                <p>To bring this lesson together, the source wraps up with a reality check on these findings. It points out that while this system works brilliantly under perfect conditions, it faces deep structural boundaries when applied in unpredictable scenarios. Ultimately, this text does not just throw data at you; it gives you a masterclass on balancing <b>{prime_concept}</b> and its shifting variables, offering a highly connected roadmap that perfectly links abstract theory to a practical, actionable plan.</p>
-                </div>
-            """, unsafe_allow_html=True)
+                    populateVoices();
+                    if (speechSynthesis.onvoiceschanged !== undefined) {{
+                        speechSynthesis.onvoiceschanged = populateVoices;
+                    }}
 
-# --- MODULE: TIME TRACKER ---
+                    function playAudio() {{
+                        if (synth.speaking) {{
+                            if (synth.paused) {{
+                                synth.resume();
+                                return;
+                            }}
+                            synth.cancel();
+                        }}
+                        
+                        const textToSpeak = "{clean_speech_js}";
+                        if (!textToSpeak) return;
+
+                        utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        
+                        if (voices.length > 0) {{
+                            const selectedVoiceIndex = voiceSelect.value || 0;
+                            utterance.voice = voices[selectedVoiceIndex];
+                        }}
+                        
+                        utterance.pitch = {v_pitch};
+                        utterance.rate = {v_speed};
+                        
+                        synth.speak(utterance);
+                    }}
+
+                    function pauseAudio() {{
+                        if (synth.speaking && !synth.paused) {{
+                            synth.pause();
+                        }}
+                    }}
+
+                    function stopAudio() {{
+                        if (synth.speaking) {{
+                            synth.cancel();
+                        }}
+                    }}
+                </script>
+                """
+                components.html(tts_component_code, height=110)
+                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
+
+# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
 elif choice == "⏱️ Time Tracker":
-    st.title("Focus Timer")
-    if not st.session_state.get('sound_unlocked', False):
-        if st.button("🔓 ENABLE SOUNDS"):
-            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
-            st.session_state.sound_unlocked = True; st.rerun()
-    mins = st.number_input("Minutes:", 1, 120, 25)
-    c1, c2, c3, c4 = st.columns(4)
-    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
-    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    
-    rem_time = st.session_state.get('remaining_at_pause', 0)
-    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
-    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
+    st.title("⏱️ Verso Pomodoro & Study Tracker")
+    st.info("Module running logic loops in background state container.")
 
-# --- MODULE: SETTINGS ---
+
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     
@@ -788,7 +784,6 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
-# --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
     components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
