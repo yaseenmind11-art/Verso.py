@@ -69,7 +69,7 @@ def initialize_states(force=False):
         'fc_correct': 0,
         'fc_wrong': 0,
         'reveal_fc': False,
-        'generated_lecture_text': ""  # Saved state to prevent repetitive API calls
+        'generated_lecture_text': ""  
     }
     for key, value in defaults.items():
         if force or key not in st.session_state:
@@ -626,23 +626,23 @@ elif choice == "📒 Study Assistant":
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # CRITICAL RATE-LIMIT FIX: Add an explicit button to trigger Gemini generation, caching the result
             if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
-                with st.spinner("Generating structured audio presentation flow via Gemini..."):
+                with st.spinner("Generating structured presentation flow via Gemini..."):
                     st.session_state.generated_lecture_text = teach_source_material(final_study_data)
             
             if st.session_state.generated_lecture_text:
                 raw_generated_lesson = st.session_state.generated_lecture_text
                 
-                # Sanitize text formatting for inside the HTML JavaScript engine blocks
-                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ')
+                # Sanitize out any newlines, quotes, or markdown icons that break JavaScript rendering
+                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
+                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
 
                 tts_component_code = f"""
-                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
+                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                         <span>
-                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice Chooser:</label>
+                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
                             <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
                         </span>
                     </div>
@@ -653,72 +653,73 @@ elif choice == "📒 Study Assistant":
                 </div>
 
                 <script>
-                    var msg = new SpeechSynthesisUtterance();
                     var fullText = "{clean_speech_js}";
-                    msg.text = fullText;
-                    
-                    var pausedIndex = 0;
                     var voiceSelect = document.getElementById('voiceSelect');
+                    var currentUtterance = null;
+                    var isPaused = false;
                     
                     function populateVoices() {{
+                        if (typeof speechSynthesis === 'undefined') return;
                         var voices = window.speechSynthesis.getVoices();
                         voiceSelect.innerHTML = '';
-                        var defaultIndex = -1;
+                        
+                        var defaultIndex = 0;
+                        var count = 0;
                         
                         voices.forEach((voice, index) => {{
                             if (voice.lang.includes('en')) {{
                                 var option = document.createElement('option');
                                 option.value = index;
                                 option.textContent = voice.name + ' (' + voice.lang + ')';
-                                if (voice.name.includes('Google US English') || voice.name === 'Google US English') {{
-                                    defaultIndex = index;
+                                if (voice.name.includes('Google US English') || voice.name.includes('Natural')) {{
+                                    defaultIndex = count;
                                 }}
                                 voiceSelect.appendChild(option);
+                                count++;
                             }}
                         }});
-                        if (defaultIndex !== -1) voiceSelect.value = defaultIndex;
                     }}
                     
                     if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
                         speechSynthesis.onvoiceschanged = populateVoices;
                     }}
                     populateVoices();
-                    
-                    msg.onboundary = function(event) {{
-                        if (event.name === 'word') pausedIndex = event.charIndex;
-                    }};
 
                     function startSpeech() {{
                         window.speechSynthesis.cancel();
-                        pausedIndex = 0;
-                        msg.text = fullText;
-                        msg.pitch = {v_pitch};
-                        msg.rate = {v_speed};
+                        isPaused = false;
+                        
+                        currentUtterance = new SpeechSynthesisUtterance(fullText);
+                        currentUtterance.pitch = {v_pitch};
+                        currentUtterance.rate = {v_speed};
+                        
                         var voices = window.speechSynthesis.getVoices();
-                        if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
-                        window.speechSynthesis.speak(msg);
+                        var selectedVoice = voices[voiceSelect.value];
+                        if(selectedVoice) currentUtterance.voice = selectedVoice;
+                        
+                        window.speechSynthesis.speak(currentUtterance);
                     }}
 
-                    function pauseSpeech() {{ window.speechSynthesis.pause(); }}
+                    function pauseSpeech() {{
+                        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {{
+                            window.speechSynthesis.pause();
+                            isPaused = true;
+                        }}
+                    }}
 
                     function resumeSpeech() {{
                         if (window.speechSynthesis.paused) {{
                             window.speechSynthesis.resume();
-                        }} else {{
-                            window.speechSynthesis.cancel();
-                            var remainingText = fullText.slice(pausedIndex);
-                            if(remainingText.length > 0) {{
-                                msg.text = remainingText;
-                                msg.pitch = {v_pitch};
-                                msg.rate = {v_speed};
-                                var voices = window.speechSynthesis.getVoices();
-                                if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
-                                window.speechSynthesis.speak(msg);
-                            }}
+                            isPaused = false;
+                        }} else if (!window.speechSynthesis.speaking) {{
+                            startSpeech();
                         }}
                     }}
 
-                    function stopSpeech() {{ window.speechSynthesis.cancel(); pausedIndex = 0; }}
+                    function stopSpeech() {{
+                        window.speechSynthesis.cancel();
+                        isPaused = false;
+                    }}
                 </script>
                 """
                 components.html(tts_component_code, height=110)
