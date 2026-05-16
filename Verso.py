@@ -174,10 +174,8 @@ ALARM_TONES = {
 KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
 
 def trigger_master_reset():
-    # Complete deep flush of session dictionary to eliminate stuck states
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    # Reinitialize minimal startup elements
     st.session_state.set_color = "#FFFFFF"
     st.session_state.set_bg = "#5465C9"
     st.session_state.set_font = 1.10
@@ -245,13 +243,30 @@ st.markdown(f"""
     .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
     .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     
-    /* Clean audio control container */
     .audio-panel {{
         background: linear-gradient(135deg, #1e293b, #0f172a);
         border: 1px solid #475569;
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 20px;
+    }}
+    
+    /* Native interactive presentation buttons */
+    .audio-btn {{
+        background-color: {accent};
+        color: white !important;
+        border: none;
+        padding: 10px 24px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 10px;
+        transition: opacity 0.2s;
+    }}
+    .audio-btn:hover {{ opacity: 0.9; }}
+    .audio-btn-stop {{
+        background-color: #ef4444;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -437,11 +452,10 @@ elif choice == "📒 Study Assistant":
         t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "🎙️ AI Voice Teacher"])
         blob = TextBlob(final_study_data)
         
-        # Rigorous text filtration to sanitize keywords and kill formatting artifacts/symbols
         raw_phrases = list(dict.fromkeys([w.lower().strip() for w in blob.noun_phrases if len(w) > 3]))
         words = []
         for phrase in raw_phrases:
-            cleaned = re.sub(r'[^a-zA-Z0-9\s-]', '', phrase)  # Strip out brackets, Roman tags, ellipses
+            cleaned = re.sub(r'[^a-zA-Z0-9\s-]', '', phrase)  
             cleaned = cleaned.strip()
             if cleaned and len(cleaned) > 3 and not cleaned.isdigit():
                 words.append(cleaned)
@@ -461,7 +475,6 @@ elif choice == "📒 Study Assistant":
                 curr_q = st.session_state.quiz_step
                 st.write(f"Question **{curr_q + 1}** of **{total_q}**")
                 
-                # Dynamic choice locking system via session state to maintain absolute choice stability
                 if st.session_state.current_quiz_options is None:
                     target_word = words[curr_q % len(words)].title()
                     q_type = curr_q % 3 
@@ -482,7 +495,6 @@ elif choice == "📒 Study Assistant":
                         opts = [target_word] + random.sample(alt_pool, min(2, len(alt_pool)))
                         random.shuffle(opts)
                         
-                    # Absolute validation step to scrub any accidental symbols out of quiz outputs
                     st.session_state.current_quiz_options = [re.sub(r'[\[\]\(\)\{\}\\]', '', str(o)) for o in opts]
                     st.session_state.current_quiz_target = re.sub(r'[\[\]\(\)\{\}\\]', '', str(target_word))
                     st.session_state.current_quiz_text = q_text
@@ -551,7 +563,7 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            # --- 🎙️ AI VOICE TEACHER MODULE (Exclusively Text-Focused, 300-500 Words) ---
+            # --- 🎙️ ACTIVE AI VOICE TEACHER MODULE ---
             prime_concept = words[0].title() if len(words) > 0 else "Primary Subject"
             sub_concept_a = words[1].title() if len(words) > 1 else "Secondary Factor"
             sub_concept_b = words[2].title() if len(words) > 2 else "Operational Parameter"
@@ -559,21 +571,65 @@ elif choice == "📒 Study Assistant":
 
             st.markdown("### 🎙️ Audio Synthesizer Lecture Mode")
             
-            # Simulated audio control layout block
-            st.markdown("""
-            <div class="audio-panel">
-                <div style="display: flex; align-items: center; justify-content: space-between; color: #f1f5f9; font-family: monospace;">
-                    <span><b>🔴 Live AI Voice Feed:</b> Generating Lesson Track...</span>
-                    <span><b>Format:</b> 44.1 kHz Spatial Mono</span>
+            # Interactive Voice Configuration Control Panel
+            va1, va2 = st.columns(2)
+            v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
+            v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
+            
+            # The clean script string to be processed by browser audio API
+            full_speech_script = f"""
+            Hello and welcome. Let us pull up your text files and break down exactly what is happening under the hood here. 
+            The immediate focal center of the material is built entirely around {prime_concept}. This concept does not exist as an isolated assertion; it serves as the core pillar holding up your entire summary layout. 
+            When we track the text sequentially, we see that {prime_concept} establishes a direct operational bridge with {sub_concept_a}. The source material outlines specific internal mechanics that regulate this relationship. 
+            Moving into the mid-section of your source text, the author introduces a vital technical combination: the interface between {sub_concept_b} and {sub_concept_c}. 
+            The paragraphs explicitly trace the limits and data boundaries governing {sub_concept_b}, providing supporting facts to validate why this trend acts as an active catalyst. 
+            To conclude this full content analysis, let us synthesize the explicit conclusions and logical limits highlighted in the final text segments. 
+            The document does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
+            """.replace('"', '\\"').replace('\n', ' ')
+
+            # Native JavaScript Controller for speech synthesis injection
+            tts_component_code = f"""
+            <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
+                    <span><b>Format:</b> Browser TTS Spatial Engine</span>
                 </div>
+                <button class="audio-btn" onclick="startSpeech()" style="background-color: {accent}; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">▶ PLAY AUDIO LECTURE</button>
+                <button class="audio-btn audio-btn-stop" onclick="stopSpeech()" style="background-color: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">⏹ STOP</button>
             </div>
-            """, unsafe_allow_html=True)
+
+            <script>
+                var msg = new SpeechSynthesisUtterance();
+                msg.text = "{full_speech_script}";
+                
+                function startSpeech() {{
+                    window.speechSynthesis.cancel(); // Clear any queued speech
+                    
+                    // Assign reactive parameter variables directly from Streamlit sliders
+                    msg.pitch = {v_pitch};
+                    msg.rate = {v_speed};
+                    
+                    // Try to pick a premium natural sounding English voice profile if available
+                    var voices = window.speechSynthesis.getVoices();
+                    var selectedVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
+                    if(selectedVoice) {{
+                        msg.voice = selectedVoice;
+                    }}
+                    
+                    window.speechSynthesis.speak(msg);
+                }}
+
+                function stopSpeech() {{
+                    window.speechSynthesis.cancel();
+                }}
+                
+                // Keep voices synced on initial load lifecycle
+                window.speechSynthesis.onvoiceschanged = function() {{}};
+            </script>
+            """
+            components.html(tts_component_code, height=110)
             
-            va1, va2, va3 = st.columns(3)
-            va1.slider("Teacher Vocal Pitch (Hz)", 85, 255, 120)
-            va2.slider("Pacing / Speech Speed", 0.75, 2.0, 1.0)
-            va3.select_slider("Voice Texture Profile", options=["Warm/Resonant", "Clear/Analytical", "Deep/Narrative"])
-            
+            # Render script on screen inside the styled chalkboard view
             st.markdown(f"""
                 <div class="teacher-board">
                 <h2>🔊 SOURCE MATERIAL AUDIO PLAYBACK</h2>
@@ -610,7 +666,6 @@ elif choice == "⏱️ Time Tracker":
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     
-    # Fully patched Master Reset Button - handles state clearing and execution termination cleanly
     if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
         trigger_master_reset()
         
