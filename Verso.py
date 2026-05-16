@@ -675,7 +675,7 @@ elif choice == "📒 Study Assistant":
                         }});
                         
                         if(voices.length > 0) {{
-                            voiceSelect.selectedIndex = defaultIndex;
+                            voiceSelect.index = defaultIndex;
                         }}
                     }}
 
