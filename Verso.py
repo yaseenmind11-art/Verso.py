@@ -90,6 +90,14 @@ def extract_from_url(url):
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
     if not url: return "Please enter a valid URL or reference title."
+    
+    # Pre-parse format attributes safely to handle fallbacks seamlessly
+    title = "Web Page Reference"
+    site_name = "Website Source"
+    author_name = ""
+    current_year = time.strftime("%Y")
+    access_date = time.strftime("%d %b. %Y")
+    
     try:
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         res = requests.get(url, headers=headers, timeout=4)
@@ -107,23 +115,43 @@ def generate_scribbr_citation(url, style_format):
             
         auth_tag = soup.find('meta', name='author')
         author_name = auth_tag['content'].strip() if auth_tag else ""
-        
-        current_year = time.strftime("%Y")
-        access_date = time.strftime("%d %b. %Y")
-        
-        if "APA" in style_format:
-            author_fmt = f"{author_name}." if author_name else "Scribbr Engine Draft."
-            return f"{author_fmt} ({current_year}). *{title}*. {site_name}. {url}"
-        elif "Chicago" in style_format:
-            author_fmt = f"{author_name}," if author_name else f'"{site_name}",'
-            return f'{author_fmt} {current_year}. "{title}." {site_name}. {url}.'
-        elif "Harvard" in style_format:
-            author_fmt = f"{author_name}" if author_name else f"{site_name}"
-            return f"{author_fmt}, {current_year}. *{title}*. [online] Available at: {url} [Accessed {access_date}]."
-        else:
-            return f'"{title}." *{site_name}*, {current_year}, {url}.'
     except:
-        return f"Scribbr Draft Format. ({time.strftime('%Y')}). *Academic Reference Portal*. Retrieved from {url}"
+        # Fallback parsing directly from the URL link patterns if scrape fails
+        domain_match = re.search(r'https?://(?:www\.)?([^/]+)', url)
+        if domain_match:
+            site_name = domain_match.group(1).split('.')[0].capitalize()
+        path_segments = [s for s in url.split('/') if s]
+        if path_segments and len(path_segments) > 1:
+            title = path_segments[-1].replace('-', ' ').replace('_', ' ').capitalize()
+
+    # Dynamic Formatting Router matching exact engine standards
+    if "APA" in style_format:
+        author_fmt = f"{author_name}." if author_name else f"{site_name}."
+        if "7th" in style_format:
+            return f"{author_fmt} ({current_year}). *{title}*. {site_name}. {url}"
+        elif "6th" in style_format:
+            return f"{author_fmt} ({current_year}). *{title}*. Retrieved from {url}"
+        else:
+            return f"{author_fmt} ({current_year}). *{title}*. {url}"
+            
+    elif "Chicago" in style_format:
+        author_fmt = f"{author_name}," if author_name else f'"{site_name}",'
+        if "Notes" in style_format:
+            return f'{author_fmt} "{title}," {site_name}, last modified {current_year}, {url}.'
+        else:
+            return f'{author_fmt} {current_year}. "{title}." {site_name}. {url}.'
+            
+    elif "Harvard" in style_format:
+        author_fmt = f"{author_name}" if author_name else f"{site_name}"
+        return f"{author_fmt}, {current_year}. *{title}*. [online] Available at: {url} [Accessed {access_date}]."
+        
+    elif "MLA" in style_format:
+        author_fmt = f"{author_name}. " if author_name else ""
+        return f'{author_fmt}"{title}." *{site_name}*, {current_year}, {url}.'
+        
+    else:
+        author_fmt = f"{author_name}." if author_name else f"{site_name}."
+        return f"{author_fmt} ({current_year}). *{title}*. {url}"
 
 ALARM_TONES = {
     "Double Beep": "https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg",
@@ -219,7 +247,6 @@ st.markdown(f"""
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
-    # Added "📚 Citation Generator" as its own standalone button choice
     nav_options = [
         "🏠 Home", 
         "📒 Study Assistant", 
@@ -347,7 +374,7 @@ elif choice == "🛡️ Plagiarism Checker":
                     st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{marked_text}</div>', unsafe_allow_html=True)
                 else: st.success(f"✅ Content Unique: {plag_percent}% Similarity"); st.balloons()
 
-# --- MODULE: CITATION GENERATOR (NEW STANDALONE BUTTON) ---
+# --- MODULE: CITATION GENERATOR ---
 elif choice == "📚 Citation Generator":
     st.title("📚 Citation Generator Workspace")
     st.markdown("### 📥 Generate Reference Citations")
@@ -355,8 +382,7 @@ elif choice == "📚 Citation Generator":
     cite_url = st.text_input("Enter Source URL, DOI, or Document Link:", value=st.session_state.citation_text_input, placeholder="https://example.com/article...", key="c_input")
     st.session_state.citation_text_input = cite_url
     
-    # Leverages style definitions from Settings configuration seamlessly
-    active_style = st.session_state.get("selected_citation_format", "APA 7th")
+    active_style = st.session_state.get("selected_citation_format", "APA 7th Generation")
     st.caption(f"Active Output Style: **{active_style}** (Change this inside control center settings)")
     
     if st.button("📋 Generate Reference", use_container_width=True):
@@ -499,7 +525,19 @@ elif choice == "⚙️ Settings":
         st.markdown('### 📚 Academic & Audio')
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        st.selectbox("Citation Style", ["APA 7th", "MLA 9th", "Chicago 17th", "Harvard"], key="selected_citation_format")
+        
+        # Extended formatting list fully restored
+        st.selectbox("Citation Style", [
+            "APA 7th Generation", 
+            "APA 6th Generation", 
+            "APA 5th Generation",
+            "MLA 9th Edition", 
+            "Chicago 17th (Notes & Bibliography)", 
+            "Chicago 17th (Author-Date)",
+            "Harvard (Standard UK)",
+            "Harvard (Australia)"
+        ], key="selected_citation_format")
+        
         st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
         st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
         st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
