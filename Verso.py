@@ -740,8 +740,20 @@ elif choice == "📒 Study Assistant":
 
 # --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
 elif choice == "⏱️ Time Tracker":
-    st.title("⏱️ Verso Pomodoro & Study Tracker")
-    st.info("Module running logic loops in background state container.")
+    st.title("Focus Timer")
+    if not st.session_state.get('sound_unlocked', False):
+        if st.button("🔓 ENABLE SOUNDS"):
+            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
+            st.session_state.sound_unlocked = True; st.rerun()
+    mins = st.number_input("Minutes:", 1, 120, 25)
+    c1, c2, c3, c4 = st.columns(4)
+    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
+    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
+    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
+    
+    rem_time = st.session_state.get('remaining_at_pause', 0)
+    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
+    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
 
 elif choice == "⚙️ Settings":
