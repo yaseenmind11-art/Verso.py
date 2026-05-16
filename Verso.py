@@ -78,7 +78,8 @@ def initialize_states(force=False):
 initialize_states()
 
 # --- 🤖 GEMINI CLIENT INITIALIZATION ---
-API_KEY = "AIzaSyCO4k7wHpkWtvFWJWQI4vnVjjOwIRvwM1U"
+# Securely fetch API key from environment variables or use safe fallback
+API_KEY = st.secrets.get("GEMINI_API_KEY", "YOUR_API_KEY_HERE")
 client = genai.Client(api_key=API_KEY)
 
 def teach_source_material(source_text: str):
@@ -618,7 +619,7 @@ elif choice == "📒 Study Assistant":
             else:
                 st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
-                
+                    
         with t4:
             st.markdown("### 🎙️ NotebookLM Live Gemini Engine Lecture")
             
@@ -643,156 +644,116 @@ elif choice == "📒 Study Assistant":
                         <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                         <span>
                             <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
-                            <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
+                            <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; border-radius: 4px; padding: 2px 5px;'></select>
                         </span>
                     </div>
-                    <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
-                    <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
-                    <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
-                    <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
+                    <button class="audio-btn" onclick="speakLesson()">🔊 Play Lecture</button>
+                    <button class="audio-btn audio-btn-pause" onclick="pauseLesson()">⏸️ Pause</button>
+                    <button class="audio-btn audio-btn-stop" onclick="stopLesson()">🛑 Stop</button>
                 </div>
 
                 <script>
-                    var fullText = "{clean_speech_js}";
-                    var voiceSelect = document.getElementById('voiceSelect');
-                    var currentUtterance = null;
-                    var isPaused = false;
-                    
-                    function populateVoices() {{
-                        if (typeof speechSynthesis === 'undefined') return;
+                    var msg = new SpeechSynthesisUtterance("{clean_speech_js}");
+                    msg.pitch = {v_pitch};
+                    msg.rate = {v_speed};
+
+                    function loadVoices() {{
                         var voices = window.speechSynthesis.getVoices();
-                        voiceSelect.innerHTML = '';
-                        
-                        var defaultIndex = 0;
-                        var count = 0;
-                        
-                        voices.forEach((voice, index) => {{
-                            if (voice.lang.includes('en')) {{
-                                var option = document.createElement('option');
-                                option.value = index;
-                                option.textContent = voice.name + ' (' + voice.lang + ')';
-                                if (voice.name.includes('Google US English') || voice.name.includes('Natural')) {{
-                                    defaultIndex = count;
-                                }}
-                                voiceSelect.appendChild(option);
-                                count++;
+                        var select = document.getElementById('voiceSelect');
+                        if(!select) return;
+                        select.innerHTML = '';
+                        voices.forEach((voice, i) => {{
+                            if(voice.lang.includes('en') || voice.lang.includes('UK') || voice.lang.includes('US')){{
+                                var opt = document.createElement('option');
+                                opt.value = i;
+                                opt.innerHTML = voice.name + ' (' + voice.lang + ')';
+                                select.appendChild(opt);
                             }}
                         }});
                     }}
-                    
-                    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
-                        speechSynthesis.onvoiceschanged = populateVoices;
-                    }}
-                    populateVoices();
 
-                    function startSpeech() {{
+                    if(typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
+                        speechSynthesis.onvoiceschanged = loadVoices;
+                    }}
+                    setTimeout(loadVoices, 500);
+
+                    function speakLesson() {{
                         window.speechSynthesis.cancel();
-                        isPaused = false;
-                        
-                        currentUtterance = new SpeechSynthesisUtterance(fullText);
-                        currentUtterance.pitch = {v_pitch};
-                        currentUtterance.rate = {v_speed};
-                        
+                        var select = document.getElementById('voiceSelect');
                         var voices = window.speechSynthesis.getVoices();
-                        var selectedVoice = voices[voiceSelect.value];
-                        if(selectedVoice) currentUtterance.voice = selectedVoice;
-                        
-                        window.speechSynthesis.speak(currentUtterance);
-                    }}
-
-                    function pauseSpeech() {{
-                        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {{
-                            window.speechSynthesis.pause();
-                            isPaused = true;
+                        if(select && select.value !== '') {{
+                            msg.voice = voices[select.value];
                         }}
+                        window.speechSynthesis.speak(msg);
                     }}
-
-                    function resumeSpeech() {{
-                        if (window.speechSynthesis.paused) {{
-                            window.speechSynthesis.resume();
-                            isPaused = false;
-                        }} else if (!window.speechSynthesis.speaking) {{
-                            startSpeech();
-                        }}
-                    }}
-
-                    function stopSpeech() {{
-                        window.speechSynthesis.cancel();
-                        isPaused = false;
-                    }}
+                    function pauseLesson() {{ window.speechSynthesis.pause(); }}
+                    function stopLesson() {{ window.speechSynthesis.cancel(); }}
                 </script>
                 """
-                components.html(tts_component_code, height=110)
-                
-                st.markdown(f"""
-                    <div class="teacher-board">
-                    <h2>🔊 LIVE NOTEBOOKLM GENERATED LECTURE FLOW</h2>
-                    {raw_generated_lesson}
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.info("Click the button above to generate your customized AI lesson layout.")
+                components.html(tts_component_code, height=130)
+                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
+        else:
+            st.info("Please input study notes, file templates, or target URLs above to ignite the learning engine.")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
-    st.title("Focus Timer")
-    if not st.session_state.get('sound_unlocked', False):
-        if st.button("🔓 ENABLE SOUNDS"):
-            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
-            st.session_state.sound_unlocked = True; st.rerun()
-    mins = st.number_input("Minutes:", 1, 120, 25)
-    c1, c2, c3, c4 = st.columns(4)
-    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
-    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
+    st.title("Focus Analytics Studio")
+    st.markdown("### 🕒 Session Controls")
     
-    rem_time = st.session_state.get('remaining_at_pause', 0)
-    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
-    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        minutes = st.number_input("Set focus timeline limit (Minutes):", min_value=1, max_value=180, value=25)
+    with col_t2:
+        st.write(" ")
+        st.write(" ")
+        if not st.session_state.timer_active:
+            if st.button("🚀 Ignite Focus Core", use_container_width=True):
+                st.session_state.timer_end_time = time.time() + (minutes * 60)
+                st.session_state.timer_active = True
+                st.rerun()
+        else:
+            if st.button("🛑 Abort Focus Window", use_container_width=True):
+                st.session_state.timer_active = False
+                st.session_state.timer_end_time = None
+                st.session_state.remaining_at_pause = 0
+                st.rerun()
+
+    if st.session_state.timer_active:
+        mins, secs = divmod(int(st.session_state.remaining_at_pause), 60)
+        st.metric("⏳ Core Remaining Time", f"{mins:02d}:{secs:02d}")
+        time.sleep(1)
+        st.rerun()
+        
+    if st.session_state.get('timer_finished_trigger'):
+        st.markdown('<div class="time-up-banner">🚨 FOCUS TIME EXPIRATION REACHED 🚨</div>', unsafe_allow_html=True)
+        components.html("<script>var s=window.parent.document.getElementById('alarm-sound');if(s){s.play();}</script>", height=0)
+        if st.button("Dismiss Focus Warning Frame", use_container_width=True):
+            del st.session_state['timer_finished_trigger']
+            st.rerun()
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
-    st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
+    st.title("Control Center Framework")
+    st.markdown("### 🎛️ Design Ecosystem")
     
-    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
+    st.session_state.set_color = st.color_picker("Ecosystem Main Accent Highlight:", value=st.session_state.set_color)
+    st.session_state.set_bg = st.color_picker("Ecosystem Notebook Canvas Background:", value=st.session_state.set_bg)
+    st.session_state.set_font = st.slider("Lecture Content Font Proportions (rem):", 0.8, 2.5, st.session_state.set_font, step=0.05)
+    
+    st.markdown("---")
+    st.markdown("### 📚 Academic Citation Configuration")
+    formats = ["APA 7th Generation", "APA 6th Edition", "MLA 9th Edition", "Harvard Reference Style", "Chicago Manual Author-Date"]
+    st.selectbox("Default Engine Output Schema:", formats, key="selected_citation_format")
+    st.checkbox("System Auto-Sync Reference Data to active Bibliography File", value=True, key="auto_bibliography")
+    
+    st.markdown("---")
+    st.markdown("### 🎵 Alarm Frequency Options")
+    st.selectbox("Select Target End Tone Track:", list(ALARM_TONES.keys()), key="selected_alarm_tone")
+    
+    if st.button("🔊 Audition Selected Tone", use_container_width=True):
+        components.html("<script>var s=window.parent.document.getElementById('alarm-sound');if(s){s.play();}</script>", height=0)
+        
+    st.markdown("---")
+    st.markdown("### 🚨 Diagnostics Center")
+    if st.button("⚠️ System Master Wipe Reset", type="primary", use_container_width=True):
         trigger_master_reset()
-        
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown('### 📚 Academic & Audio')
-        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        
-        st.selectbox("Citation Style", [
-            "APA 7th Generation", 
-            "APA 6th Generation", 
-            "APA 5th Generation",
-            "MLA 9th Edition", 
-            "Chicago 17th (Notes & Bibliography)", 
-            "Chicago 17th (Author-Date)",
-            "Harvard (Standard UK)",
-            "Harvard (Australia)"
-        ], key="selected_citation_format")
-        
-        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
-        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
-        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
-    with col2:
-        st.markdown('### 🎨 UI Appearance')
-        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
-        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
-        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
-        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
-        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
-        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
-    with col3:
-        st.markdown('### 🔐 System Info')
-        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
-        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
-    st.success("System Optimized")
-
-# --- GLOBAL TRIGGERS ---
-if st.session_state.get('timer_finished_trigger'):
-    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
-    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-    if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
