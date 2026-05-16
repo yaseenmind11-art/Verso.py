@@ -46,9 +46,9 @@ setup_system()
 # --- ⚙️ STATE MANAGEMENT ---
 def initialize_states(force=False):
     defaults = {
-        'set_color': "#F0F2F6",
-        'set_bg': "#FFFFFF",
-        'set_font': 1.0,
+        'set_color': "#FFFFFF",
+        'set_bg': "#5465C9",
+        'set_font': 1.10,
         'reset_counter': random.randint(1, 1000),
         'timer_end_time': None,
         'timer_active': False,
@@ -77,17 +77,11 @@ def initialize_states(force=False):
 
 initialize_states()
 
-# --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
-try:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-    client = genai.Client(api_key=API_KEY)
-except Exception:
-    client = None
+# --- 🤖 GEMINI CLIENT INITIALIZATION ---
+API_KEY = "AIzaSyCO4k7wHpkWtvFWJWQI4vnVjjOwIRvwM1U"
+client = genai.Client(api_key=API_KEY)
 
 def teach_source_material(source_text: str):
-    if client is None:
-        return "⚠️ Setup Error: API Key missing or leaked. Please configure GEMINI_API_KEY inside your local secrets file (.streamlit/secrets.toml) or deployment dashboard panels."
-        
     system_instruction = """
     You are an expert, engaging teacher. Your job is to take the provided source 
     material and teach it as a complete lesson. 
@@ -248,22 +242,25 @@ st.markdown(f"""
     .stApp {{ color: inherit; }}
     .notebook-card {{ 
         background-color: {bg_card}; 
-        padding: 20px; border-radius: 8px; border: 1px solid {accent}; 
-        margin-bottom: 15px; color: inherit;
+        padding: 30px; border-radius: 12px; border-left: 6px solid {accent}; 
+        margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
     }}
     .teacher-board {{ 
-        background-color: #F8F9FA; border: 1px solid #E9ECEF; padding: 30px; 
-        border-radius: 8px; font-family: inherit; 
-        color: #212529; line-height: 1.6; font-size: {f_scale}rem; white-space: pre-wrap;
+        background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
+        border-radius: 12px; font-family: 'Inter', sans-serif; 
+        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
     }}
+    .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
+    .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
+    .teacher-board b {{ color: {accent}; }}
     
     .google-container {{
         width: 100%;
         height: 800px;
         overflow: hidden;
         position: relative;
-        border-radius: 8px;
-        border: 1px solid #E9ECEF;
+        border-radius: 12px;
+        border: 1px solid #334155;
         background-color: white;
     }}
     .google-iframe {{
@@ -276,33 +273,55 @@ st.markdown(f"""
     
     .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px; animation: blinker 0.8s linear infinite; }}
     @keyframes blinker {{ 50% {{ opacity: 0; }} }}
-    .diff-add {{ background-color: #D1E7DD; color: #0F5132; padding: 2px 4px; border-radius: 4px; }}
-    .diff-remove {{ background-color: #F8D7DA; color: #842029; text-decoration: line-through; padding: 2px 4px; }}
-    .pro-badge {{ background-color: #6C757D; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
+    .diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
+    .diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
+    .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
     
     .audio-panel {{
-        background: #F8F9FA;
-        border: 1px solid #E9ECEF;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 1px solid #475569;
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 20px;
-        color: #212529;
     }}
     
     .audio-btn {{
-        background-color: #0D6EFD !important;
+        background-color: {bg_card} !important;
         color: white !important;
-        border: none !important;
-        padding: 8px 20px;
-        font-size: 14px;
-        border-radius: 4px;
+        border: 1px solid {accent} !important;
+        padding: 10px 24px;
+        font-size: 15px;
+        font-weight: bold;
+        border-radius: 6px;
         cursor: pointer;
         margin-right: 10px;
+        transition: opacity 0.2s;
         display: inline-block;
     }}
-    .audio-btn:hover {{ opacity: 0.9; }}
-    .audio-btn-pause {{ background-color: #FFC107 !important; color: #212529 !important; }}
-    .audio-btn-stop {{ background-color: #DC3545 !important; }}
+    .audio-btn:hover {{ opacity: 0.85; }}
+    .audio-btn-pause {{
+        background-color: #eab308 !important;
+        border: 1px solid #facc15 !important;
+    }}
+    .audio-btn-stop {{
+        background-color: #ef4444 !important;
+        border: 1px solid #f87171 !important;
+    }}
+    
+    [data-testid="stSidebar"] div.stRadio > div {{
+        background: transparent !important;
+        padding: 0px !important;
+    }}
+    [data-testid="stSidebar"] div.stRadio label {{
+        padding: 6px 0px !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin-bottom: 4px !important;
+    }}
+    [data-testid="stSidebar"] div.stRadio label:hover {{
+        background-color: transparent !important;
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -317,14 +336,9 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h1>VERSO PRO</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
     
-    if client is None:
-        st.error("🔑 API Key Configuration Missing")
-        st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
-        st.markdown("---")
-
     nav_options = [
         "🏠 Home", 
         "📒 Study Assistant", 
@@ -443,7 +457,7 @@ elif choice == "🛡️ Plagiarism Checker":
                 for s in sentences:
                     is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
                     if is_match:
-                        marked_text += f'<span class="plag-highlight" style="background-color:#F8D7DA; color:#842029;">{s}</span> '
+                        marked_text += f'<span class="plag-highlight" style="background-color:#7f1d1d; color:#fecaca;">{s}</span> '
                         match_count += 1
                     else: marked_text += f'{s} '
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
@@ -593,7 +607,7 @@ elif choice == "📒 Study Assistant":
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 else:
-                    st.markdown(f'<div style="background-color:#E9ECEF; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:inherit; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background-color:#5465C9; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#FFFFFF; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
                     if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
@@ -619,176 +633,166 @@ elif choice == "📒 Study Assistant":
             if st.session_state.generated_lecture_text:
                 raw_generated_lesson = st.session_state.generated_lecture_text
                 
+                # Sanitize out any newlines, quotes, or markdown icons that break JavaScript rendering
                 clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js)
+                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
 
                 tts_component_code = f"""
-                <div class="audio-panel">
+                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                         <span>
                             <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
-                            <select id='voiceSelect' style='background: white; color: black; border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px;'></select>
+                            <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
                         </span>
                     </div>
-                    <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
-                    <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
-                    <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
+                    <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
+                    <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
+                    <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
+                    <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
                 </div>
 
                 <script>
-                    const synth = window.speechSynthesis;
-                    let utterance = null;
-                    let voices = [];
-                    const voiceSelect = document.getElementById('voiceSelect');
-
+                    var fullText = "{clean_speech_js}";
+                    var voiceSelect = document.getElementById('voiceSelect');
+                    var currentUtterance = null;
+                    var isPaused = false;
+                    
                     function populateVoices() {{
-                        voices = synth.getVoices();
+                        if (typeof speechSynthesis === 'undefined') return;
+                        var voices = window.speechSynthesis.getVoices();
                         voiceSelect.innerHTML = '';
                         
-                        let defaultIndex = 0;
-                        voices.forEach((voice, index) => {{
-                            const option = document.createElement('option');
-                            option.textContent = `${{voice.name}} (${{voice.lang}})`;
-                            option.value = index;
-                            
-                            if (voice.name.includes('Google') && voice.lang === 'en-US') {{
-                                defaultIndex = index;
-                            }}
-                            voiceSelect.appendChild(option);
-                        }});
+                        var defaultIndex = 0;
+                        var count = 0;
                         
-                        if(voices.length > 0) {{
-                            voiceSelect.selectedIndex = defaultIndex;
-                        }}
+                        voices.forEach((voice, index) => {{
+                            if (voice.lang.includes('en')) {{
+                                var option = document.createElement('option');
+                                option.value = index;
+                                option.textContent = voice.name + ' (' + voice.lang + ')';
+                                if (voice.name.includes('Google US English') || voice.name.includes('Natural')) {{
+                                    defaultIndex = count;
+                                }}
+                                voiceSelect.appendChild(option);
+                                count++;
+                            }}
+                        }});
                     }}
-
-                    populateVoices();
-                    if (speechSynthesis.onvoiceschanged !== undefined) {{
+                    
+                    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
                         speechSynthesis.onvoiceschanged = populateVoices;
                     }}
+                    populateVoices();
 
-                    function playAudio() {{
-                        if (synth.speaking) {{
-                            if (synth.paused) {{
-                                synth.resume();
-                                return;
-                            }}
-                            synth.cancel();
-                        }}
+                    function startSpeech() {{
+                        window.speechSynthesis.cancel();
+                        isPaused = false;
                         
-                        const textToSpeak = "{clean_speech_js}";
-                        if (!textToSpeak) return;
-
-                        utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        currentUtterance = new SpeechSynthesisUtterance(fullText);
+                        currentUtterance.pitch = {v_pitch};
+                        currentUtterance.rate = {v_speed};
                         
-                        if (voices.length > 0) {{
-                            const selectedVoiceIndex = voiceSelect.value || 0;
-                            utterance.voice = voices[selectedVoiceIndex];
-                        }}
+                        var voices = window.speechSynthesis.getVoices();
+                        var selectedVoice = voices[voiceSelect.value];
+                        if(selectedVoice) currentUtterance.voice = selectedVoice;
                         
-                        utterance.pitch = {v_pitch};
-                        utterance.rate = {v_speed};
-                        
-                        synth.speak(utterance);
+                        window.speechSynthesis.speak(currentUtterance);
                     }}
 
-                    function pauseAudio() {{
-                        if (synth.speaking && !synth.paused) {{
-                            synth.pause();
+                    function pauseSpeech() {{
+                        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {{
+                            window.speechSynthesis.pause();
+                            isPaused = true;
                         }}
                     }}
 
-                    function stopAudio() {{
-                        if (synth.speaking) {{
-                            synth.cancel();
+                    function resumeSpeech() {{
+                        if (window.speechSynthesis.paused) {{
+                            window.speechSynthesis.resume();
+                            isPaused = false;
+                        }} else if (!window.speechSynthesis.speaking) {{
+                            startSpeech();
                         }}
+                    }}
+
+                    function stopSpeech() {{
+                        window.speechSynthesis.cancel();
+                        isPaused = false;
                     }}
                 </script>
                 """
                 components.html(tts_component_code, height=110)
-                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                    <div class="teacher-board">
+                    <h2>🔊 LIVE NOTEBOOKLM GENERATED LECTURE FLOW</h2>
+                    {raw_generated_lesson}
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info("Click the button above to generate your customized AI lesson layout.")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
-    st.title("⏱️ Verso Pomodoro & Study Tracker")
-    st.info("Module running logic loops in background state container.")
+    st.title("Focus Timer")
+    if not st.session_state.get('sound_unlocked', False):
+        if st.button("🔓 ENABLE SOUNDS"):
+            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
+            st.session_state.sound_unlocked = True; st.rerun()
+    mins = st.number_input("Minutes:", 1, 120, 25)
+    c1, c2, c3, c4 = st.columns(4)
+    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
+    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
+    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
+    
+    rem_time = st.session_state.get('remaining_at_pause', 0)
+    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
+    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
-    st.title("⚙️ Control Center Settings")
-    st.markdown("### 🎨 Visual Theme & App Customization")
+    st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
     
-    st.markdown('<div class="notebook-card">💡 Changes made here modify the global layout styling configurations used across your active modules.</div>', unsafe_allow_html=True)
-    
-    c1, c2, c3 = st.columns(3)
-    
-    with c1:
-        new_accent = st.color_picker(
-            "Accent Border Color", 
-            value=st.session_state.set_color, 
-            help="Modifies the highlight elements on your notebook display components."
-        )
-    with c2:
-        new_bg = st.color_picker(
-            "Card Background Color", 
-            value=st.session_state.set_bg, 
-            help="Changes the body theme color for information blocks."
-        )
-    with c3:
-        new_scale = st.slider(
-            "Lecture Font Scale (rem)", 
-            0.80, 2.00, 
-            value=st.session_state.set_font, 
-            step=0.05,
-            help="Changes text size scaling inside the AI Voice Teacher output board."
-        )
+    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
+        trigger_master_reset()
+        
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('### 📚 Academic & Audio')
+        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
+        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
+        
+        st.selectbox("Citation Style", [
+            "APA 7th Generation", 
+            "APA 6th Generation", 
+            "APA 5th Generation",
+            "MLA 9th Edition", 
+            "Chicago 17th (Notes & Bibliography)", 
+            "Chicago 17th (Author-Date)",
+            "Harvard (Standard UK)",
+            "Harvard (Australia)"
+        ], key="selected_citation_format")
+        
+        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
+        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
+        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
+    with col2:
+        st.markdown('### 🎨 UI Appearance')
+        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
+        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
+        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
+        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
+        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
+        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
+    with col3:
+        st.markdown('### 🔐 System Info')
+        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
+        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
+    st.success("System Optimized")
 
-    st.markdown("---")
-    st.markdown("### 📚 Reference Preferences")
-    citation_formats = ["APA 7th Generation", "APA 6th Generation", "MLA 9th Edition", "Harvard System", "Chicago Manual Style"]
-    
-    current_format_idx = citation_formats.index(st.session_state.get("selected_citation_format", "APA 7th Generation")) if st.session_state.get("selected_citation_format", "APA 7th Generation") in citation_formats else 0
-    
-    new_citation_style = st.selectbox(
-        "Default Bibliography Sourcing Layout:",
-        citation_formats,
-        index=current_format_idx
-    )
-    
-    auto_bib_toggle = st.toggle(
-        "Automatically push new generation requests to global reference log", 
-        value=st.session_state.get("auto_bibliography", True)
-    )
-
-    st.markdown("---")
-    st.markdown("### ⏱️ Time Tracker Notification Options")
-    
-    tone_names = list(ALARM_TONES.keys())
-    current_tone_idx = tone_names.index(st.session_state.selected_alarm_tone) if st.session_state.selected_alarm_tone in tone_names else 0
-    
-    new_alarm_tone = st.selectbox(
-        "Timer Ringtone Trigger Selection:",
-        tone_names,
-        index=current_tone_idx
-    )
-
-    st.markdown("---")
-    st.markdown("### 🛠️ Maintenance & Commit Actions")
-    action_col1, action_col2 = st.columns(2)
-    
-    with action_col1:
-        if st.button("💾 Save Theme Settings", use_container_width=True):
-            st.session_state.set_color = new_accent
-            st.session_state.set_bg = new_bg
-            st.session_state.set_font = new_scale
-            st.session_state.selected_citation_format = new_citation_style
-            st.session_state.auto_bibliography = auto_bib_toggle
-            st.session_state.selected_alarm_tone = new_alarm_tone
-            st.success("Configuration modifications updated inside current cache session!")
-            time.sleep(0.5)
-            st.rerun()
-            
-    with action_col2:
-        if st.button("🔄 Trigger Master Reset", use_container_width=True, type="secondary"):
-            trigger_master_reset()
+# --- GLOBAL TRIGGERS ---
+if st.session_state.get('timer_finished_trigger'):
+    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
+    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
+    if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
