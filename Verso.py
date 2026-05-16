@@ -13,6 +13,8 @@ import io
 import requests
 from bs4 import BeautifulSoup
 import urllib3
+from google import genai
+from google.genai import types
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -42,35 +44,77 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ STATE MANAGEMENT ---
-if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
-if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
-if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
+def initialize_states(force=False):
+    defaults = {
+        'set_color': "#FFFFFF",
+        'set_bg': "#5465C9",
+        'set_font': 1.10,
+        'reset_counter': random.randint(1, 1000),
+        'timer_end_time': None,
+        'timer_active': False,
+        'remaining_at_pause': 0,
+        'sound_unlocked': False,
+        'selected_alarm_tone': "Double Beep",
+        'study_text_input': "",
+        'grammar_text_input': "",
+        'plag_text_input': "",
+        'word_counter_input': "",
+        'citation_text_input': "",
+        'quiz_step': 0,
+        'quiz_score': 0,
+        'current_quiz_options': None,
+        'current_quiz_target': None,
+        'current_quiz_text': None,
+        'fc_step': 0,
+        'fc_correct': 0,
+        'fc_wrong': 0,
+        'reveal_fc': False,
+        'generated_lecture_text': ""  
+    }
+    for key, value in defaults.items():
+        if force or key not in st.session_state:
+            st.session_state[key] = value
 
-if 'reset_counter' not in st.session_state: st.session_state.reset_counter = 0
-if 'timer_end_time' not in st.session_state: st.session_state.timer_end_time = None
-if 'timer_active' not in st.session_state: st.session_state.timer_active = False
-if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
-if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
-if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
+initialize_states()
 
-if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
-if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_input = ""
-if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
-if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
-if 'citation_text_input' not in st.session_state: st.session_state.citation_text_input = ""
+# --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
+try:
+    # Safely extract key from Streamlit secrets config instead of exposing hardcoded text strings
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=API_KEY)
+except Exception:
+    client = None
 
-if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
-if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
-if 'current_quiz_options' not in st.session_state: st.session_state.current_quiz_options = None
-if 'current_quiz_target' not in st.session_state: st.session_state.current_quiz_target = None
-if 'current_quiz_text' not in st.session_state: st.session_state.current_quiz_text = None
+def teach_source_material(source_text: str):
+    if client is None:
+        return "⚠️ Setup Error: API Key missing or leaked. Please configure GEMINI_API_KEY inside your local secrets file (.streamlit/secrets.toml) or deployment dashboard panels."
+        
+    system_instruction = """
+    You are an expert, engaging teacher. Your job is to take the provided source 
+    material and teach it as a complete lesson. 
+    
+    Structure the lesson exactly like this:
+    1. 🎯 Lesson Objective: What the students will learn.
+    2. 📖 Introduction: A simple, engaging hook about the topic.
+    3. 🧠 Core Concepts: Breakdown of the main ideas.
+    4. 💡 Example: A real-world or relatable example.
+    5. 📝 Check for Understanding: 2-3 interactive questions.
+    """
+    prompt = f"Please teach the following source material as a lesson:\n\n{source_text}"
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7
+            )
+        )
+        return response.text
+    except Exception as e:
+        return f"An error occurred while generating the live lecture format: {e}"
 
-if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
-if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
-if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
-if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
-
-# --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
+# --- 🌐 NETWORK CONFIGURATION ---
 CAMPUS_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -176,10 +220,7 @@ KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
 def trigger_master_reset():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.session_state.set_color = "#FFFFFF"
-    st.session_state.set_bg = "#5465C9"
-    st.session_state.set_font = 1.10
-    st.session_state.reset_counter = random.randint(1, 1000)
+    initialize_states(force=True)
     st.rerun()
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
@@ -214,7 +255,7 @@ st.markdown(f"""
     .teacher-board {{ 
         background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
         border-radius: 12px; font-family: 'Inter', sans-serif; 
-        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; 
+        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
     }}
     .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
@@ -251,22 +292,42 @@ st.markdown(f"""
         margin-bottom: 20px;
     }}
     
-    /* Native interactive presentation buttons */
     .audio-btn {{
-        background-color: {accent};
+        background-color: {bg_card} !important;
         color: white !important;
-        border: none;
+        border: 1px solid {accent} !important;
         padding: 10px 24px;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: bold;
         border-radius: 6px;
         cursor: pointer;
         margin-right: 10px;
         transition: opacity 0.2s;
+        display: inline-block;
     }}
-    .audio-btn:hover {{ opacity: 0.9; }}
+    .audio-btn:hover {{ opacity: 0.85; }}
+    .audio-btn-pause {{
+        background-color: #eab308 !important;
+        border: 1px solid #facc15 !important;
+    }}
     .audio-btn-stop {{
-        background-color: #ef4444;
+        background-color: #ef4444 !important;
+        border: 1px solid #f87171 !important;
+    }}
+    
+    [data-testid="stSidebar"] div.stRadio > div {{
+        background: transparent !important;
+        padding: 0px !important;
+    }}
+    [data-testid="stSidebar"] div.stRadio label {{
+        padding: 6px 0px !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin-bottom: 4px !important;
+    }}
+    [data-testid="stSidebar"] div.stRadio label:hover {{
+        background-color: transparent !important;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -282,6 +343,15 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
+    st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
+    
+    # Visual fallback validation checking inside interface wrapper
+    if client is None:
+        st.error("🔑 API Key Configuration Missing")
+        st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
+        st.markdown("---")
+with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
     nav_options = [
@@ -291,9 +361,11 @@ with st.sidebar:
         "🛡️ Plagiarism Checker", 
         "📚 Citation Generator", 
         "⏱️ Time Tracker", 
-        "📝 Word Counter"
+        "📝 Word Counter",
+        "⚙️ Settings"
     ]
-    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
+    
+    choice = st.radio("Navigation Menu", nav_options, label_visibility="collapsed")
 
 # --- HOME ---
 if choice == "🏠 Home":
@@ -358,21 +430,21 @@ elif choice == "📝 Word Counter":
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
+    st.markdown('<h1>Smart Verso Auto Correct</h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
-                t = text_to_check.lower().strip()
-                t = re.sub(r'\bmy\s+nme\b', 'my name', t); t = re.sub(r'\bnme\b', 'name', t)
-                t = re.sub(r'\bya\s+seen\b', 'yaseen', t); t = re.sub(r'\bar\b', 'are', t)
-                blob = TextBlob(t); corrected = str(blob.correct()).rstrip('.?! ')
-                corrected = re.sub(r'\bi\b', 'I', corrected); corrected = re.sub(r'\bmy\b', 'My', corrected)
-                corrected = re.sub(r'\byaseen\b', 'Yaseen', corrected, flags=re.IGNORECASE)
+                t = text_to_check.strip()
+                blob = TextBlob(t)
+                corrected = str(blob.correct()).rstrip('.?! ')
+                corrected = re.sub(r'\bi\b', 'I', corrected)
+                
                 q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi', 'are')
                 corrected += "?" if corrected.lower().startswith(q_words) else "."
                 final_text = corrected[0].upper() + corrected[1:] if corrected else ""
+                
                 diff_html = ""
                 matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -386,7 +458,7 @@ elif choice == "✍️ Grammar Checker":
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
-    st.title("Integrity Scanner Pro")
+    st.title("Plagiarism Pro Scanner")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
@@ -534,17 +606,17 @@ elif choice == "📒 Study Assistant":
                 fc_type = curr_idx % 4
                 if fc_type == 0:
                     q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor."
+                    a_text = f"<b>Source Analysis:</b> The inputted source material utilizes '{curr_word}' as a core technical anchor."
                 elif fc_type == 1:
                     q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
-                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation leads to a more robust result."
+                    a_text = f"<b>Practical Application:</b> The inputted source material implies that successful implementation leads to a more robust result."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
                     q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your content?"
-                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
+                    a_text = f"<b>Inter-Term Relationship:</b> Within the context of the inputted source material, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
                 else:
                     q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
+                    a_text = f"<b>Contextual Importance:</b> The inputted source material identifies '{curr_word}' as a high-value variable."
                 st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
@@ -563,89 +635,112 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            # --- 🎙️ ACTIVE AI VOICE TEACHER MODULE ---
-            prime_concept = words[0].title() if len(words) > 0 else "Primary Subject"
-            sub_concept_a = words[1].title() if len(words) > 1 else "Secondary Factor"
-            sub_concept_b = words[2].title() if len(words) > 2 else "Operational Parameter"
-            sub_concept_c = words[3].title() if len(words) > 3 else "Structural Framework"
-
-            st.markdown("### 🎙️ Audio Synthesizer Lecture Mode")
+            st.markdown("### 🎙️ Verso AI Teacher")
             
-            # Interactive Voice Configuration Control Panel
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # The clean script string to be processed by browser audio API
-            full_speech_script = f"""
-            Hello and welcome. Let us pull up your text files and break down exactly what is happening under the hood here. 
-            The immediate focal center of the material is built entirely around {prime_concept}. This concept does not exist as an isolated assertion; it serves as the core pillar holding up your entire summary layout. 
-            When we track the text sequentially, we see that {prime_concept} establishes a direct operational bridge with {sub_concept_a}. The source material outlines specific internal mechanics that regulate this relationship. 
-            Moving into the mid-section of your source text, the author introduces a vital technical combination: the interface between {sub_concept_b} and {sub_concept_c}. 
-            The paragraphs explicitly trace the limits and data boundaries governing {sub_concept_b}, providing supporting facts to validate why this trend acts as an active catalyst. 
-            To conclude this full content analysis, let us synthesize the explicit conclusions and logical limits highlighted in the final text segments. 
-            The document does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
-            """.replace('"', '\\"').replace('\n', ' ')
-
-            # Native JavaScript Controller for speech synthesis injection
-            tts_component_code = f"""
-            <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
-                    <span><b>Format:</b> Browser TTS Spatial Engine</span>
-                </div>
-                <button class="audio-btn" onclick="startSpeech()" style="background-color: {accent}; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">▶ PLAY AUDIO LECTURE</button>
-                <button class="audio-btn audio-btn-stop" onclick="stopSpeech()" style="background-color: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">⏹ STOP</button>
-            </div>
-
-            <script>
-                var msg = new SpeechSynthesisUtterance();
-                msg.text = "{full_speech_script}";
-                
-                function startSpeech() {{
-                    window.speechSynthesis.cancel(); // Clear any queued speech
-                    
-                    // Assign reactive parameter variables directly from Streamlit sliders
-                    msg.pitch = {v_pitch};
-                    msg.rate = {v_speed};
-                    
-                    // Try to pick a premium natural sounding English voice profile if available
-                    var voices = window.speechSynthesis.getVoices();
-                    var selectedVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
-                    if(selectedVoice) {{
-                        msg.voice = selectedVoice;
-                    }}
-                    
-                    window.speechSynthesis.speak(msg);
-                }}
-
-                function stopSpeech() {{
-                    window.speechSynthesis.cancel();
-                }}
-                
-                // Keep voices synced on initial load lifecycle
-                window.speechSynthesis.onvoiceschanged = function() {{}};
-            </script>
-            """
-            components.html(tts_component_code, height=110)
+            if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
+                with st.spinner("Generating structured presentation flow via Verso..."):
+                    st.session_state.generated_lecture_text = teach_source_material(final_study_data)
             
-            # Render script on screen inside the styled chalkboard view
-            st.markdown(f"""
-                <div class="teacher-board">
-                <h2>🔊 SOURCE MATERIAL AUDIO PLAYBACK</h2>
+            if st.session_state.generated_lecture_text:
+                raw_generated_lesson = st.session_state.generated_lecture_text
                 
-                <h3>Track Section 1: Core Content Thesis & Mechanics</h3>
-                <p>Hello and welcome. Let us pull up your text files and break down exactly what is happening under the hood here. Listening closely to the text properties, the immediate focal center of the material is built entirely around <b>{prime_concept}</b>. This concept does not exist as an isolated assertion; it serves as the core pillar holding up your entire summary layout. When we track the text sequentially, we see that <b>{prime_concept}</b> establishes a direct operational bridge with <b>{sub_concept_a}</b>. The source material outlines specific internal mechanics that regulate this relationship. If you take a closer look at the introductory passages, the text details a chain reaction: when your main variables shift, the behavior of <b>{sub_concept_a}</b> adapts in real-time. This structural dependency forms the baseline thesis of your documentation, signaling that one element cannot be thoroughly modified without completely altering the functional trajectory of the other.</p>
-                
-                <h3>Track Section 2: Text Breakdown & Evidence Flow</h3>
-                <p>Moving into the mid-section of your source text, the author introduces a vital technical combination: the interface between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. Let's trace how the material proves this out. The paragraphs explicitly trace the limits and data boundaries governing <b>{sub_concept_b}</b>, providing supporting facts to validate why this trend acts as an active catalyst. If you review the data logs and assertions provided in the text, you can hear a distinct logical thread: the reliability of <b>{sub_concept_c}</b> is highly dependent on how well these constraints are set. Our deep content breakdown shows that this interaction serves as the technical engine of the material. The prose systematically maps out step-by-step processes to prevent system bottlenecks, confirming that the entire architecture stays balanced only when these separate parts work smoothly together.</p>
-                
-                <h3>Track Section 3: Material Synthesis & Structural Conclusions</h3>
-                <p>To conclude this full content analysis, let us synthesize the explicit conclusions and logical limits highlighted in the final text segments. The document does not just state facts; it directly addresses the functional boundaries of <b>{sub_concept_c}</b>, explaining where its logic holds up and where it starts to break down. By focusing deeply on these parameters, the document reveals that any successful application depends on variables that shift over time. Make sure to notice how the ending sentences connect these loose strings back to <b>{prime_concept}</b>. This brings your source text full circle, creating a clear, cohesive roadmap where your arguments are fully backed by data, your terms are precisely aligned, and every sub-topic remains explicitly connected to the core lesson.</p>
-                </div>
-            """, unsafe_allow_html=True)
+                # Sanitize out any newlines, quotes, or markdown icons that break JavaScript rendering
+                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
+                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
 
-# --- MODULE: TIME TRACKER ---
+                tts_component_code = f"""
+                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
+                        <span>
+                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
+                            <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
+                        </span>
+                    </div>
+                    <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
+                    <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
+                    <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
+                </div>
+
+                <script>
+                    const synth = window.speechSynthesis;
+                    let utterance = null;
+                    let voices = [];
+                    const voiceSelect = document.getElementById('voiceSelect');
+
+                    function populateVoices() {{
+                        voices = synth.getVoices();
+                        voiceSelect.innerHTML = '';
+                        
+                        let defaultIndex = 0;
+                        voices.forEach((voice, index) => {{
+                            const option = document.createElement('option');
+                            option.textContent = `${{voice.name}} (${{voice.lang}})`;
+                            option.value = index;
+                            
+                            // Explicitly set Google US English as the chosen choice if available
+                            if (voice.name.includes('Google') && voice.lang === 'en-US') {{
+                                defaultIndex = index;
+                            }}
+                            voiceSelect.appendChild(option);
+                        }});
+                        
+                        if(voices.length > 0) {{
+                            voiceSelect.selectedIndex = defaultIndex;
+                        }}
+                    }}
+
+                    populateVoices();
+                    if (speechSynthesis.onvoiceschanged !== undefined) {{
+                        speechSynthesis.onvoiceschanged = populateVoices;
+                    }}
+
+                    function playAudio() {{
+                        if (synth.speaking) {{
+                            if (synth.paused) {{
+                                synth.resume();
+                                return;
+                            }}
+                            synth.cancel();
+                        }}
+                        
+                        const textToSpeak = "{clean_speech_js}";
+                        if (!textToSpeak) return;
+
+                        utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        
+                        if (voices.length > 0) {{
+                            const selectedVoiceIndex = voiceSelect.value || 0;
+                            utterance.voice = voices[selectedVoiceIndex];
+                        }}
+                        
+                        utterance.pitch = {v_pitch};
+                        utterance.rate = {v_speed};
+                        
+                        synth.speak(utterance);
+                    }}
+
+                    function pauseAudio() {{
+                        if (synth.speaking && !synth.paused) {{
+                            synth.pause();
+                        }}
+                    }}
+
+                    function stopAudio() {{
+                        if (synth.speaking) {{
+                            synth.cancel();
+                        }}
+                    }}
+                </script>
+                """
+                components.html(tts_component_code, height=110)
+                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
+
+# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     if not st.session_state.get('sound_unlocked', False):
@@ -662,12 +757,9 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- MODULE: SETTINGS ---
+
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-    
-    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
-        trigger_master_reset()
         
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -703,7 +795,6 @@ elif choice == "⚙️ Settings":
         st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
     st.success("System Optimized")
 
-# --- GLOBAL TRIGGERS ---
 if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
     components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
