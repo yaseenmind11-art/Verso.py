@@ -633,14 +633,14 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            st.markdown("### 🎙️ NotebookLM Live Gemini Engine Lecture")
+            st.markdown("### 🎙️ Verso AI Teacher")
             
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
             if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
-                with st.spinner("Generating structured presentation flow via Gemini..."):
+                with st.spinner("Generating structured presentation flow via Verso..."):
                     st.session_state.generated_lecture_text = teach_source_material(final_study_data)
             
             if st.session_state.generated_lecture_text:
