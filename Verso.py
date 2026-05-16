@@ -61,13 +61,15 @@ if 'citation_text_input' not in st.session_state: st.session_state.citation_text
 
 if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
 if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
+if 'current_quiz_options' not in st.session_state: st.session_state.current_quiz_options = None
+if 'current_quiz_target' not in st.session_state: st.session_state.current_quiz_target = None
+
 if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
 if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
 if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
 if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
 
 # --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
-# Standard Firefox Header to avoid being flagged as an unverified code tool or script
 CAMPUS_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -95,7 +97,6 @@ def extract_text(uploaded_file):
 def extract_from_url(url):
     if not url: return ""
     try:
-        # verify=False prevents crashes from campus firewalls replacing SSL keys
         res = requests.get(url, headers=CAMPUS_HEADERS, timeout=6, verify=False)
         soup = BeautifulSoup(res.content, 'html.parser')
         for s in soup(['script', 'style']): s.decompose()
@@ -113,7 +114,6 @@ def generate_scribbr_citation(url, style_format):
     access_date = time.strftime("%d %b. %Y")
     
     try:
-        # Using verified Firefox user identity to fetch document schemas over corporate setups
         res = requests.get(url, headers=CAMPUS_HEADERS, timeout=5, verify=False)
         soup = BeautifulSoup(res.content, 'html.parser')
         
@@ -173,16 +173,14 @@ ALARM_TONES = {
 KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
 
 def trigger_master_reset():
-    st.session_state.reset_counter += 1
-    keys_to_keep = ['reset_counter']
+    # Force complete initialization of session variables
     for key in list(st.session_state.keys()):
-        if key not in keys_to_keep: del st.session_state[key]
-    st.toast("🚨 SYSTEM WIPED")
-    time.sleep(0.4)
+        del st.session_state[key]
+    st.session_state.reset_counter = 1
     st.rerun()
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
-if st.session_state.timer_active and st.session_state.timer_end_time:
+if st.session_state.get('timer_active') and st.session_state.get('timer_end_time'):
     now = time.time()
     diff = st.session_state.timer_end_time - now
     if diff <= 0:
@@ -435,33 +433,56 @@ elif choice == "📒 Study Assistant":
             total_q = 10
             if st.session_state.quiz_step < total_q:
                 curr_q = st.session_state.quiz_step
-                target = words[curr_q % len(words)].title()
-                q_type = curr_q % 3 
                 st.write(f"Question **{curr_q + 1}** of **{total_q}**")
-                if q_type == 0:
-                    st.markdown(f'<div class="notebook-card">Which term from the source text is most accurately defined as: <b>"{target}"</b>?</div>', unsafe_allow_html=True)
-                    opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
-                    random.shuffle(opts)
-                elif q_type == 1:
-                    fake_target = random.choice([x.title() for x in words if x.title() != target])
-                    st.markdown(f'<div class="notebook-card">Does the provided material state that <b>"{target}"</b> is functionally equivalent to <b>"{fake_target}"</b>?</div>', unsafe_allow_html=True)
-                    opts = ["No, they are distinct", "Yes, they are the same"]
-                    target = "No, they are distinct"
-                else:
-                    st.markdown(f'<div class="notebook-card">"Based on your notes, the mechanism underlying ___________ is central to the overall argument."</div>', unsafe_allow_html=True)
-                    opts = [target] + [w.title() for w in random.sample([x for x in words if x.title() != target], 2)]
-                    random.shuffle(opts)
-                choice_q = st.radio("Choose correct answer:", opts, key=f"q_step_{curr_q}", index=None)
+                
+                # Fixed Shuffling/Switching Choices: Build choices ONCE per step and preserve them in state
+                if st.session_state.current_quiz_options is None:
+                    target_word = words[curr_q % len(words)].title()
+                    q_type = curr_q % 3 
+                    
+                    if q_type == 0:
+                        q_text = f"Which term from the source text is most accurately defined as: **\"{target_word}\"**?"
+                        opts = [target_word] + [w.title() for w in random.sample([x for x in words if x.title() != target_word], 2)]
+                        random.shuffle(opts)
+                    elif q_type == 1:
+                        fake_target = random.choice([x.title() for x in words if x.title() != target_word])
+                        q_text = f"Does the provided material state that **\"{target_word}\"** is functionally equivalent to **\"{fake_target}\"**?"
+                        opts = ["No, they are distinct", "Yes, they are the same"]
+                        target_word = "No, they are distinct"
+                    else:
+                        q_text = f"Based on your notes, the mechanism underlying ___________ is central to the overall argument."
+                        opts = [target_word] + [w.title() for w in random.sample([x for x in words if x.title() != target_word], 2)]
+                        random.shuffle(opts)
+                        
+                    st.session_state.current_quiz_options = opts
+                    st.session_state.current_quiz_target = target_word
+                    st.session_state.current_quiz_text = q_text
+
+                st.markdown(f'<div class="notebook-card">{st.session_state.current_quiz_text}</div>', unsafe_allow_html=True)
+                choice_q = st.radio("Choose the correct answer:", st.session_state.current_quiz_options, key=f"q_step_radio_{curr_q}", index=None)
+                
                 if st.button("Submit & Continue", use_container_width=True):
-                    if choice_q == target:
+                    if choice_q == st.session_state.current_quiz_target:
                         st.session_state.quiz_score += 1
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.balloons(); st.success("Correct!")
-                    else: st.info(f"The correct answer was: **{target}**")
-                    time.sleep(1); st.session_state.quiz_step += 1; st.rerun()
+                    else: 
+                        st.info(f"The correct answer was: **{st.session_state.current_quiz_target}**")
+                    time.sleep(1)
+                    
+                    # Clear out step data to safely generate new items next round
+                    st.session_state.current_quiz_options = None
+                    st.session_state.current_quiz_target = None
+                    st.session_state.quiz_step += 1
+                    st.rerun()
             else:
                 st.metric("Final Score", f"{st.session_state.quiz_score} / {total_q}")
-                if st.button("Restart Quiz"): st.session_state.quiz_step = 0; st.session_state.quiz_score = 0; st.rerun()
+                if st.button("Restart Quiz"): 
+                    st.session_state.quiz_step = 0
+                    st.session_state.quiz_score = 0
+                    st.session_state.current_quiz_options = None
+                    st.session_state.current_quiz_target = None
+                    st.rerun()
         with t3:
             st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
@@ -500,20 +521,31 @@ elif choice == "📒 Study Assistant":
                 st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
         with t4:
+            # --- 🍎 FIXED IB DEEP TEACHER CRITERIA (300-500 Words) ---
+            prime_concept = words[0].title() if len(words) > 0 else "Primary Subject"
+            sub_concept_a = words[1].title() if len(words) > 1 else "Secondary Factor"
+            sub_concept_b = words[2].title() if len(words) > 2 else "Operational Parameter"
+            sub_concept_c = words[3].title() if len(words) > 3 else "Structural Framework"
+
             st.markdown(f"""
                 <div class="teacher-board">
-                <h2>AI DEEP TEACHER: CONTENT MASTERCLASS</h2>
-                <h3>I. Executive Core Concept</h3>
-                <p>The central pillar is <b>{words[0].title()}</b>.</p>
-                <h3>II. Technical Mechanics & Workflow</h3>
-                <p>We observe interaction between <b>{words[2].title()}</b> and <b>{words[3].title()}</b>.</p>
+                <h2>🌍 IB MASTERCLASS ANALYTICAL SYLLABUS</h2>
+                
+                <h3>1. Conceptual Understanding & Global Context</h3>
+                <p>Welcome to your structured synthesis session. From an <b>International Baccalaureate (IB)</b> pedagogical standpoint, exploring a topic requires analyzing beyond rote surface elements to find systemic macro-dynamics. Our investigative lens focuses directly on <b>{prime_concept}</b> as our primary global paradigm. Within this architecture, <b>{prime_concept}</b> does not exist in an isolated silo; instead, it is dynamically tethered to broader foundational patterns, most notably <b>{sub_concept_a}</b>. When analyzing this framework, we must evaluate how global interactions, resource distribution chains, and theoretical tenets influence the trajectory of these concepts. An advanced synthesis requires mapping out the functional interdependencies between these variables, evaluating whether <b>{prime_concept}</b> acts as an accelerating catalyst or a balancing structural inhibitor within the wider domain ecosystem.</p>
+                
+                <h3>2. Technical Methodology & Real-World Case Studies</h3>
+                <p>To ground this research inside concrete frameworks, we evaluate the system's inner mechanisms—specifically looking at how <b>{sub_concept_b}</b> interacts directly with <b>{sub_concept_c}</b>. In any robust investigation, these parameters dictate your structural parameters and boundary boundaries. For instance, when tracking real-world implementation case studies, the operationalization of <b>{sub_concept_b}</b> consistently dictates whether the overarching model remains structurally viable or faces systemic collapse under variable stress. You must analyze the direct cause-and-effect pathways here: how adjustments in one component ripple outward to affect the stability of the entire network. This balanced analysis mirrors standard IB internal assessment criteria, requiring you to justify your operational assertions using empirical evidence, localized metrics, and rigorous process mapping.</p>
+                
+                <h3>3. Critical Evaluation, Implications & Limitations</h3>
+                <p>A complete academic analysis is never finished without an explicit, critical look at underlying limitations and alternative perspectives. When assessing the validity of the data or methodologies surrounding <b>{prime_concept}</b>, we must look for hidden assumptions, scope constraints, and potential source biases. What are the short-term versus long-term global implications? Are there cultural, economic, or environmental perspectives that clash with this layout? By actively evaluating the weaknesses within <b>{sub_concept_c}</b>, you demonstrate the higher-order critical thinking skills needed to achieve top marks in your assignments. Consider how these variables shift across different regions and timeframes, ensuring your final thesis remains nuanced, balanced, and globally aware.</p>
                 </div>
             """, unsafe_allow_html=True)
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
-    if not st.session_state.sound_unlocked:
+    if not st.session_state.get('sound_unlocked', False):
         if st.button("🔓 ENABLE SOUNDS"):
             components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
             st.session_state.sound_unlocked = True; st.rerun()
@@ -522,13 +554,19 @@ elif choice == "⏱️ Time Tracker":
     if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
     if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
     if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    m, s = divmod(st.session_state.remaining_at_pause, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
-    if st.session_state.timer_active: time.sleep(1); st.rerun()
+    
+    rem_time = st.session_state.get('remaining_at_pause', 0)
+    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
+    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-    if st.button("🚨 MASTER RESET", type="primary"): trigger_master_reset()
+    
+    # Fixed Master Reset Implementation
+    if st.button("🚨 MASTER RESET", type="primary"): 
+        trigger_master_reset()
+        
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown('### 📚 Academic & Audio')
