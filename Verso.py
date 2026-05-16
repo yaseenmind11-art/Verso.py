@@ -42,33 +42,37 @@ def setup_system():
 setup_system()
 
 # --- ⚙️ STATE MANAGEMENT ---
-if 'set_color' not in st.session_state: st.session_state.set_color = "#FFFFFF" 
-if 'set_bg' not in st.session_state: st.session_state.set_bg = "#5465C9"
-if 'set_font' not in st.session_state: st.session_state.set_font = 1.10
+def initialize_states(force=False):
+    defaults = {
+        'set_color': "#FFFFFF",
+        'set_bg': "#5465C9",
+        'set_font': 1.10,
+        'reset_counter': random.randint(1, 1000),
+        'timer_end_time': None,
+        'timer_active': False,
+        'remaining_at_pause': 0,
+        'sound_unlocked': False,
+        'selected_alarm_tone': "Double Beep",
+        'study_text_input': "",
+        'grammar_text_input': "",
+        'plag_text_input': "",
+        'word_counter_input': "",
+        'citation_text_input': "",
+        'quiz_step': 0,
+        'quiz_score': 0,
+        'current_quiz_options': None,
+        'current_quiz_target': None,
+        'current_quiz_text': None,
+        'fc_step': 0,
+        'fc_correct': 0,
+        'fc_wrong': 0,
+        'reveal_fc': False
+    }
+    for key, value in defaults.items():
+        if force or key not in st.session_state:
+            st.session_state[key] = value
 
-if 'reset_counter' not in st.session_state: st.session_state.reset_counter = 0
-if 'timer_end_time' not in st.session_state: st.session_state.timer_end_time = None
-if 'timer_active' not in st.session_state: st.session_state.timer_active = False
-if 'remaining_at_pause' not in st.session_state: st.session_state.remaining_at_pause = 0
-if 'sound_unlocked' not in st.session_state: st.session_state.sound_unlocked = False
-if 'selected_alarm_tone' not in st.session_state: st.session_state.selected_alarm_tone = "Double Beep"
-
-if 'study_text_input' not in st.session_state: st.session_state.study_text_input = ""
-if 'grammar_text_input' not in st.session_state: st.session_state.grammar_text_input = ""
-if 'plag_text_input' not in st.session_state: st.session_state.plag_text_input = ""
-if 'word_counter_input' not in st.session_state: st.session_state.word_counter_input = ""
-if 'citation_text_input' not in st.session_state: st.session_state.citation_text_input = ""
-
-if 'quiz_step' not in st.session_state: st.session_state.quiz_step = 0
-if 'quiz_score' not in st.session_state: st.session_state.quiz_score = 0
-if 'current_quiz_options' not in st.session_state: st.session_state.current_quiz_options = None
-if 'current_quiz_target' not in st.session_state: st.session_state.current_quiz_target = None
-if 'current_quiz_text' not in st.session_state: st.session_state.current_quiz_text = None
-
-if 'fc_step' not in st.session_state: st.session_state.fc_step = 0
-if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
-if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
-if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
+initialize_states()
 
 # --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
 CAMPUS_HEADERS = {
@@ -174,12 +178,11 @@ ALARM_TONES = {
 KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
 
 def trigger_master_reset():
+    # Purge completely
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.session_state.set_color = "#FFFFFF"
-    st.session_state.set_bg = "#5465C9"
-    st.session_state.set_font = 1.10
-    st.session_state.reset_counter = random.randint(1, 1000)
+    # Enforce fresh system load arrays
+    initialize_states(force=True)
     st.rerun()
 
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
@@ -251,7 +254,7 @@ st.markdown(f"""
         margin-bottom: 20px;
     }}
     
-    /* Dedicated presentation button engine styles */
+    /* Presentation button styles */
     .audio-btn {{
         background-color: {bg_card} !important;
         color: white !important;
@@ -275,27 +278,20 @@ st.markdown(f"""
         border: 1px solid #f87171 !important;
     }}
     
-    /* Rebuilt Active Sidebar Custom CSS Layout overrides */
+    /* Restored Sidebar Radio styling parameters - No grey background blocks */
     [data-testid="stSidebar"] div.stRadio > div {{
-        background: transparent;
-        padding: 5px;
+        background: transparent !important;
+        padding: 0px !important;
     }}
     [data-testid="stSidebar"] div.stRadio label {{
-        padding: 12px 16px;
-        border-radius: 8px;
-        margin-bottom: 6px;
-        background-color: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.05);
-        cursor: pointer;
-        transition: all 0.2s ease;
+        padding: 6px 0px !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin-bottom: 4px !important;
     }}
     [data-testid="stSidebar"] div.stRadio label:hover {{
-        background-color: rgba(255,255,255,0.08);
-    }}
-    [data-testid="stSidebar"] div.stRadio label[data-checked="true"] {{
-        background-color: {bg_card} !important;
-        border-left: 5px solid {accent} !important;
-        color: #FFFFFF !important;
+        background-color: transparent !important;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -566,17 +562,17 @@ elif choice == "📒 Study Assistant":
                 fc_type = curr_idx % 4
                 if fc_type == 0:
                     q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Source Analysis:</b> Your material utilizes '{curr_word}' as a core technical anchor."
+                    a_text = f"<b>Source Analysis:</b> The inputted source material utilizes '{curr_word}' as a core technical anchor."
                 elif fc_type == 1:
                     q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
-                    a_text = f"<b>Practical Application:</b> The source implies that successful implementation leads to a more robust result."
+                    a_text = f"<b>Practical Application:</b> The inputted source material implies that successful implementation leads to a more robust result."
                 elif fc_type == 2:
                     other_word = words[(curr_idx + 1) % len(words)].title()
                     q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your content?"
-                    a_text = f"<b>Inter-Term Relationship:</b> Within your notes, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
+                    a_text = f"<b>Inter-Term Relationship:</b> Within the context of the inputted source material, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
                 else:
                     q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Contextual Importance:</b> The input identifies '{curr_word}' as a high-value variable."
+                    a_text = f"<b>Contextual Importance:</b> The inputted source material identifies '{curr_word}' as a high-value variable."
                 st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
@@ -603,23 +599,22 @@ elif choice == "📒 Study Assistant":
 
             st.markdown("### 🎙️ Audio Synthesizer Lecture Mode")
             
-            # Interactive Voice Configuration Control Panel
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # Clean script string to be processed by browser audio API
+            # Formatted speech data focusing entirely on the source context lesson
             full_speech_script = f"""
-            Hello and welcome. Let us pull up your text files and break down exactly what is happening under the hood here. 
-            The immediate focal center of the material is built entirely around {prime_concept}. This concept does not exist as an isolated assertion; it serves as the core pillar holding up your entire summary layout. 
-            When we track the text sequentially, we see that {prime_concept} establishes a direct operational bridge with {sub_concept_a}. The source material outlines specific internal mechanics that regulate this relationship. 
-            Moving into the mid-section of your source text, the author introduces a vital technical combination: the interface between {sub_concept_b} and {sub_concept_c}. 
-            The paragraphs explicitly trace the limits and data boundaries governing {sub_concept_b}, providing supporting facts to validate why this trend acts as an active catalyst. 
-            To conclude this full content analysis, let us synthesize the explicit conclusions and logical limits highlighted in the final text segments. 
-            The document does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
+            Hello and welcome to this lesson. Let us process the active properties of the inputted source material and break down exactly what is happening under the hood here. 
+            The immediate focal center of the inputted source material is built entirely around {prime_concept}. This concept does not exist as an isolated assertion; it serves as the core pillar holding up the structural layout of the lesson. 
+            When we track the technical entries sequentially, we see that the inputted source material establishes a direct operational bridge with {sub_concept_a}. The information outlines specific internal mechanics that regulate this relationship. 
+            Moving into the mid-section text of the inputted source material, a vital technical combination is presented: the interface between {sub_concept_b} and {sub_concept_c}. 
+            The parameters explicitly trace the data limits and conceptual boundaries governing {sub_concept_b}, providing supporting facts to validate why this trend acts as an active catalyst. 
+            To conclude this structural lecture, let us synthesize the explicit conclusions and logical limits highlighted in the final data segments. 
+            The inputted source material does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
             """.replace('"', '\\"').replace('\n', ' ')
 
-            # Native JavaScript Controller for speech synthesis engine with custom Voice Chooser selector
+            # Custom dropdown logic with "Google US English (en-US)" set as default
             tts_component_code = f"""
             <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -646,14 +641,27 @@ elif choice == "📒 Study Assistant":
                 function populateVoices() {{
                     var voices = window.speechSynthesis.getVoices();
                     voiceSelect.innerHTML = '';
+                    
+                    var defaultIndex = -1;
+                    
                     voices.forEach((voice, index) => {{
                         if (voice.lang.includes('en')) {{
                             var option = document.createElement('option');
                             option.value = index;
                             option.textContent = voice.name + ' (' + voice.lang + ')';
+                            
+                            // Check for Google US English default prioritization match
+                            if (voice.name.includes('Google US English') || voice.name === 'Google US English') {{
+                                defaultIndex = index;
+                            }}
+                            
                             voiceSelect.appendChild(option);
                         }}
                     }});
+                    
+                    if (defaultIndex !== -1) {{
+                        voiceSelect.value = defaultIndex;
+                    }}
                 }}
                 
                 if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
@@ -711,19 +719,19 @@ elif choice == "📒 Study Assistant":
             """
             components.html(tts_component_code, height=110)
             
-            # Render script on screen inside the styled chalkboard view
+            # Lesson board text layout referencing the material explicitly
             st.markdown(f"""
                 <div class="teacher-board">
                 <h2>🔊 SOURCE MATERIAL AUDIO PLAYBACK</h2>
                 
-                <h3>Track Section 1: Core Content Thesis & Mechanics</h3>
-                <p>Hello and welcome. Let us pull up your text files and break down exactly what is happening under the hood here. Listening closely to the text properties, the immediate focal center of the material is built entirely around <b>{prime_concept}</b>. This concept does not exist as an isolated assertion; it serves as the core pillar holding up your entire summary layout. When we track the text sequentially, we see that <b>{prime_concept}</b> establishes a direct operational bridge with <b>{sub_concept_a}</b>. The source material outlines specific internal mechanics that regulate this relationship. If you take a closer look at the introductory passages, the text details a chain reaction: when your main variables shift, the behavior of <b>{sub_concept_a}</b> adapts in real-time. This structural dependency forms the baseline thesis of your documentation, signaling that one element cannot be thoroughly modified without completely altering the functional trajectory of the other.</p>
+                <h3>Track Section 1: Lesson Thesis & Core Mechanics</h3>
+                <p>Hello and welcome to this lesson. Let us process the active properties of the inputted source material and break down exactly what is happening under the hood here. Listening closely to the properties layout, the immediate focal center of the inputted source material is built entirely around <b>{prime_concept}</b>. This concept does not exist as an isolated assertion; it serves as the core pillar holding up the structural layout of the lesson. When we track the technical entries sequentially, we see that the inputted source material establishes a direct operational bridge with <b>{sub_concept_a}</b>. The information outlines specific internal mechanics that regulate this relationship. When the core attributes shift, the behavior of <b>{sub_concept_a}</b> adapts in real-time. This structural dependency forms the baseline lesson thesis, signaling that one element cannot be thoroughly modified without completely altering the functional trajectory of the other.</p>
                 
-                <h3>Track Section 2: Text Breakdown & Evidence Flow</h3>
-                <p>Moving into the mid-section of your source text, the author introduces a vital technical combination: the interface between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. Let's trace how the material proves this out. The paragraphs explicitly trace the limits and data boundaries governing <b>{sub_concept_b}</b>, providing supporting facts to validate why this trend acts as an active catalyst. If you review the data logs and assertions provided in the text, you can hear a distinct logical thread: the reliability of <b>{sub_concept_c}</b> is highly dependent on how well these constraints are set. Our deep content breakdown shows that this interaction serves as the technical engine of the material. The prose systematically maps out step-by-step processes to prevent system bottlenecks, confirming that the entire architecture stays balanced only when these separate parts work smoothly together.</p>
+                <h3>Track Section 2: Material Evaluation & Evidence Flow</h3>
+                <p>Moving into the mid-section text of the inputted source material, a vital technical combination is presented: the interface between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. Let's trace how the lesson proves this out. The parameters explicitly trace the data limits and conceptual boundaries governing <b>{sub_concept_b}</b>, providing supporting facts to validate why this trend acts as an active catalyst. Following the logical thread embedded inside the text properties, the structural reliability of <b>{sub_concept_c}</b> is highly dependent on how well these constraints are set. Our deep content breakdown shows that this interaction serves as the technical engine of the lesson, mapping out step-by-step processes to confirm that the entire architecture stays balanced only when these separate parts work smoothly together.</p>
                 
                 <h3>Track Section 3: Material Synthesis & Structural Conclusions</h3>
-                <p>To conclude this full content analysis, let us synthesize the explicit conclusions and logical limits highlighted in the final text segments. The document does not just state facts; it directly addresses the functional boundaries of <b>{sub_concept_c}</b>, explaining where its logic holds up and where it starts to break down. By focusing deeply on these parameters, the document reveals that any successful application depends on variables that shift over time. Make sure to notice how the ending sentences connect these loose strings back to <b>{prime_concept}</b>. This brings your source text full circle, creating a clear, cohesive roadmap where your arguments are fully backed by data, your terms are precisely aligned, and every sub-topic remains explicitly connected to the core lesson.</p>
+                <p>To conclude this structural lecture, let us synthesize the explicit conclusions and logical limits highlighted in the final data segments. The inputted source material does not just state facts; it directly addresses the functional boundaries of <b>{sub_concept_c}</b>, explaining where its logic holds up and where it starts to break down. By focusing deeply on these parameters, the lesson reveals that any successful application depends on variables that shift over time. Notice how the ending sentences connect these loose structural strings back to <b>{prime_concept}</b>. This brings the inputted source material full circle, creating a clear, cohesive roadmap where the data properties are fully balanced, your terms are precisely aligned, and every sub-topic remains explicitly connected to the core lesson.</p>
                 </div>
             """, unsafe_allow_html=True)
 
