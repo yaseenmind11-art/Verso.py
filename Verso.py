@@ -12,6 +12,10 @@ import pandas as pd
 import io
 import requests
 from bs4 import BeautifulSoup
+import urllib3
+
+# Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
@@ -62,6 +66,16 @@ if 'fc_correct' not in st.session_state: st.session_state.fc_correct = 0
 if 'fc_wrong' not in st.session_state: st.session_state.fc_wrong = 0
 if 'reveal_fc' not in st.session_state: st.session_state.reveal_fc = False
 
+# --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
+# Standard Firefox Header to avoid being flagged as an unverified code tool or script
+CAMPUS_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1'
+}
+
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
     if uploaded_file is None: return ""
@@ -81,7 +95,8 @@ def extract_text(uploaded_file):
 def extract_from_url(url):
     if not url: return ""
     try:
-        res = requests.get(url, timeout=5)
+        # verify=False prevents crashes from campus firewalls replacing SSL keys
+        res = requests.get(url, headers=CAMPUS_HEADERS, timeout=6, verify=False)
         soup = BeautifulSoup(res.content, 'html.parser')
         for s in soup(['script', 'style']): s.decompose()
         return soup.get_text(separator=' ', strip=True)
@@ -98,8 +113,8 @@ def generate_scribbr_citation(url, style_format):
     access_date = time.strftime("%d %b. %Y")
     
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        res = requests.get(url, headers=headers, timeout=4)
+        # Using verified Firefox user identity to fetch document schemas over corporate setups
+        res = requests.get(url, headers=CAMPUS_HEADERS, timeout=5, verify=False)
         soup = BeautifulSoup(res.content, 'html.parser')
         
         title_tag = soup.find('meta', property='og:title')
@@ -258,7 +273,6 @@ if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
     st.markdown("### 🎓 Universal Academic Engine")
     
-    # Wikipedia option completely removed from reliable options
     source_options = {
         "Educational (.edu)": "site:.edu",
         "Government (.gov)": "site:.gov",
@@ -290,9 +304,7 @@ if choice == "🏠 Home":
         query_parts = [source_options[s] for s in selected_sources]
         advanced_filter = " OR ".join(query_parts) if query_parts else ""
         
-        # Enforces a strict filter to make sure Wikipedia doesn't pop up
         full_query = f"{q} ({advanced_filter}) -site:wikipedia.org" if advanced_filter else f"{q} -site:wikipedia.org"
-        
         st.info(f"Scanning across **{len(selected_sources)}** reliable database categories.")
         
         search_url = f"https://www.google.com/search?q={full_query.replace(' ', '+')}&igu=1"
