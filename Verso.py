@@ -77,18 +77,11 @@ def initialize_states(force=False):
 
 initialize_states()
 
-# --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
-try:
-    # Safely extract key from Streamlit secrets config instead of exposing hardcoded text strings
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-    client = genai.Client(api_key=API_KEY)
-except Exception:
-    client = None
+# --- 🤖 GEMINI CLIENT INITIALIZATION ---
+API_KEY = "AIzaSyCO4k7wHpkWtvFWJWQI4vnVjjOwIRvwM1U"
+client = genai.Client(api_key=API_KEY)
 
 def teach_source_material(source_text: str):
-    if client is None:
-        return "⚠️ Setup Error: API Key missing or leaked. Please configure GEMINI_API_KEY inside your local secrets file (.streamlit/secrets.toml) or deployment dashboard panels."
-        
     system_instruction = """
     You are an expert, engaging teacher. Your job is to take the provided source 
     material and teach it as a complete lesson. 
@@ -346,12 +339,6 @@ with st.sidebar:
     st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
     
-    # Visual fallback validation checking inside interface wrapper
-    if client is None:
-        st.error("🔑 API Key Configuration Missing")
-        st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
-        st.markdown("---")
-
     nav_options = [
         "🏠 Home", 
         "📒 Study Assistant", 
@@ -656,93 +643,156 @@ elif choice == "📒 Study Assistant":
                         <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                         <span>
                             <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
-                            <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
+                            <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
                         </span>
                     </div>
-                    <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
-                    <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
-                    <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
+                    <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
+                    <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
+                    <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
+                    <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
                 </div>
 
                 <script>
-                    const synth = window.speechSynthesis;
-                    let utterance = null;
-                    let voices = [];
-                    const voiceSelect = document.getElementById('voiceSelect');
-
+                    var fullText = "{clean_speech_js}";
+                    var voiceSelect = document.getElementById('voiceSelect');
+                    var currentUtterance = null;
+                    var isPaused = false;
+                    
                     function populateVoices() {{
-                        voices = synth.getVoices();
+                        if (typeof speechSynthesis === 'undefined') return;
+                        var voices = window.speechSynthesis.getVoices();
                         voiceSelect.innerHTML = '';
                         
-                        let defaultIndex = 0;
-                        voices.forEach((voice, index) => {{
-                            const option = document.createElement('option');
-                            option.textContent = `${{voice.name}} (${{voice.lang}})`;
-                            option.value = index;
-                            
-                            // Explicitly set Google US English as the chosen choice if available
-                            if (voice.name.includes('Google') && voice.lang === 'en-US') {{
-                                defaultIndex = index;
-                            }}
-                            voiceSelect.appendChild(option);
-                        }});
+                        var defaultIndex = 0;
+                        var count = 0;
                         
-                        if(voices.length > 0) {{
-                            voiceSelect.selectedIndex = defaultIndex;
-                        }}
+                        voices.forEach((voice, index) => {{
+                            if (voice.lang.includes('en')) {{
+                                var option = document.createElement('option');
+                                option.value = index;
+                                option.textContent = voice.name + ' (' + voice.lang + ')';
+                                if (voice.name.includes('Google US English') || voice.name.includes('Natural')) {{
+                                    defaultIndex = count;
+                                }}
+                                voiceSelect.appendChild(option);
+                                count++;
+                            }}
+                        }});
                     }}
-
-                    populateVoices();
-                    if (speechSynthesis.onvoiceschanged !== undefined) {{
+                    
+                    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
                         speechSynthesis.onvoiceschanged = populateVoices;
                     }}
+                    populateVoices();
 
-                    function playAudio() {{
-                        if (synth.speaking) {{
-                            if (synth.paused) {{
-                                synth.resume();
-                                return;
-                            }}
-                            synth.cancel();
-                        }}
+                    function startSpeech() {{
+                        window.speechSynthesis.cancel();
+                        isPaused = false;
                         
-                        const textToSpeak = "{clean_speech_js}";
-                        if (!textToSpeak) return;
-
-                        utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        currentUtterance = new SpeechSynthesisUtterance(fullText);
+                        currentUtterance.pitch = {v_pitch};
+                        currentUtterance.rate = {v_speed};
                         
-                        if (voices.length > 0) {{
-                            const selectedVoiceIndex = voiceSelect.value || 0;
-                            utterance.voice = voices[selectedVoiceIndex];
-                        }}
+                        var voices = window.speechSynthesis.getVoices();
+                        var selectedVoice = voices[voiceSelect.value];
+                        if(selectedVoice) currentUtterance.voice = selectedVoice;
                         
-                        utterance.pitch = {v_pitch};
-                        utterance.rate = {v_speed};
-                        
-                        synth.speak(utterance);
+                        window.speechSynthesis.speak(currentUtterance);
                     }}
 
-                    function pauseAudio() {{
-                        if (synth.speaking && !synth.paused) {{
-                            synth.pause();
+                    function pauseSpeech() {{
+                        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {{
+                            window.speechSynthesis.pause();
+                            isPaused = true;
                         }}
                     }}
 
-                    function stopAudio() {{
-                        if (synth.speaking) {{
-                            synth.cancel();
+                    function resumeSpeech() {{
+                        if (window.speechSynthesis.paused) {{
+                            window.speechSynthesis.resume();
+                            isPaused = false;
+                        }} else if (!window.speechSynthesis.speaking) {{
+                            startSpeech();
                         }}
+                    }}
+
+                    function stopSpeech() {{
+                        window.speechSynthesis.cancel();
+                        isPaused = false;
                     }}
                 </script>
                 """
                 components.html(tts_component_code, height=110)
-                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                    <div class="teacher-board">
+                    <h2>🔊 LIVE NOTEBOOKLM GENERATED LECTURE FLOW</h2>
+                    {raw_generated_lesson}
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info("Click the button above to generate your customized AI lesson layout.")
 
-# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
+# --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
-    st.title("⏱️ Verso Pomodoro & Study Tracker")
-    st.info("Module running logic loops in background state container.")
+    st.title("Focus Timer")
+    if not st.session_state.get('sound_unlocked', False):
+        if st.button("🔓 ENABLE SOUNDS"):
+            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
+            st.session_state.sound_unlocked = True; st.rerun()
+    mins = st.number_input("Minutes:", 1, 120, 25)
+    c1, c2, c3, c4 = st.columns(4)
+    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
+    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
+    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
+    
+    rem_time = st.session_state.get('remaining_at_pause', 0)
+    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
+    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
-    st.title("⚙️ Control Center Settings")
-    st.info("System layout adjustments saved to state profile.")
+    st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
+    
+    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
+        trigger_master_reset()
+        
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('### 📚 Academic & Audio')
+        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
+        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
+        
+        st.selectbox("Citation Style", [
+            "APA 7th Generation", 
+            "APA 6th Generation", 
+            "APA 5th Generation",
+            "MLA 9th Edition", 
+            "Chicago 17th (Notes & Bibliography)", 
+            "Chicago 17th (Author-Date)",
+            "Harvard (Standard UK)",
+            "Harvard (Australia)"
+        ], key="selected_citation_format")
+        
+        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
+        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
+        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
+    with col2:
+        st.markdown('### 🎨 UI Appearance')
+        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
+        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
+        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
+        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
+        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
+        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
+    with col3:
+        st.markdown('### 🔐 System Info')
+        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
+        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
+    st.success("System Optimized")
+
+# --- GLOBAL TRIGGERS ---
+if st.session_state.get('timer_finished_trigger'):
+    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
+    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
+    if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
