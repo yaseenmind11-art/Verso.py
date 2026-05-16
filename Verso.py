@@ -343,7 +343,6 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
     
     # Visual fallback validation checking inside interface wrapper
