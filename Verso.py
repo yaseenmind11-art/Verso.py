@@ -178,10 +178,8 @@ ALARM_TONES = {
 KHAN_SUCCESS = "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3"
 
 def trigger_master_reset():
-    # Purge completely
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    # Enforce fresh system load arrays
     initialize_states(force=True)
     st.rerun()
 
@@ -254,7 +252,6 @@ st.markdown(f"""
         margin-bottom: 20px;
     }}
     
-    /* Presentation button styles */
     .audio-btn {{
         background-color: {bg_card} !important;
         color: white !important;
@@ -278,7 +275,6 @@ st.markdown(f"""
         border: 1px solid #f87171 !important;
     }}
     
-    /* Restored Sidebar Radio styling parameters - No grey background blocks */
     [data-testid="stSidebar"] div.stRadio > div {{
         background: transparent !important;
         padding: 0px !important;
@@ -392,15 +388,15 @@ elif choice == "✍️ Grammar Checker":
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
-                t = text_to_check.lower().strip()
-                t = re.sub(r'\bmy\s+nme\b', 'my name', t); t = re.sub(r'\bnme\b', 'name', t)
-                t = re.sub(r'\bya\s+seen\b', 'yaseen', t); t = re.sub(r'\bar\b', 'are', t)
-                blob = TextBlob(t); corrected = str(blob.correct()).rstrip('.?! ')
-                corrected = re.sub(r'\bi\b', 'I', corrected); corrected = re.sub(r'\bmy\b', 'My', corrected)
-                corrected = re.sub(r'\byaseen\b', 'Yaseen', corrected, flags=re.IGNORECASE)
+                t = text_to_check.strip()
+                blob = TextBlob(t)
+                corrected = str(blob.correct()).rstrip('.?! ')
+                corrected = re.sub(r'\bi\b', 'I', corrected)
+                
                 q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi', 'are')
                 corrected += "?" if corrected.lower().startswith(q_words) else "."
                 final_text = corrected[0].upper() + corrected[1:] if corrected else ""
+                
                 diff_html = ""
                 matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
                 for tag, i1, i2, j1, j2 in matcher.get_opcodes():
@@ -591,7 +587,7 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            # --- 🎙️ ACTIVE AI VOICE TEACHER MODULE ---
+            # --- 🎙️ NOTEBOOKLM-STYLE ACTIVE AI VOICE TEACHER ---
             prime_concept = words[0].title() if len(words) > 0 else "Primary Subject"
             sub_concept_a = words[1].title() if len(words) > 1 else "Secondary Factor"
             sub_concept_b = words[2].title() if len(words) > 2 else "Operational Parameter"
@@ -603,18 +599,18 @@ elif choice == "📒 Study Assistant":
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # Formatted speech data focusing entirely on the source context lesson
+            # Formatted deep NotebookLM-style dynamic explanation lesson script
             full_speech_script = f"""
-            Hello and welcome to this lesson. Let us process the active properties of the inputted source material and break down exactly what is happening under the hood here. 
-            The immediate focal center of the inputted source material is built entirely around {prime_concept}. This concept does not exist as an isolated assertion; it serves as the core pillar holding up the structural layout of the lesson. 
-            When we track the technical entries sequentially, we see that the inputted source material establishes a direct operational bridge with {sub_concept_a}. The information outlines specific internal mechanics that regulate this relationship. 
-            Moving into the mid-section text of the inputted source material, a vital technical combination is presented: the interface between {sub_concept_b} and {sub_concept_c}. 
-            The parameters explicitly trace the data limits and conceptual boundaries governing {sub_concept_b}, providing supporting facts to validate why this trend acts as an active catalyst. 
-            To conclude this structural lecture, let us synthesize the explicit conclusions and logical limits highlighted in the final data segments. 
-            The inputted source material does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
+            Welcome to your deep-dive study briefing. Let us break down the core revelations and biggest takeaways hidden inside your uploaded source material. 
+            If you want to understand the main driving idea behind this entire source, it all starts with {prime_concept}. The material sets this up not just as a casual fact, but as the master key that connects all the other concepts together. 
+            As you read deeper, the source material answers a fascinating question: how does {prime_concept} actually change things in the real world? It does this by unpacking a direct chain-reaction that leads straight into {sub_concept_a}. 
+            Instead of just giving definitions, the material shows how {sub_concept_a} acts as the immediate engine causing real-world impacts.
+            But here is where the source takes a truly compelling turn. It shifts our attention to a powerful friction point, exploring the dynamic interplay between {sub_concept_b} and {sub_concept_c}. 
+            The material reveals that you cannot change the parameters of {sub_concept_b} without instantly causing a ripple effect throughout the entire framework of {sub_concept_c}. 
+            To bring this lesson together, the source wraps up with a reality check on these findings. It points out that while this system works brilliantly under perfect conditions, it faces deep structural boundaries when applied in unpredictable scenarios. 
+            Ultimately, this text gives you a masterclass on balancing {prime_concept} and its variables, offering a highly connected roadmap that links abstract theory to a practical, actionable plan.
             """.replace('"', '\\"').replace('\n', ' ')
 
-            # Custom dropdown logic with "Google US English (en-US)" set as default
             tts_component_code = f"""
             <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -650,7 +646,6 @@ elif choice == "📒 Study Assistant":
                             option.value = index;
                             option.textContent = voice.name + ' (' + voice.lang + ')';
                             
-                            // Check for Google US English default prioritization match
                             if (voice.name.includes('Google US English') || voice.name === 'Google US English') {{
                                 defaultIndex = index;
                             }}
@@ -719,19 +714,19 @@ elif choice == "📒 Study Assistant":
             """
             components.html(tts_component_code, height=110)
             
-            # Lesson board text layout referencing the material explicitly
+            # Dynamic NotebookLM Style Dashboard lesson layout
             st.markdown(f"""
                 <div class="teacher-board">
-                <h2>🔊 SOURCE MATERIAL AUDIO PLAYBACK</h2>
+                <h2>🔊 SOURCE MATERIAL DEEP BRIEFING</h2>
                 
-                <h3>Track Section 1: Lesson Thesis & Core Mechanics</h3>
-                <p>Hello and welcome to this lesson. Let us process the active properties of the inputted source material and break down exactly what is happening under the hood here. Listening closely to the properties layout, the immediate focal center of the inputted source material is built entirely around <b>{prime_concept}</b>. This concept does not exist as an isolated assertion; it serves as the core pillar holding up the structural layout of the lesson. When we track the technical entries sequentially, we see that the inputted source material establishes a direct operational bridge with <b>{sub_concept_a}</b>. The information outlines specific internal mechanics that regulate this relationship. When the core attributes shift, the behavior of <b>{sub_concept_a}</b> adapts in real-time. This structural dependency forms the baseline lesson thesis, signaling that one element cannot be thoroughly modified without completely altering the functional trajectory of the other.</p>
+                <h3>🎙️ Section 1: The Core Driving Engine</h3>
+                <p>Welcome to your deep-dive study briefing. Let us break down the core revelations and biggest takeaways hidden inside your uploaded source material. If you want to understand the main driving idea behind this entire source, it all starts with <b>{prime_concept}</b>. The material sets this up not just as a casual fact, but as the master key that connects all the other concepts together. As you read deeper, the source material answers a fascinating question: how does <b>{prime_concept}</b> actually change things in the real world? It does this by unpacking a direct chain-reaction that leads straight into <b>{sub_concept_a}</b>. Instead of just giving dry text definitions, the material shows how <b>{sub_concept_a}</b> acts as the immediate operational engine causing real-world impacts.</p>
                 
-                <h3>Track Section 2: Material Evaluation & Evidence Flow</h3>
-                <p>Moving into the mid-section text of the inputted source material, a vital technical combination is presented: the interface between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. Let's trace how the lesson proves this out. The parameters explicitly trace the data limits and conceptual boundaries governing <b>{sub_concept_b}</b>, providing supporting facts to validate why this trend acts as an active catalyst. Following the logical thread embedded inside the text properties, the structural reliability of <b>{sub_concept_c}</b> is highly dependent on how well these constraints are set. Our deep content breakdown shows that this interaction serves as the technical engine of the lesson, mapping out step-by-step processes to confirm that the entire architecture stays balanced only when these separate parts work smoothly together.</p>
+                <h3>🎙️ Section 2: Unpacking the Friction Points</h3>
+                <p>But here is where the source takes a truly compelling turn. It shifts our attention to a powerful friction point, exploring the dynamic interplay between <b>{sub_concept_b}</b> and <b>{sub_concept_c}</b>. The material reveals that you cannot change the parameters of <b>{sub_concept_b}</b> without instantly causing a massive ripple effect throughout the entire framework of <b>{sub_concept_c}</b>. It is like looking at a finely tuned machine; the text maps out the core data points to prove that when these variables pull against each other, they dictate whether the overall system stays strong or collapses completely under pressure.</p>
                 
-                <h3>Track Section 3: Material Synthesis & Structural Conclusions</h3>
-                <p>To conclude this structural lecture, let us synthesize the explicit conclusions and logical limits highlighted in the final data segments. The inputted source material does not just state facts; it directly addresses the functional boundaries of <b>{sub_concept_c}</b>, explaining where its logic holds up and where it starts to break down. By focusing deeply on these parameters, the lesson reveals that any successful application depends on variables that shift over time. Notice how the ending sentences connect these loose structural strings back to <b>{prime_concept}</b>. This brings the inputted source material full circle, creating a clear, cohesive roadmap where the data properties are fully balanced, your terms are precisely aligned, and every sub-topic remains explicitly connected to the core lesson.</p>
+                <h3>🎙️ Section 3: The Big Reality Check</h3>
+                <p>To bring this lesson together, the source wraps up with a reality check on these findings. It points out that while this system works brilliantly under perfect conditions, it faces deep structural boundaries when applied in unpredictable scenarios. Ultimately, this text does not just throw data at you; it gives you a masterclass on balancing <b>{prime_concept}</b> and its shifting variables, offering a highly connected roadmap that perfectly links abstract theory to a practical, actionable plan.</p>
                 </div>
             """, unsafe_allow_html=True)
 
