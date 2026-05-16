@@ -274,6 +274,29 @@ st.markdown(f"""
         background-color: #ef4444 !important;
         border: 1px solid #f87171 !important;
     }}
+    
+    /* Rebuilt Active Sidebar Custom CSS Layout overrides */
+    [data-testid="stSidebar"] div.stRadio > div {{
+        background: transparent;
+        padding: 5px;
+    }}
+    [data-testid="stSidebar"] div.stRadio label {{
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        background-color: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.05);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }}
+    [data-testid="stSidebar"] div.stRadio label:hover {{
+        background-color: rgba(255,255,255,0.08);
+    }}
+    [data-testid="stSidebar"] div.stRadio label[data-checked="true"] {{
+        background-color: {bg_card} !important;
+        border-left: 5px solid {accent} !important;
+        color: #FFFFFF !important;
+    }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -288,8 +311,9 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image("z.png", width=80)
-    st.title("VERSO PRO")
+    st.markdown("<h1 style='color: white; margin-bottom: 0px;'>VERSO PRO</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
+    
     nav_options = [
         "🏠 Home", 
         "📒 Study Assistant", 
@@ -297,9 +321,11 @@ with st.sidebar:
         "🛡️ Plagiarism Checker", 
         "📚 Citation Generator", 
         "⏱️ Time Tracker", 
-        "📝 Word Counter"
+        "📝 Word Counter",
+        "⚙️ Settings"
     ]
-    choice = st.radio("Navigation", nav_options + ["⚙️ Settings"], label_visibility="collapsed")
+    
+    choice = st.radio("Navigation Menu", nav_options, label_visibility="collapsed")
 
 # --- HOME ---
 if choice == "🏠 Home":
@@ -593,16 +619,19 @@ elif choice == "📒 Study Assistant":
             The document does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
             """.replace('"', '\\"').replace('\n', ' ')
 
-            # Native JavaScript Controller for speech synthesis engine with start, pause, resume
+            # Native JavaScript Controller for speech synthesis engine with custom Voice Chooser selector
             tts_component_code = f"""
             <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
-                    <span><b>Format:</b> Browser TTS Spatial Engine</span>
+                    <span>
+                        <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice Chooser:</label>
+                        <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
+                    </span>
                 </div>
                 <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
                 <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
-                <button class="audio-btn" onclick="resumeSpeech()"> can ⏯ RESUME</button>
+                <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
                 <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
             </div>
 
@@ -611,8 +640,26 @@ elif choice == "📒 Study Assistant":
                 var fullText = "{full_speech_script}";
                 msg.text = fullText;
                 
-                // Track index to allow functional resumption from the same spot
                 var pausedIndex = 0;
+                var voiceSelect = document.getElementById('voiceSelect');
+                
+                function populateVoices() {{
+                    var voices = window.speechSynthesis.getVoices();
+                    voiceSelect.innerHTML = '';
+                    voices.forEach((voice, index) => {{
+                        if (voice.lang.includes('en')) {{
+                            var option = document.createElement('option');
+                            option.value = index;
+                            option.textContent = voice.name + ' (' + voice.lang + ')';
+                            voiceSelect.appendChild(option);
+                        }}
+                    }});
+                }}
+                
+                if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
+                    speechSynthesis.onvoiceschanged = populateVoices;
+                }}
+                populateVoices();
                 
                 msg.onboundary = function(event) {{
                     if (event.name === 'word') {{
@@ -628,8 +675,9 @@ elif choice == "📒 Study Assistant":
                     msg.rate = {v_speed};
                     
                     var voices = window.speechSynthesis.getVoices();
-                    var selectedVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
-                    if(selectedVoice) msg.voice = selectedVoice;
+                    if(voiceSelect.value !== '') {{
+                        msg.voice = voices[voiceSelect.value];
+                    }}
                     
                     window.speechSynthesis.speak(msg);
                 }}
@@ -642,7 +690,6 @@ elif choice == "📒 Study Assistant":
                     if (window.speechSynthesis.paused) {{
                         window.speechSynthesis.resume();
                     }} else {{
-                        // Fallback implementation if browser instance buffer breaks down
                         window.speechSynthesis.cancel();
                         var remainingText = fullText.slice(pausedIndex);
                         if(remainingText.length > 0) {{
@@ -650,8 +697,7 @@ elif choice == "📒 Study Assistant":
                             msg.pitch = {v_pitch};
                             msg.rate = {v_speed};
                             var voices = window.speechSynthesis.getVoices();
-                            var selectedVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
-                            if(selectedVoice) msg.voice = selectedVoice;
+                            if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
                             window.speechSynthesis.speak(msg);
                         }}
                     }}
@@ -661,8 +707,6 @@ elif choice == "📒 Study Assistant":
                     window.speechSynthesis.cancel();
                     pausedIndex = 0;
                 }}
-                
-                window.speechSynthesis.onvoiceschanged = function() {{}};
             </script>
             """
             components.html(tts_component_code, height=110)
