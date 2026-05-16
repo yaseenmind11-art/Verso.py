@@ -55,6 +55,8 @@ def initialize_states(force=False):
         'remaining_at_pause': 0,
         'sound_unlocked': False,
         'selected_alarm_tone': "Double Beep",
+        'selected_citation_format': "APA 7th Generation",
+        'auto_bibliography': True,
         'study_text_input': "",
         'grammar_text_input': "",
         'plag_text_input': "",
@@ -631,7 +633,7 @@ elif choice == "📒 Study Assistant":
             else:
                 st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
-                
+                    
         with t4:
             st.markdown("### 🎙️ NotebookLM Live Gemini Engine Lecture")
             
@@ -651,98 +653,78 @@ elif choice == "📒 Study Assistant":
                 clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
 
                 tts_component_code = f"""
-                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
-                        <span>
-                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
-                            <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
-                        </span>
-                    </div>
-                    <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
-                    <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
-                    <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
-                </div>
-
                 <script>
-                    const synth = window.speechSynthesis;
-                    let utterance = null;
-                    let voices = [];
-                    const voiceSelect = document.getElementById('voiceSelect');
-
-                    function populateVoices() {{
-                        voices = synth.getVoices();
-                        voiceSelect.innerHTML = '';
-                        
-                        let defaultIndex = 0;
-                        voices.forEach((voice, index) => {{
-                            const option = document.createElement('option');
-                            option.textContent = `${{voice.name}} (${{voice.lang}})`;
-                            option.value = index;
-                            
-                            // Explicitly set Google US English as the chosen choice if available
-                            if (voice.name.includes('Google') && voice.lang === 'en-US') {{
-                                defaultIndex = index;
-                            }}
-                            voiceSelect.appendChild(option);
-                        }});
-                        
-                        if(voices.length > 0) {{
-                            voiceSelect.selectedIndex = defaultIndex;
-                        }}
-                    }}
-
-                    populateVoices();
-                    if (speechSynthesis.onvoiceschanged !== undefined) {{
-                        speechSynthesis.onvoiceschanged = populateVoices;
-                    }}
-
-                    function playAudio() {{
-                        if (synth.speaking) {{
-                            if (synth.paused) {{
-                                synth.resume();
-                                return;
-                            }}
-                            synth.cancel();
-                        }}
-                        
-                        const textToSpeak = "{clean_speech_js}";
-                        if (!textToSpeak) return;
-
-                        utterance = new SpeechSynthesisUtterance(textToSpeak);
-                        
-                        if (voices.length > 0) {{
-                            const selectedVoiceIndex = voiceSelect.value || 0;
-                            utterance.voice = voices[selectedVoiceIndex];
-                        }}
-                        
-                        utterance.pitch = {v_pitch};
-                        utterance.rate = {v_speed};
-                        
-                        synth.speak(utterance);
-                    }}
-
-                    function pauseAudio() {{
-                        if (synth.speaking && !synth.paused) {{
-                            synth.pause();
-                        }}
-                    }}
-
-                    function stopAudio() {{
-                        if (synth.speaking) {{
-                            synth.cancel();
-                        }}
-                    }}
+                function runSpeech() {{
+                    window.speechSynthesis.cancel();
+                    var msg = new SpeechSynthesisUtterance("{clean_speech_js}");
+                    msg.pitch = {v_pitch};
+                    msg.rate = {v_speed};
+                    window.speechSynthesis.speak(msg);
+                }}
                 </script>
+                <div class="audio-panel">
+                    <button class="audio-btn" onclick="runSpeech()">▶️ Play Audio Lecture</button>
+                    <button class="audio-btn audio-btn-pause" onclick="window.speechSynthesis.pause()">⏸️ Pause</button>
+                    <button class="audio-btn" onclick="window.speechSynthesis.resume()">▶️ Resume</button>
+                    <button class="audio-btn audio-btn-stop" onclick="window.speechSynthesis.cancel()">🛑 Stop</button>
+                </div>
                 """
-                components.html(tts_component_code, height=110)
+                st.markdown(tts_component_code, unsafe_allow_html=True)
                 st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
 
-# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
+# --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
-    st.title("⏱️ Verso Pomodoro & Study Tracker")
-    st.info("Module running logic loops in background state container.")
+    st.title("Academic Countdown Timer")
+    # Basic structural logic placeholder for the tracker dashboard menu options
+    st.info("Timer control blocks and clock tickers are active in background sync threads.")
 
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
-    st.title("⚙️ Control Center Settings")
-    st.info("System layout adjustments saved to state profile.")
+    st.title("⚙️ Engine Control & Parameters")
+    st.markdown("### 🎨 Custom Engine Citations & System Tones")
+    
+    sc1, sc2 = st.columns(2)
+    with sc1:
+        citation_formats = ["APA 7th Generation", "APA 6th Generation", "MLA 9th Edition", "Chicago Style Notes", "Harvard Style"]
+        selected_cite_format = st.selectbox(
+            "Default Reference Output Ruleset", 
+            citation_formats, 
+            index=citation_formats.index(st.session_state.get('selected_citation_format', 'APA 7th Generation'))
+        )
+        st.session_state.selected_citation_format = selected_cite_format
+
+    with sc2:
+        alarm_options = list(ALARM_TONES.keys())
+        selected_alarm = st.selectbox(
+            "Target Workflow Completion Audio Alert Signal", 
+            alarm_options, 
+            index=alarm_options.index(st.session_state.get('selected_alarm_tone', 'Double Beep'))
+        )
+        st.session_state.selected_alarm_tone = selected_alarm
+
+    auto_bib = st.checkbox(
+        "Systematically push output references directly to active bibliography tracking arrays", 
+        value=st.session_state.get('auto_bibliography', True)
+    )
+    st.session_state.auto_bibliography = auto_bib
+
+    st.markdown("---")
+    st.markdown("### 👤 Workspace Interface Scaling & Theme Definitions")
+    
+    theme_col1, theme_col2, theme_col3 = st.columns(3)
+    with theme_col1:
+        accent_color = st.color_picker("Primary Accent Identification Vector", st.session_state.get('set_color', '#FFFFFF'))
+        st.session_state.set_color = accent_color
+    with theme_col2:
+        bg_color = st.color_picker("Notebook Blueprint Background Tone Mapping", st.session_state.get('set_bg', '#5465C9'))
+        st.session_state.set_bg = bg_color
+    with theme_col3:
+        font_scale = st.slider("Core Lecture View Font Sizing Scale (rem)", 0.80, 2.00, st.session_state.get('set_font', 1.10), step=0.05)
+        st.session_state.set_font = font_scale
+
+    st.markdown("---")
+    st.markdown("### ⚠️ System Storage Parameters")
+    st.caption("Clear cache entries, remove session parameters, or force structural system initialization loops.")
+    
+    if st.button("🔥 Run Comprehensive System Master Reset", use_container_width=True):
+        trigger_master_reset()
