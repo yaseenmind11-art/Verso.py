@@ -68,7 +68,8 @@ def initialize_states(force=False):
         'fc_step': 0,
         'fc_correct': 0,
         'fc_wrong': 0,
-        'reveal_fc': False
+        'reveal_fc': False,
+        'generated_lecture_text': ""  # Saved state to prevent repetitive API calls
     }
     for key, value in defaults.items():
         if force or key not in st.session_state:
@@ -77,7 +78,6 @@ def initialize_states(force=False):
 initialize_states()
 
 # --- 🤖 GEMINI CLIENT INITIALIZATION ---
-# Using the dedicated API token provided for direct authentication integration
 API_KEY = "AIzaSyCO4k7wHpkWtvFWJWQI4vnVjjOwIRvwM1U"
 client = genai.Client(api_key=API_KEY)
 
@@ -107,7 +107,7 @@ def teach_source_material(source_text: str):
     except Exception as e:
         return f"An error occurred while generating the live lecture format: {e}"
 
-# --- 🌐 NETWORK CONFIGURATION FOR CAMPUS COMPLIANCE ---
+# --- 🌐 NETWORK CONFIGURATION ---
 CAMPUS_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -248,7 +248,7 @@ st.markdown(f"""
     .teacher-board {{ 
         background-color: #0f172a; border: 1px solid #334155; padding: 45px; 
         border-radius: 12px; font-family: 'Inter', sans-serif; 
-        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; whitespace: pre-wrap;
+        color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
     }}
     .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
     .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
@@ -626,123 +626,111 @@ elif choice == "📒 Study Assistant":
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # Dynamically execute Gemini content generation from input text metrics
-            with st.spinner("Generating structured structured audio presentation flow via Gemini Pro..."):
-                raw_generated_lesson = teach_source_material(final_study_data)
-                
-            # Sanitize output quotes and line breaks for proper javascript string insertion compliance
-            clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ')
-
-            tts_component_code = f"""
-            <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
-                    <span>
-                        <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice Chooser:</label>
-                        <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
-                    </span>
-                </div>
-                <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
-                <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
-                <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
-                <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
-            </div>
-
-            <script>
-                var msg = new SpeechSynthesisUtterance();
-                var fullText = "{clean_speech_js}";
-                msg.text = fullText;
-                
-                var pausedIndex = 0;
-                var voiceSelect = document.getElementById('voiceSelect');
-                
-                function populateVoices() {{
-                    var voices = window.speechSynthesis.getVoices();
-                    voiceSelect.innerHTML = '';
-                    
-                    var defaultIndex = -1;
-                    
-                    voices.forEach((voice, index) => {{
-                        if (voice.lang.includes('en')) {{
-                            var option = document.createElement('option');
-                            option.value = index;
-                            option.textContent = voice.name + ' (' + voice.lang + ')';
-                            
-                            if (voice.name.includes('Google US English') || voice.name === 'Google US English') {{
-                                defaultIndex = index;
-                            }}
-                            
-                            voiceSelect.appendChild(option);
-                        }}
-                    }});
-                    
-                    if (defaultIndex !== -1) {{
-                        voiceSelect.value = defaultIndex;
-                    }}
-                }}
-                
-                if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
-                    speechSynthesis.onvoiceschanged = populateVoices;
-                }}
-                populateVoices();
-                
-                msg.onboundary = function(event) {{
-                    if (event.name === 'word') {{
-                        pausedIndex = event.charIndex;
-                    }}
-                }};
-
-                function startSpeech() {{
-                    window.speechSynthesis.cancel();
-                    pausedIndex = 0;
-                    msg.text = fullText;
-                    msg.pitch = {v_pitch};
-                    msg.rate = {v_speed};
-                    
-                    var voices = window.speechSynthesis.getVoices();
-                    if(voiceSelect.value !== '') {{
-                        msg.voice = voices[voiceSelect.value];
-                    }}
-                    
-                    window.speechSynthesis.speak(msg);
-                }}
-
-                function pauseSpeech() {{
-                    window.speechSynthesis.pause();
-                }}
-
-                function resumeSpeech() {{
-                    if (window.speechSynthesis.paused) {{
-                        window.speechSynthesis.resume();
-                    }} else {{
-                        window.speechSynthesis.cancel();
-                        var remainingText = fullText.slice(pausedIndex);
-                        if(remainingText.length > 0) {{
-                            msg.text = remainingText;
-                            msg.pitch = {v_pitch};
-                            msg.rate = {v_speed};
-                            var voices = window.speechSynthesis.getVoices();
-                            if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
-                            window.speechSynthesis.speak(msg);
-                        }}
-                    }}
-                }}
-
-                function stopSpeech() {{
-                    window.speechSynthesis.cancel();
-                    pausedIndex = 0;
-                }}
-            </script>
-            """
-            components.html(tts_component_code, height=110)
+            # CRITICAL RATE-LIMIT FIX: Add an explicit button to trigger Gemini generation, caching the result
+            if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
+                with st.spinner("Generating structured audio presentation flow via Gemini..."):
+                    st.session_state.generated_lecture_text = teach_source_material(final_study_data)
             
-            # Print the live, fully formed lecture content inside the clean teacher canvas block
-            st.markdown(f"""
-                <div class="teacher-board">
-                <h2>🔊 LIVE NOTEBOOKLM GENERATED LECTURE FLOW</h2>
-                {raw_generated_lesson}
+            if st.session_state.generated_lecture_text:
+                raw_generated_lesson = st.session_state.generated_lecture_text
+                
+                # Sanitize text formatting for inside the HTML JavaScript engine blocks
+                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ')
+
+                tts_component_code = f"""
+                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
+                        <span>
+                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice Chooser:</label>
+                            <select id='voiceSelect' style='background: #0f172a; color: #fff; border: 1px solid #475569; padding: 3px; border-radius: 4px;'></select>
+                        </span>
+                    </div>
+                    <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
+                    <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
+                    <button class="audio-btn" onclick="resumeSpeech()">⏯ RESUME</button>
+                    <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
                 </div>
-            """, unsafe_allow_html=True)
+
+                <script>
+                    var msg = new SpeechSynthesisUtterance();
+                    var fullText = "{clean_speech_js}";
+                    msg.text = fullText;
+                    
+                    var pausedIndex = 0;
+                    var voiceSelect = document.getElementById('voiceSelect');
+                    
+                    function populateVoices() {{
+                        var voices = window.speechSynthesis.getVoices();
+                        voiceSelect.innerHTML = '';
+                        var defaultIndex = -1;
+                        
+                        voices.forEach((voice, index) => {{
+                            if (voice.lang.includes('en')) {{
+                                var option = document.createElement('option');
+                                option.value = index;
+                                option.textContent = voice.name + ' (' + voice.lang + ')';
+                                if (voice.name.includes('Google US English') || voice.name === 'Google US English') {{
+                                    defaultIndex = index;
+                                }}
+                                voiceSelect.appendChild(option);
+                            }}
+                        }});
+                        if (defaultIndex !== -1) voiceSelect.value = defaultIndex;
+                    }}
+                    
+                    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {{
+                        speechSynthesis.onvoiceschanged = populateVoices;
+                    }}
+                    populateVoices();
+                    
+                    msg.onboundary = function(event) {{
+                        if (event.name === 'word') pausedIndex = event.charIndex;
+                    }};
+
+                    function startSpeech() {{
+                        window.speechSynthesis.cancel();
+                        pausedIndex = 0;
+                        msg.text = fullText;
+                        msg.pitch = {v_pitch};
+                        msg.rate = {v_speed};
+                        var voices = window.speechSynthesis.getVoices();
+                        if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
+                        window.speechSynthesis.speak(msg);
+                    }}
+
+                    function pauseSpeech() {{ window.speechSynthesis.pause(); }}
+
+                    function resumeSpeech() {{
+                        if (window.speechSynthesis.paused) {{
+                            window.speechSynthesis.resume();
+                        }} else {{
+                            window.speechSynthesis.cancel();
+                            var remainingText = fullText.slice(pausedIndex);
+                            if(remainingText.length > 0) {{
+                                msg.text = remainingText;
+                                msg.pitch = {v_pitch};
+                                msg.rate = {v_speed};
+                                var voices = window.speechSynthesis.getVoices();
+                                if(voiceSelect.value !== '') msg.voice = voices[voiceSelect.value];
+                                window.speechSynthesis.speak(msg);
+                            }}
+                        }}
+                    }}
+
+                    function stopSpeech() {{ window.speechSynthesis.cancel(); pausedIndex = 0; }}
+                </script>
+                """
+                components.html(tts_component_code, height=110)
+                
+                st.markdown(f"""
+                    <div class="teacher-board">
+                    <h2>🔊 LIVE NOTEBOOKLM GENERATED LECTURE FLOW</h2>
+                    {raw_generated_lesson}
+                    </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.info("Click the button above to generate your customized AI lesson layout.")
 
 # --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
