@@ -251,22 +251,28 @@ st.markdown(f"""
         margin-bottom: 20px;
     }}
     
-    /* Native interactive presentation buttons */
+    /* Dedicated presentation button engine styles */
     .audio-btn {{
-        background-color: {accent};
+        background-color: {bg_card} !important;
         color: white !important;
-        border: none;
+        border: 1px solid {accent} !important;
         padding: 10px 24px;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: bold;
         border-radius: 6px;
         cursor: pointer;
         margin-right: 10px;
         transition: opacity 0.2s;
+        display: inline-block;
     }}
-    .audio-btn:hover {{ opacity: 0.9; }}
+    .audio-btn:hover {{ opacity: 0.85; }}
+    .audio-btn-pause {{
+        background-color: #eab308 !important;
+        border: 1px solid #facc15 !important;
+    }}
     .audio-btn-stop {{
-        background-color: #ef4444;
+        background-color: #ef4444 !important;
+        border: 1px solid #f87171 !important;
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -576,7 +582,7 @@ elif choice == "📒 Study Assistant":
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
-            # The clean script string to be processed by browser audio API
+            # Clean script string to be processed by browser audio API
             full_speech_script = f"""
             Hello and welcome. Let us pull up your text files and break down exactly what is happening under the hood here. 
             The immediate focal center of the material is built entirely around {prime_concept}. This concept does not exist as an isolated assertion; it serves as the core pillar holding up your entire summary layout. 
@@ -587,43 +593,75 @@ elif choice == "📒 Study Assistant":
             The document does not just state facts; it directly addresses the functional boundaries of {sub_concept_c}, explaining where its logic holds up and where it starts to break down.
             """.replace('"', '\\"').replace('\n', ' ')
 
-            # Native JavaScript Controller for speech synthesis injection
+            # Native JavaScript Controller for speech synthesis engine with start, pause, resume
             tts_component_code = f"""
             <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: monospace; color: #f1f5f9; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                     <span><b>Format:</b> Browser TTS Spatial Engine</span>
                 </div>
-                <button class="audio-btn" onclick="startSpeech()" style="background-color: {accent}; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">▶ PLAY AUDIO LECTURE</button>
-                <button class="audio-btn audio-btn-stop" onclick="stopSpeech()" style="background-color: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer;">⏹ STOP</button>
+                <button class="audio-btn" onclick="startSpeech()">▶ START LECTURE</button>
+                <button class="audio-btn audio-btn-pause" onclick="pauseSpeech()">⏸ PAUSE</button>
+                <button class="audio-btn" onclick="resumeSpeech()"> can ⏯ RESUME</button>
+                <button class="audio-btn audio-btn-stop" onclick="stopSpeech()">⏹ STOP</button>
             </div>
 
             <script>
                 var msg = new SpeechSynthesisUtterance();
-                msg.text = "{full_speech_script}";
+                var fullText = "{full_speech_script}";
+                msg.text = fullText;
                 
+                // Track index to allow functional resumption from the same spot
+                var pausedIndex = 0;
+                
+                msg.onboundary = function(event) {{
+                    if (event.name === 'word') {{
+                        pausedIndex = event.charIndex;
+                    }}
+                }};
+
                 function startSpeech() {{
-                    window.speechSynthesis.cancel(); // Clear any queued speech
-                    
-                    // Assign reactive parameter variables directly from Streamlit sliders
+                    window.speechSynthesis.cancel();
+                    pausedIndex = 0;
+                    msg.text = fullText;
                     msg.pitch = {v_pitch};
                     msg.rate = {v_speed};
                     
-                    // Try to pick a premium natural sounding English voice profile if available
                     var voices = window.speechSynthesis.getVoices();
                     var selectedVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
-                    if(selectedVoice) {{
-                        msg.voice = selectedVoice;
-                    }}
+                    if(selectedVoice) msg.voice = selectedVoice;
                     
                     window.speechSynthesis.speak(msg);
                 }}
 
+                function pauseSpeech() {{
+                    window.speechSynthesis.pause();
+                }}
+
+                function resumeSpeech() {{
+                    if (window.speechSynthesis.paused) {{
+                        window.speechSynthesis.resume();
+                    }} else {{
+                        // Fallback implementation if browser instance buffer breaks down
+                        window.speechSynthesis.cancel();
+                        var remainingText = fullText.slice(pausedIndex);
+                        if(remainingText.length > 0) {{
+                            msg.text = remainingText;
+                            msg.pitch = {v_pitch};
+                            msg.rate = {v_speed};
+                            var voices = window.speechSynthesis.getVoices();
+                            var selectedVoice = voices.find(voice => voice.lang.includes('en-US') || voice.lang.includes('en-GB'));
+                            if(selectedVoice) msg.voice = selectedVoice;
+                            window.speechSynthesis.speak(msg);
+                        }}
+                    }}
+                }}
+
                 function stopSpeech() {{
                     window.speechSynthesis.cancel();
+                    pausedIndex = 0;
                 }}
                 
-                // Keep voices synced on initial load lifecycle
                 window.speechSynthesis.onvoiceschanged = function() {{}};
             </script>
             """
