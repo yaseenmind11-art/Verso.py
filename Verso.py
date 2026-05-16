@@ -428,7 +428,7 @@ elif choice == "📝 Word Counter":
 
 # --- MODULE: GRAMMAR CHECKER ---
 elif choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto Correct</h1>', unsafe_allow_html=True)
+    st.markdown('<h1>Smart Verso Auto Correct <span class="pro-badge">V5.0</span></h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
     if st.button("✨ Run Smart Correction", use_container_width=True):
@@ -456,7 +456,7 @@ elif choice == "✍️ Grammar Checker":
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
-    st.title("Plagiarism Pro Scanner")
+    st.title("Integrity Scanner Pro")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
@@ -633,14 +633,14 @@ elif choice == "📒 Study Assistant":
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
                 
         with t4:
-            st.markdown("### 🎙️ Verso AI Teacher")
+            st.markdown("### 🎙️ NotebookLM Live Gemini Engine Lecture")
             
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
             
             if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
-                with st.spinner("Generating structured presentation flow via Verso..."):
+                with st.spinner("Generating structured presentation flow via Gemini..."):
                     st.session_state.generated_lecture_text = teach_source_material(final_study_data)
             
             if st.session_state.generated_lecture_text:
@@ -743,44 +743,6 @@ elif choice == "⏱️ Time Tracker":
     st.title("⏱️ Verso Pomodoro & Study Tracker")
     st.info("Module running logic loops in background state container.")
 
-
 elif choice == "⚙️ Settings":
-    st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-    
-    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
-        trigger_master_reset()
-        
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown('### 📚 Academic & Audio')
-        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        
-        st.selectbox("Citation Style", [
-            "APA 7th Generation", 
-            "APA 6th Generation", 
-            "APA 5th Generation",
-            "MLA 9th Edition", 
-            "Chicago 17th (Notes & Bibliography)", 
-            "Chicago 17th (Author-Date)",
-            "Harvard (Standard UK)",
-            "Harvard (Australia)"
-        ], key="selected_citation_format")
-        
-        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
-        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
-        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
-    with col2:
-        st.markdown('### 🎨 UI Appearance')
-        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
-        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
-        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
-        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
-        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
-        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
-    with col3:
-        st.markdown('### 🔐 System Info')
-        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
-        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
-    st.success("System Optimized")
-
+    st.title("⚙️ Control Center Settings")
+    st.info("System layout adjustments saved to state profile.")
