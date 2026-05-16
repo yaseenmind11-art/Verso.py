@@ -1,10 +1,9 @@
 streamlit
 textblob
 nltk
-deep_translator
-requests
-beautifulsoup4
-pandas
-openpyxl
 docx2txt
 PyPDF2
+pandas
+requests
+beautifulsoup4
+google-genai
