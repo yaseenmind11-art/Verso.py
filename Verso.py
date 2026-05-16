@@ -758,9 +758,6 @@ elif choice == "⏱️ Time Tracker":
 
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-    
-    if st.button("🚨 MASTER RESET", type="primary", use_container_width=True): 
-        trigger_master_reset()
         
     col1, col2, col3 = st.columns(3)
     with col1:
