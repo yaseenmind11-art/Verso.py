@@ -738,11 +738,90 @@ elif choice == "📒 Study Assistant":
                 components.html(tts_component_code, height=110)
                 st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
 
-# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
+# --- MODULE: TIME TRACKER ---
 elif choice == "⏱️ Time Tracker":
     st.title("⏱️ Verso Pomodoro & Study Tracker")
     st.info("Module running logic loops in background state container.")
 
+# --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.title("⚙️ Control Center Settings")
-    st.info("System layout adjustments saved to state profile.")
+    st.markdown("### 🎨 Visual Theme & App Customization")
+    
+    st.markdown('<div class="notebook-card">💡 Changes made here modify the global layout styling configurations used across your active modules.</div>', unsafe_allow_html=True)
+    
+    # --- Custom Theme Design Controls ---
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        new_accent = st.color_picker(
+            "Accent Border Color", 
+            value=st.session_state.set_color, 
+            help="Modifies the highlight side-borders on your notebook display cards."
+        )
+    with c2:
+        new_bg = st.color_picker(
+            "Card Background Color", 
+            value=st.session_state.set_bg, 
+            help="Changes the body theme color for information cards."
+        )
+    with c3:
+        new_scale = st.slider(
+            "Lecture Font Scale (rem)", 
+            0.80, 2.00, 
+            value=st.session_state.set_font, 
+            step=0.05,
+            help="Changes text size scaling inside the AI Voice Teacher output board."
+        )
+
+    # --- Citation Preferences Dropdown ---
+    st.markdown("---")
+    st.markdown("### 📚 Reference Preferences")
+    citation_formats = ["APA 7th Generation", "APA 6th Generation", "MLA 9th Edition", "Harvard System", "Chicago Manual Style"]
+    
+    current_format_idx = citation_formats.index(st.session_state.get("selected_citation_format", "APA 7th Generation")) if st.session_state.get("selected_citation_format", "APA 7th Generation") in citation_formats else 0
+    
+    new_citation_style = st.selectbox(
+        "Default Bibliography Sourcing Layout:",
+        citation_formats,
+        index=current_format_idx
+    )
+    
+    auto_bib_toggle = st.toggle(
+        "Automatically push new generation requests to global reference log", 
+        value=st.session_state.get("auto_bibliography", True)
+    )
+
+    # --- Alarm System Management Dropdown ---
+    st.markdown("---")
+    st.markdown("### ⏱️ Time Tracker Notification Options")
+    
+    tone_names = list(ALARM_TONES.keys())
+    current_tone_idx = tone_names.index(st.session_state.selected_alarm_tone) if st.session_state.selected_alarm_tone in tone_names else 0
+    
+    new_alarm_tone = st.selectbox(
+        "Timer Ringtone Trigger Selection:",
+        tone_names,
+        index=current_tone_idx
+    )
+
+    # --- Active Save & Reset Logic Actions ---
+    st.markdown("---")
+    st.markdown("### 🛠️ Maintenance & Commit Actions")
+    action_col1, action_col2 = st.columns(2)
+    
+    with action_col1:
+        if st.button("💾 Save Theme Settings", use_container_width=True):
+            st.session_state.set_color = new_accent
+            st.session_state.set_bg = new_bg
+            st.session_state.set_font = new_scale
+            st.session_state.selected_citation_format = new_citation_style
+            st.session_state.auto_bibliography = auto_bib_toggle
+            st.session_state.selected_alarm_tone = new_alarm_tone
+            st.success("Configuration modifications updated inside current cache session!")
+            time.sleep(0.5)
+            st.rerun()
+            
+    with action_col2:
+        if st.button("🔄 Trigger Master Reset", use_container_width=True, type="secondary"):
+            trigger_master_reset()
