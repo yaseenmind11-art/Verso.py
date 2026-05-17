@@ -1,11 +1,11 @@
 streamlit
 textblob
 nltk
+language-tool-python
 docx2txt
 PyPDF2
 pandas
-requests
 beautifulsoup4
+requests
 urllib3
 google-genai
-language-tool-python
