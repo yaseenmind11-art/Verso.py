@@ -1,7 +1,6 @@
 import streamlit as st
 from textblob import TextBlob
 import nltk
-import time
 import random
 import re
 import difflib
@@ -26,6 +25,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # GOOGLE ANALYTICS
 # =========================================
 def inject_ga():
+
     ga_id = "G-030XWBG97P"
 
     ga_code = f"""
@@ -46,19 +46,21 @@ def inject_ga():
     components.html(ga_code, height=0)
 
 # =========================================
-# SYSTEM SETUP
+# NLTK SETUP
 # =========================================
 @st.cache_resource
 def setup_system():
 
     try:
-        for res in [
+
+        resources = [
             'punkt',
             'brown',
             'wordnet',
-            'punkt_tab',
             'averaged_perceptron_tagger'
-        ]:
+        ]
+
+        for res in resources:
             nltk.download(res, quiet=True)
 
     except Exception:
@@ -67,36 +69,67 @@ def setup_system():
 setup_system()
 
 # =========================================
-# LANGUAGE TOOL
+# SAFE LANGUAGE TOOL LOADER
 # =========================================
 @st.cache_resource
 def load_language_tool():
-    return language_tool_python.LanguageTool('en-US')
+
+    try:
+
+        tool = language_tool_python.LanguageToolPublicAPI(
+            'en-US'
+        )
+
+        return tool
+
+    except Exception:
+
+        st.warning(
+            "LanguageTool unavailable. "
+            "Using fallback spelling correction."
+        )
+
+        return None
 
 grammar_tool = load_language_tool()
 
 # =========================================
-# ADVANCED GRAMMAR ENGINE
+# SMART GRAMMAR ENGINE
 # =========================================
 def smart_grammar_corrector(text):
 
     if not text.strip():
         return ""
 
-    # -------------------------------------
-    # STEP 1 → Grammar Correction
-    # -------------------------------------
-    matches = grammar_tool.check(text)
-
-    corrected = language_tool_python.utils.correct(
-        text,
-        matches
-    )
+    corrected = text
 
     # -------------------------------------
-    # STEP 2 → Spelling Correction
+    # STEP 1 → Grammar correction
     # -------------------------------------
-    corrected = str(TextBlob(corrected).correct())
+    try:
+
+        if grammar_tool is not None:
+
+            matches = grammar_tool.check(text)
+
+            corrected = language_tool_python.utils.correct(
+                text,
+                matches
+            )
+
+    except Exception:
+        corrected = text
+
+    # -------------------------------------
+    # STEP 2 → Spelling correction
+    # -------------------------------------
+    try:
+        corrected = str(
+            TextBlob(corrected).correct()
+        )
+
+    except Exception:
+        pass
 
     # -------------------------------------
     # STEP 3 → Cleanup
@@ -112,7 +145,7 @@ def smart_grammar_corrector(text):
         corrected = corrected[0].upper() + corrected[1:]
 
     # -------------------------------------
-    # STEP 4 → Smart Punctuation
+    # STEP 4 → Smart punctuation
     # -------------------------------------
     question_words = (
         'who', 'what', 'where',
@@ -137,12 +170,12 @@ def smart_grammar_corrector(text):
 def initialize_states(force=False):
 
     defaults = {
+
         'set_color': "#FFFFFF",
         'set_bg': "#5465C9",
-        'set_font': 1.10,
-        'reset_counter': random.randint(1, 1000),
-
-        'grammar_text_input': ""
+        'set_font': 1.1,
+        'grammar_text_input': "",
+        'reset_counter': random.randint(1, 9999)
     }
 
     for key, value in defaults.items():
@@ -169,6 +202,7 @@ except Exception:
 # PAGE CONFIG
 # =========================================
 st.set_page_config(
+
     page_title="VERSO PRO",
     page_icon="✍️",
     layout="wide"
@@ -225,6 +259,10 @@ st.markdown(f"""
     font-size: {f_scale}rem;
 }}
 
+textarea {{
+    font-size: 18px !important;
+}}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -236,7 +274,9 @@ with st.sidebar:
     st.title("VERSO PRO")
 
     choice = st.radio(
+
         "Navigation Menu",
+
         [
             "🏠 Home",
             "✍️ Grammar Checker",
@@ -252,33 +292,38 @@ if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
 
     st.markdown("""
-    ### 🎓 Universal Academic Engine
+    ### 🎓 Universal Writing Assistant
 
-    This app includes:
+    Features Included:
 
     ✅ Grammar Correction  
     ✅ Spelling Correction  
-    ✅ Punctuation Correction  
-    ✅ AI Text Enhancement  
-    ✅ Smart Writing Assistant
+    ✅ Punctuation Fixing  
+    ✅ Smart AI Cleanup  
+    ✅ Sentence Enhancement  
+    ✅ Difference Highlighting  
     """)
 
 # =========================================
-# GRAMMAR CHECKER
+# GRAMMAR CHECKER PAGE
 # =========================================
 elif choice == "✍️ Grammar Checker":
 
-    st.title("✍️ Verso Smart Grammar Corrector")
+    st.title("✍️ Smart Grammar Corrector")
 
     st.markdown("""
-    ### AI Grammar + Spelling + Punctuation Assistant
+    ### Correct grammar, punctuation, and spelling instantly.
     """)
 
     text_to_check = st.text_area(
+
         "Paste your text below:",
+
         value=st.session_state.grammar_text_input,
+
         height=250,
-        placeholder="Type or paste your paragraph here..."
+
+        placeholder="Example: i has a apple and she go to school yesterday"
     )
 
     st.session_state.grammar_text_input = text_to_check
@@ -287,31 +332,33 @@ elif choice == "✍️ Grammar Checker":
     # BUTTON
     # =====================================
     if st.button(
+
         "✨ Run Smart Correction",
+
         use_container_width=True
     ):
 
         if text_to_check.strip():
 
             with st.spinner(
-                "Analyzing grammar and spelling..."
+                "Analyzing grammar..."
             ):
 
-                # -----------------------------
-                # FINAL CORRECTED TEXT
-                # -----------------------------
                 final_text = smart_grammar_corrector(
                     text_to_check
                 )
 
-                # -----------------------------
+                # -------------------------
                 # DIFF VISUALIZATION
-                # -----------------------------
+                # -------------------------
                 diff_html = ""
 
                 matcher = difflib.SequenceMatcher(
+
                     None,
+
                     text_to_check,
+
                     final_text
                 )
 
@@ -325,44 +372,48 @@ elif choice == "✍️ Grammar Checker":
 
                         if i1 != i2:
 
-                            diff_html += f'''
+                            diff_html += f"""
                             <span class="diff-remove">
                             {text_to_check[i1:i2]}
                             </span>
-                            '''
+                            """
 
                         if j1 != j2:
 
-                            diff_html += f'''
+                            diff_html += f"""
                             <span class="diff-add">
                             {final_text[j1:j2]}
                             </span>
-                            '''
+                            """
 
-                # -----------------------------
+                # -------------------------
                 # SUCCESS
-                # -----------------------------
+                # -------------------------
                 st.success(
-                    "✅ Correction Finished!"
+                    "✅ Correction Completed"
                 )
 
-                # -----------------------------
-                # HIGHLIGHTED DIFFERENCES
-                # -----------------------------
+                # -------------------------
+                # DIFF OUTPUT
+                # -------------------------
                 st.markdown(
-                    f'''
+
+                    f"""
                     <div class="correct-box">
                     {diff_html}
                     </div>
-                    ''',
+                    """,
+
                     unsafe_allow_html=True
                 )
 
-                # -----------------------------
+                # -------------------------
                 # FINAL OUTPUT
-                # -----------------------------
+                # -------------------------
                 with st.expander(
+
                     "📄 Final Corrected Text",
+
                     expanded=True
                 ):
 
@@ -375,27 +426,32 @@ elif choice == "✍️ Grammar Checker":
             )
 
 # =========================================
-# SETTINGS
+# SETTINGS PAGE
 # =========================================
 elif choice == "⚙️ Settings":
 
-    st.title("⚙️ Verso Settings")
+    st.title("⚙️ App Settings")
 
     col1, col2 = st.columns(2)
 
     with col1:
 
-        st.markdown("### 🎨 Appearance")
+        st.markdown("### 🎨 Accent Color")
 
         def update_accent():
+
             st.session_state.set_color = (
                 st.session_state.accent_pick
             )
 
         st.color_picker(
+
             "Accent Color",
+
             value=st.session_state.set_color,
+
             key="accent_pick",
+
             on_change=update_accent
         )
 
@@ -404,23 +460,35 @@ elif choice == "⚙️ Settings":
         st.markdown("### 🖼️ Card Background")
 
         def update_bg():
+
             st.session_state.set_bg = (
                 st.session_state.bg_pick
             )
 
         st.color_picker(
-            "Card Background",
+
+            "Background Color",
+
             value=st.session_state.set_bg,
+
             key="bg_pick",
+
             on_change=update_bg
         )
 
+    st.markdown("### 🔠 Font Size")
+
     st.slider(
+
         "Font Scale",
+
         0.8,
+
         2.0,
+
         value=st.session_state.set_font,
+
         key="set_font"
     )
 
-    st.success("✅ Settings Saved")
+    st.success("✅ Settings Updated")
