@@ -1,3 +1,4 @@
+import language_tool_python
 import streamlit as st
 from textblob import TextBlob
 import nltk
@@ -15,6 +16,25 @@ from bs4 import BeautifulSoup
 import urllib3
 from google import genai
 from google.genai import types
+
+def correct_text(text):
+    # Initialize the LanguageTool engine
+    tool = language_tool_python.LanguageTool('en-US')
+    
+    # Automatically fix grammar, punctuation, and capitalization
+    corrected_text = tool.correct(text)
+    
+    # Close the tool to free up resources
+    tool.close()
+    
+    return corrected_text
+
+# Example text with capitalization and punctuation errors
+sample_text = "this is a sentence. i think it is great, Dont you think so"
+
+fixed_text = correct_text(sample_text)
+print("Original:", sample_text)
+print("Corrected:", fixed_text)
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -632,7 +652,7 @@ elif choice == "📒 Study Assistant":
             else:
                 st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
-                
+                    
         with t4:
             st.markdown("### 🎙️ Verso AI Teacher")
             
@@ -645,156 +665,4 @@ elif choice == "📒 Study Assistant":
                     st.session_state.generated_lecture_text = teach_source_material(final_study_data)
             
             if st.session_state.generated_lecture_text:
-                raw_generated_lesson = st.session_state.generated_lecture_text
-                
-                # Sanitize out any newlines, quotes, or markdown icons that break JavaScript rendering
-                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js) # Drops emoji characters so engine stays clean
-
-                tts_component_code = f"""
-                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
-                        <span>
-                            <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
-                            <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
-                        </span>
-                    </div>
-                    <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
-                    <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
-                    <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
-                </div>
-
-                <script>
-                    const synth = window.speechSynthesis;
-                    let utterance = null;
-                    let voices = [];
-                    const voiceSelect = document.getElementById('voiceSelect');
-
-                    function populateVoices() {{
-                        voices = synth.getVoices();
-                        voiceSelect.innerHTML = '';
-                        
-                        let defaultIndex = 0;
-                        voices.forEach((voice, index) => {{
-                            const option = document.createElement('option');
-                            option.textContent = `${{voice.name}} (${{voice.lang}})`;
-                            option.value = index;
-                            
-                            // Explicitly set Google US English as the chosen choice if available
-                            if (voice.name.includes('Google') && voice.lang === 'en-US') {{
-                                defaultIndex = index;
-                            }}
-                            voiceSelect.appendChild(option);
-                        }});
-                        
-                        if(voices.length > 0) {{
-                            voiceSelect.selectedIndex = defaultIndex;
-                        }}
-                    }}
-
-                    populateVoices();
-                    if (speechSynthesis.onvoiceschanged !== undefined) {{
-                        speechSynthesis.onvoiceschanged = populateVoices;
-                    }}
-
-                    function playAudio() {{
-                        if (synth.speaking) {{
-                            if (synth.paused) {{
-                                synth.resume();
-                                return;
-                            }}
-                            synth.cancel();
-                        }}
-                        
-                        const textToSpeak = "{clean_speech_js}";
-                        if (!textToSpeak) return;
-
-                        utterance = new SpeechSynthesisUtterance(textToSpeak);
-                        
-                        if (voices.length > 0) {{
-                            const selectedVoiceIndex = voiceSelect.value || 0;
-                            utterance.voice = voices[selectedVoiceIndex];
-                        }}
-                        
-                        utterance.pitch = {v_pitch};
-                        utterance.rate = {v_speed};
-                        
-                        synth.speak(utterance);
-                    }}
-
-                    function pauseAudio() {{
-                        if (synth.speaking && !synth.paused) {{
-                            synth.pause();
-                        }}
-                    }}
-
-                    function stopAudio() {{
-                        if (synth.speaking) {{
-                            synth.cancel();
-                        }}
-                    }}
-                </script>
-                """
-                components.html(tts_component_code, height=110)
-                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
-
-# --- MODULE: TIME TRACKER / SETTINGS (STUBS BASED ON APP SELECTION OPTIONS) ---
-elif choice == "⏱️ Time Tracker":
-    st.title("Focus Timer")
-    if not st.session_state.get('sound_unlocked', False):
-        if st.button("🔓 ENABLE SOUNDS"):
-            components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
-            st.session_state.sound_unlocked = True; st.rerun()
-    mins = st.number_input("Minutes:", 1, 120, 25)
-    c1, c2, c3, c4 = st.columns(4)
-    if c1.button("Start"): st.session_state.timer_end_time = time.time()+(mins*60); st.session_state.timer_active=True; st.rerun()
-    if c2.button("Pause"): st.session_state.timer_active=False; st.rerun()
-    if c4.button("Reset"): st.session_state.timer_active=False; st.session_state.timer_end_time=None; st.rerun()
-    
-    rem_time = st.session_state.get('remaining_at_pause', 0)
-    m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
-    if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
-
-
-elif choice == "⚙️ Settings":
-    st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
-        
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown('### 📚 Academic & Audio')
-        st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
-        if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-        
-        st.selectbox("Citation Style", [
-            "APA 7th Generation", 
-            "APA 6th Generation", 
-            "APA 5th Generation",
-            "MLA 9th Edition", 
-            "Chicago 17th (Notes & Bibliography)", 
-            "Chicago 17th (Author-Date)",
-            "Harvard (Standard UK)",
-            "Harvard (Australia)"
-        ], key="selected_citation_format")
-        
-        st.selectbox("Tone Level", ["Formal", "Casual", "Academic"])
-        st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
-        st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
-    with col2:
-        st.markdown('### 🎨 UI Appearance')
-        def update_accent(): st.session_state.set_color = st.session_state.accent_pick
-        def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
-        st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
-        st.color_picker("Card BG", value=st.session_state.set_bg, key="bg_pick", on_change=update_bg)
-        st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
-        st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
-    with col3:
-        st.markdown('### 🔐 System Info')
-        st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
-        st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
-    st.success("System Optimized")
-
-if st.session_state.get('timer_finished_trigger'):
-    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
-    components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
-    if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
+                st.markdown(f'<div class="teacher-board">{st.session_state.generated_lecture_text}</div>', unsafe_allow_html=True)
