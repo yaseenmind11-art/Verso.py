@@ -438,7 +438,7 @@ elif choice == "✍️ Grammar Checker":
             with st.spinner("Processing..."):
               def correct_text(text):
     # Initialize the tool for US English
-     tool = language_tool_python.LanguageTool('en-US')
+     tool = language_tool_python.LanguageTool
     
     # Identify errors (grammar, spelling, punctuation, capitalization)
     matches = tool.check(text)
