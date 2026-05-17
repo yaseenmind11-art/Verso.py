@@ -1,4 +1,5 @@
 import streamlit as st
+from textblob import TextBlob
 import nltk
 import time
 import random
@@ -14,8 +15,6 @@ from bs4 import BeautifulSoup
 import urllib3
 from google import genai
 from google.genai import types
-import language_tool_python
-
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -436,23 +435,25 @@ elif choice == "✍️ Grammar Checker":
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
-              def correct_text(text):
-    
-    # Identify errors (grammar, spelling, punctuation, capitalization)
-    matches = tool.check(text)
-    
-    # Automatically apply the suggested corrections
-    corrected_text = tool.correct(text)
-    
-    return corrected_text, matches
-
-# Example usage:
-input_text = "this is a example of bad grammar and i forgot my punctuation"
-corrected, errors = correct_text(input_text)
-
-print(f"Original: {input_text}")
-print(f"Corrected: {corrected}")
-
+                t = text_to_check.strip()
+                blob = TextBlob(t)
+                corrected = str(blob.correct()).rstrip('.?! ')
+                corrected = re.sub(r'\bi\b', 'I', corrected)
+                
+                q_words = ('who', 'what', 'where', 'when', 'why', 'how', 'is', 'can', 'do', 'does', 'hi', 'are')
+                corrected += "?" if corrected.lower().startswith(q_words) else "."
+                final_text = corrected[0].upper() + corrected[1:] if corrected else ""
+                
+                diff_html = ""
+                matcher = difflib.SequenceMatcher(None, text_to_check, final_text)
+                for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                    if tag == 'equal': diff_html += text_to_check[i1:i2]
+                    else:
+                        if i1 != i2: diff_html += f'<span class="diff-remove">{text_to_check[i1:i2]}</span>'
+                        if j1 != j2: diff_html += f'<span class="diff-add">{final_text[j1:j2]}</span>'
+                st.success("Correction Finished!")
+                st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{diff_html}</div>', unsafe_allow_html=True)
+                with st.expander("Final Polished Text"): st.code(final_text)
 
 # --- MODULE: PLAGIARISM CHECKER ---
 elif choice == "🛡️ Plagiarism Checker":
