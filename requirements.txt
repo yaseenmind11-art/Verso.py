@@ -6,4 +6,6 @@ PyPDF2
 pandas
 requests
 beautifulsoup4
+urllib3
 google-genai
+language-tool-python
