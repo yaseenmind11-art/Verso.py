@@ -120,11 +120,11 @@ except Exception:
 
 def teach_source_material(source_text: str):
     if client is None:
-        return "⚠️ Setup Error: API Key missing or leaked. Please configure GEMINI_API_KEY inside your local secrets file (.streamlit/secrets.toml) or deployment dashboard panels."
+        return "⚠️ sorry this isn't supposed to happen 😥  (Key problem = API)"
 
     system_instruction = """
     You are an expert, engaging teacher. Your job is to take the provided source
-    material and teach it as a complete lesson.
+    material and teach it as a complete lesson in detail.
 
     Structure the lesson exactly like this:
     1. 🎯 Lesson Objective: What the students will learn.
@@ -375,7 +375,6 @@ with st.sidebar:
     if client is None:
         st.error("🔑 API Key Configuration Missing")
         st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
-    st.markdown("---")
 
 with st.sidebar:
     st.image("z.png", width=80)
