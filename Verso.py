@@ -1,8 +1,33 @@
-Here is the complete, unified code for **Verso Research Pro**.
+Ah, I see what's happening! That screenshot completely clarifies things.
 
-The only modifications made are updating your Google Analytics section to include the Google Search Console verification meta tag block, and updating the initialization call further down.
+Since your live site URL is **`https://yaseenmind11-art.github.io/Verso.py/`**, you should **use this new GitHub Pages link** for your URL prefix property in Google Search Console, **not** the Streamlit one.
 
-Make sure to replace `"YOUR_GOOGLE_VERIFICATION_STRING_HERE"` with your actual verification code string from your Google Search Console dashboard before saving and pushing to GitHub!
+Because of this setup, we also need to make a small adjustment to the verification method. Streamlit code runs dynamically, but GitHub Pages serves a flat, static site.
+
+Here is exactly how to handle it so it verifies perfectly:
+
+### Step 1: In Google Search Console
+
+1. Select the **URL Prefix** option.
+2. Paste your live link exactly as shown in your screenshot: `https://yaseenmind11-art.github.io/Verso.py/`
+3. Click continue. When it shows you the verification options, choose **HTML file download** (instead of the HTML tag method we discussed earlier).
+4. Download that small verification HTML file to your computer (it usually looks like `googlee1234567890.html`).
+
+### Step 2: Upload to GitHub
+
+1. Go directly to your GitHub repository for `Verso.py`.
+2. Upload that downloaded `googlee1234567890.html` file straight into the **root** folder of your repository (the main page where your code file lives).
+3. Commit and push the changes so the file goes live.
+
+### Step 3: Verify
+
+Once the file is uploaded, go back to Google Search Console and hit **Verify**. It will instantly check your GitHub Pages site, find that file, and authorize your account!
+
+---
+
+### Your Final Python Code
+
+Since you are hosting this via GitHub Pages now, we don't need to overcomplicate the dynamic layout block inside your Streamlit script anymore. Here is your entire, untouched code file with the neat, consolidated layout block ready to go:
 
 ```python
 import streamlit as st
@@ -60,14 +85,10 @@ CAMPUS_HEADERS = {
 }
 campus_session.headers.update(CAMPUS_HEADERS)
 
-# --- 🛰️ GOOGLE ANALYTICS & SEARCH CONSOLE INTEGRATION ---
-def inject_ga_and_gsc():
+# --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
+def inject_ga():
     ga_id = "G-030XWBG97P"
-    gsc_verification_id = "YOUR_GOOGLE_VERIFICATION_STRING_HERE"
-    
-    combined_code = f"""
-    <meta name="google-site-verification" content="{gsc_verification_id}" />
-    
+    ga_code = f"""
     <script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
@@ -76,7 +97,7 @@ def inject_ga_and_gsc():
     gtag('config', '{ga_id}', {{ 'debug_mode': true }});
     </script>
     """
-    components.html(combined_code, height=0)
+    components.html(ga_code, height=0)
 
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
@@ -279,7 +300,7 @@ selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
-inject_ga_and_gsc()
+inject_ga()
 
 st.markdown(f"""
 <style>
