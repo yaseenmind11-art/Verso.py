@@ -1,8 +1,3 @@
-Here is your complete, unified code for **Verso Research Pro**.
-
-This includes your **Google Site Verification dynamic engine** injection at the very top (right below `st.set_page_config`), the Sophos network campus proxy logic, your custom CSS themes, and all interactive study panels (Keywords, 10-Question Quiz, 25 NotebookLM-style Flashcards, and AI Voice Broadcast system) perfectly intact.
-
-```python
 import streamlit as st
 from textblob import TextBlob
 import nltk
@@ -24,7 +19,7 @@ from google.genai import types
 
 # --- 🎯 GOOGLE SITE VERIFICATION CENTER ---
 # Copy the long string inside content="..." from Google Search Console and paste it below:
-GSC_VERIFICATION_STRING = "<meta name="google-site-verification" content="W9JcAjDYAJtTHQz2toGnqDUsgQo34tcEmQSf-NItZug" />"
+GSC_VERIFICATION_STRING = "PASTE_YOUR_STRING_HERE"
 
 # Streamlit App Configuration (Must be the first Streamlit command executed)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
@@ -97,7 +92,8 @@ def setup_system():
     try:
         for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
             nltk.download(res, quiet=True)
-    except Exception: pass
+    except Exception: 
+        pass
 
 setup_system()
 
@@ -173,7 +169,8 @@ def teach_source_material(source_text: str):
 
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
-    if uploaded_file is None: return ""
+    if uploaded_file is None: 
+        return ""
     try:
         if uploaded_file.type == "application/pdf":
             reader = PyPDF2.PdfReader(uploaded_file)
@@ -185,20 +182,25 @@ def extract_text(uploaded_file):
             return df.astype(str).apply(lambda x: ' '.join(x), axis=1).str.cat(sep=' ')
         else:
             return str(uploaded_file.read(), "utf-8")
-    except Exception: return ""
+    except Exception: 
+        return ""
 
 def extract_from_url(url):
-    if not url: return ""
+    if not url: 
+        return ""
     try:
         res = campus_session.get(url, timeout=6)
         soup = BeautifulSoup(res.content, 'html.parser')
-        for s in soup(['script', 'style']): s.decompose()
+        for s in soup(['script', 'style']): 
+            s.decompose()
         return soup.get_text(separator=' ', strip=True)
-    except: return ""
+    except: 
+        return ""
 
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
-    if not url: return "Please enter a valid URL or reference title."
+    if not url: 
+        return "Please enter a valid URL or reference title."
 
     title = "Web Page Reference"
     site_name = "Website Source"
