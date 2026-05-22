@@ -13,28 +13,9 @@ import io
 import requests
 from bs4 import BeautifulSoup
 import urllib3
-import os
+import os  
 from google import genai
 from google.genai import types
-
-# --- 🎯 GOOGLE SITE VERIFICATION CENTER ---
-# Copy the long string inside content="..." from Google Search Console and paste it below:
-GSC_VERIFICATION_STRING = "PASTE_YOUR_STRING_HERE"
-
-# Streamlit App Configuration (Must be the first Streamlit command executed)
-st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
-
-# Dynamically inject the verification tag into the outer HTML framework
-components.html(f"""
-<script>
-    if (!parent.document.querySelector('meta[name="google-site-verification"]')) {{
-        var meta = parent.document.createElement('meta');
-        meta.name = "google-site-verification";
-        meta.content = "{GSC_VERIFICATION_STRING}";
-        parent.document.head.appendChild(meta);
-    }}
-</script>
-""", height=0)
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -62,20 +43,13 @@ else:
     # Fallback Method: Turn off strict validation if running at home or cert is missing
     campus_session.verify = False
 
-# Hardened fallback configuration to bypass Sophos Deep Packet Inspection when strictly blocked on-campus
-campus_session.trust_env = False
-os.environ['CURL_CA_BUNDLE'] = ''
-os.environ['PYTHONHTTPSVERIFY'] = '0'
-
 # Optimized Headers to resemble a standard browser request bypassing strict firewall flags
 CAMPUS_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.5',
     'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache'
+    'Upgrade-Insecure-Requests': '1'
 }
 campus_session.headers.update(CAMPUS_HEADERS)
 
@@ -99,8 +73,7 @@ def setup_system():
     try:
         for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
             nltk.download(res, quiet=True)
-    except Exception: 
-        pass
+    except Exception: pass
 
 setup_system()
 
@@ -130,8 +103,7 @@ def initialize_states(force=False):
         'fc_correct': 0,
         'fc_wrong': 0,
         'reveal_fc': False,
-        'generated_lecture_text': "",
-        'voice_search_query': ""
+        'generated_lecture_text': ""
     }
     for key, value in defaults.items():
         if force or key not in st.session_state:
@@ -177,8 +149,7 @@ def teach_source_material(source_text: str):
 
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
-    if uploaded_file is None: 
-        return ""
+    if uploaded_file is None: return ""
     try:
         if uploaded_file.type == "application/pdf":
             reader = PyPDF2.PdfReader(uploaded_file)
@@ -190,25 +161,21 @@ def extract_text(uploaded_file):
             return df.astype(str).apply(lambda x: ' '.join(x), axis=1).str.cat(sep=' ')
         else:
             return str(uploaded_file.read(), "utf-8")
-    except Exception: 
-        return ""
+    except Exception: return ""
 
 def extract_from_url(url):
-    if not url: 
-        return ""
+    if not url: return ""
     try:
-        res = campus_session.get(url, timeout=8, verify=False)
+        # Replaced requests.get with custom campus_session to bypass Sophos issues
+        res = campus_session.get(url, timeout=6)
         soup = BeautifulSoup(res.content, 'html.parser')
-        for s in soup(['script', 'style']): 
-            s.decompose()
+        for s in soup(['script', 'style']): s.decompose()
         return soup.get_text(separator=' ', strip=True)
-    except: 
-        return ""
+    except: return ""
 
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
-    if not url: 
-        return "Please enter a valid URL or reference title."
+    if not url: return "Please enter a valid URL or reference title."
 
     title = "Web Page Reference"
     site_name = "Website Source"
@@ -217,7 +184,8 @@ def generate_scribbr_citation(url, style_format):
     access_date = time.strftime("%d %b. %Y")
 
     try:
-        res = campus_session.get(url, timeout=6, verify=False)
+        # Replaced requests.get with custom campus_session to bypass Sophos issues
+        res = campus_session.get(url, timeout=5)
         soup = BeautifulSoup(res.content, 'html.parser')
 
         title_tag = soup.find('meta', property='og:title')
@@ -299,40 +267,41 @@ f_scale = st.session_state.set_font
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
+st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
 st.markdown(f"""
 <style>
 .stApp {{ color: inherit; }}
 .notebook-card {{
-    background-color: {bg_card};
-    padding: 30px; border-radius: 12px; border-left: 6px solid {accent};
-    margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
+background-color: {bg_card};
+padding: 30px; border-radius: 12px; border-left: 6px solid {accent};
+margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
 }}
 .teacher-board {{
-    background-color: #0f172a; border: 1px solid #334155; padding: 45px;
-    border-radius: 12px; font-family: 'Inter', sans-serif;
-    color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
+background-color: #0f172a; border: 1px solid #334155; padding: 45px;
+border-radius: 12px; font-family: 'Inter', sans-serif;
+color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
 }}
 .teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
 .teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
 .teacher-board b {{ color: {accent}; }}
 
 .google-container {{
-    width: 100%;
-    height: 800px;
-    overflow: hidden;
-    position: relative;
-    border-radius: 12px;
-    border: 1px solid #334155;
-    background-color: white;
+width: 100%;
+height: 800px;
+overflow: hidden;
+position: relative;
+border-radius: 12px;
+border: 1px solid #334155;
+background-color: white;
 }}
 .google-iframe {{
-    position: absolute;
-    top: -125px;
-    left: 0;
-    width: 100%;
-    height: 1025px;
+position: absolute;
+top: -125px;
+left: 0;
+width: 100%;
+height: 1025px;
 }}
 
 .time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px;
@@ -343,49 +312,49 @@ animation: blinker 0.8s linear infinite; }}
 .pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
 
 .audio-panel {{
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    border: 1px solid #475569;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
+background: linear-gradient(135deg, #1e293b, #0f172a);
+border: 1px solid #475569;
+border-radius: 8px;
+padding: 15px;
+margin-bottom: 20px;
 }}
 
 .audio-btn {{
-    background-color: {bg_card} !important;
-    color: white !important;
-    border: 1px solid {accent} !important;
-    padding: 10px 24px;
-    font-size: 15px;
-    font-weight: bold;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-right: 10px;
-    transition: opacity 0.2s;
-    display: inline-block;
+background-color: {bg_card} !important;
+color: white !important;
+border: 1px solid {accent} !important;
+padding: 10px 24px;
+font-size: 15px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+margin-right: 10px;
+transition: opacity 0.2s;
+display: inline-block;
 }}
 .audio-btn:hover {{ opacity: 0.85; }}
 .audio-btn-pause {{
-    background-color: #eab308 !important;
-    border: 1px solid #facc15 !important;
+background-color: #eab308 !important;
+border: 1px solid #facc15 !important;
 }}
 .audio-btn-stop {{
-    background-color: #ef4444 !important;
-    border: 1px solid #f87171 !important;
+background-color: #ef4444 !important;
+border: 1px solid #f87171 !important;
 }}
 
 [data-testid="stSidebar"] div.stRadio > div {{
-    background: transparent !important;
-    padding: 0px !important;
+background: transparent !important;
+padding: 0px !important;
 }}
 [data-testid="stSidebar"] div.stRadio label {{
-    padding: 6px 0px !important;
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin-bottom: 4px !important;
+padding: 6px 0px !important;
+background-color: transparent !important;
+border: none !important;
+box-shadow: none !important;
+margin-bottom: 4px !important;
 }}
 [data-testid="stSidebar"] div.stRadio label:hover {{
-    background-color: transparent !important;
+background-color: transparent !important;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -454,86 +423,9 @@ if choice == "🏠 Home":
         key="selected_sources"
     )
 
-    # Hardened iframe layout offering explicit media capture validation
-    voice_component_html = """
-    <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-        <input type="text" id="searchBox" placeholder="Research your topic or use voice commands..." style="width: 85%; padding: 12px; font-size: 16px; border-radius: 6px; border: 1px solid #475569; background-color: #0f172a; color: white;">
-        <button id="micBtn" style="width: 15%; padding: 12px; font-size: 16px; border-radius: 6px; border: 1px solid #5465C9; background-color: #5465C9; color: white; cursor: pointer; font-weight: bold;">🎙️ Mic</button>
-    </div>
-
-    <script>
-        const searchBox = document.getElementById('searchBox');
-        const micBtn = document.getElementById('micBtn');
-        
-        const currentQuery = window.parent.document.getElementById("voice_query_transport");
-        if (currentQuery && currentQuery.innerText) {
-            searchBox.value = currentQuery.innerText;
-        }
-
-        searchBox.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                window.parent.postMessage({type: 'VOICE_SEARCH_SUBMIT', query: searchBox.value}, '*');
-            }
-        });
-
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-
-            micBtn.addEventListener('click', () => {
-                micBtn.innerText = "🛑 Listening...";
-                micBtn.style.backgroundColor = "#ef4444";
-                recognition.start();
-            });
-
-            recognition.onresult = (event) => {
-                const speechToText = event.results[0][0].transcript;
-                searchBox.value = speechToText;
-                window.parent.postMessage({type: 'VOICE_SEARCH_SUBMIT', query: speechToText}, '*');
-            };
-
-            recognition.onerror = () => {
-                micBtn.innerText = "🎙️ Mic";
-                micBtn.style.backgroundColor = "#5465C9";
-            };
-
-            recognition.onend = () => {
-                micBtn.innerText = "🎙️ Mic";
-                micBtn.style.backgroundColor = "#5465C9";
-            };
-        } else {
-            micBtn.style.display = 'none';
-        }
-    </script>
-    """
-    
-    # Broadcast configuration linkage framework
-    components.html(f"""
-    <script>
-        window.addEventListener('message', function(event) {{
-            if (event.data.type === 'VOICE_SEARCH_SUBMIT') {{
-                const link = document.createElement('a');
-                link.href = '?voice_q=' + encodeURIComponent(event.data.query);
-                parent.window.location.href = link.href;
-            }}
-        }});
-    </script>
-    """, height=0)
-
-    # Added rule to bypass modern web sandbox restrictions for audio capture
-    components.html(voice_component_html, height=60, allow_rules=["microphone"])
-    
-    # Clean query parameter verification layer
-    if "voice_q" in st.query_params:
-        st.session_state.voice_search_query = st.query_params["voice_q"]
-        
-    q = st.session_state.voice_search_query
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
 
     if q:
-        st.markdown(f"<div id='voice_query_transport' style='display:none;'>{q}</div>", unsafe_allow_html=True)
         query_parts = [source_options[s] for s in selected_sources]
         advanced_filter = " OR ".join(query_parts) if query_parts else ""
 
@@ -634,8 +526,8 @@ elif choice == "📚 Citation Generator":
                 output = generate_scribbr_citation(cite_url, active_style)
                 st.markdown(f'<div class="notebook-card"><b>Generated Entry:</b><br><br>{output}</div>', unsafe_allow_html=True)
 
-            if st.session_state.get("auto_bibliography", True):
-                st.success("Reference entry systematically pushed to active Auto-Bibliography.")
+                if st.session_state.get("auto_bibliography", True):
+                    st.success("Reference entry systematically pushed to active Auto-Bibliography.")
         else:
             st.warning("Please provide a valid source link or title inside the input workspace.")
 
@@ -715,7 +607,7 @@ elif choice == "📒 Study Assistant":
                         st.balloons(); st.success("Excellent! Correct evaluation.")
                     else:
                         st.info(f"Analysis update: The correct choice was: **{st.session_state.current_quiz_target}**")
-                    time.sleep(1)
+                        time.sleep(1)
 
                     st.session_state.current_quiz_options = None
                     st.session_state.current_quiz_target = None
@@ -751,7 +643,6 @@ elif choice == "📒 Study Assistant":
                 else:
                     q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
                     a_text = f"<b>Contextual Importance:</b> The inputted source material identifies '{curr_word}' as a high-value variable."
-                
                 st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
                 if not st.session_state.reveal_fc:
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
