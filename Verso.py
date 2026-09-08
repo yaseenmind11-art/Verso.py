@@ -369,7 +369,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
-
+with st.sidebar:
     if client is None:
         st.error("🔑 API Key Configuration Missing")
         st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
