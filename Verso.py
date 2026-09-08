@@ -16,7 +16,7 @@ import urllib3
 import os  
 from google import genai
 from google.genai import types
-from deep-translator
+import deep-translator
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
