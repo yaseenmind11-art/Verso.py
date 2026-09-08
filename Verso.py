@@ -16,6 +16,7 @@ import urllib3
 import os  
 from google import genai
 from google.genai import types
+
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -390,6 +391,7 @@ with st.sidebar:
         "⚙️ Settings"
     ]
 
+    choice = st.radio("Navigation Menu", nav_options, label_visibility="collapsed")
 
 # --- HOME ---
 if choice == "🏠 Home":
@@ -621,7 +623,7 @@ elif choice == "📒 Study Assistant":
                     st.rerun()
 
         with t3:
-            st.markdown("### Flashcards (25 Cards)")
+            st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
                 curr_idx = st.session_state.fc_step
