@@ -16,7 +16,8 @@ import urllib3
 import os  
 from google import genai
 from google.genai import types
-
+streamlit
+deep-translator
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -388,11 +389,53 @@ with st.sidebar:
         "📚 Citation Generator",
         "⏱️ Time Tracker",
         "📝 Word Counter",
+        "🌐 Verso Translate",
         "⚙️ Settings"
     ]
 
-    choice = st.radio("Navigation Menu", nav_options, label_visibility="collapsed")
+if current_page == "Verso Translate":
+    st.title("🌐 Verso Translate")
+    st.subheader("Google Translate Powered Engine")
 
+    # Fetch supported languages dynamically (supporting over 100+ global languages)
+    try:
+        lang_dict = GoogleTranslator().get_supported_languages(as_dict=True)
+    except Exception:
+        # Fallback dictionary if offline or API limits hit momentarily
+        lang_dict = {"english": "en", "spanish": "es", "french": "fr", "arabic": "ar", "german": "de"}
+
+    # Alphabetize languages for clean user interface lookup
+    sorted_languages = sorted(list(lang_dict.keys()))
+
+    # Layout Google Translate design layout: Source Left, Target Right
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        source_lang = st.selectbox("From (Source Language)", ["auto"] + sorted_languages, index=0)
+        text_to_translate = st.text_area("Type text here...", height=200, placeholder="Enter text to translate...")
+
+    with col2:
+        # Default target language set to English
+        default_target_idx = sorted_languages.index("english") if "english" in sorted_languages else 0
+        target_lang = st.selectbox("To (Target Language)", sorted_languages, index=default_target_idx)
+        
+        # Action execution button
+        if st.button("Translate Text", type="primary", use_container_width=True):
+            if text_to_translate.strip():
+                with st.spinner("Translating..."):
+                    try:
+                        # Map full name back to standard language ISO codes
+                        src_code = "auto" if source_lang == "auto" else lang_dict[source_lang]
+                        tgt_code = lang_dict[target_lang]
+                        
+                        translated_res = GoogleTranslator(source=src_code, target=tgt_code).translate(text_to_translate)
+                        st.text_area("Translation Output", value=translated_res, height=200, disabled=False)
+                    except Exception as e:
+                        st.error(f"Translation failed: {e}")
+            else:
+                st.warning("Please enter text to translate first.")
+
+    
 # --- HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
@@ -623,7 +666,7 @@ elif choice == "📒 Study Assistant":
                     st.rerun()
 
         with t3:
-            st.markdown("### NotebookLM Style Flashcards (25 Cards)")
+            st.markdown("### Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
                 curr_idx = st.session_state.fc_step
