@@ -369,8 +369,6 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
-with st.sidebar:
-   
 
     if client is None:
         st.error("🔑 API Key Configuration Missing")
