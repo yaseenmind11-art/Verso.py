@@ -370,7 +370,7 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
+   
 
     if client is None:
         st.error("🔑 API Key Configuration Missing")
