@@ -387,7 +387,6 @@ with st.sidebar:
         "📚 Citation Generator",
         "⏱️ Time Tracker",
         "📝 Word Counter",
-        "🌐 Verso Translate",
         "⚙️ Settings"
     ]
 
