@@ -623,7 +623,7 @@ elif choice == "📒 Study Assistant":
                     st.rerun()
 
         with t3:
-            st.markdown("### NotebookLM Style Flashcards (25 Cards)")
+            st.markdown("### Verso Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
                 curr_idx = st.session_state.fc_step
