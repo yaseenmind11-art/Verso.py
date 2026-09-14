@@ -439,7 +439,7 @@ if choice == "🏠 Home":
 
 # --- MODULE: WORD COUNTER ---
 elif choice == "📝 Word Counter":
-    st.title("Verso Word Metrics")
+    st.title("Verso Word Counter")
     st.markdown("### 📥 Analyze Content")
     uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
     file_text = extract_text(uploaded_file)
