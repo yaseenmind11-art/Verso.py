@@ -394,7 +394,7 @@ with st.sidebar:
 # --- HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    st.markdown("### 🎓 Verso Academic Engine (use it to filter unsuitable websites In studyingand essays)")
+    st.markdown("### 🎓 Verso Academic Engine (use it to filter unsuitable websites In studying and writing essays)")
 
     source_options = {
         "Educational (.edu)": "site:.edu",
