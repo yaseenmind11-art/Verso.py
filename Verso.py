@@ -361,7 +361,7 @@ with st.sidebar:
         "📚 Citation Generator",
         "⏱️ Time Tracker",
         "📝 Word Counter",
-        "✍️ HUMANISM ENGINE",
+        "✍️ Humanism Engine",
         "⚙️ Settings",
         
     ]
