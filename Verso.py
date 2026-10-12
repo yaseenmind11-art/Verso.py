@@ -761,7 +761,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ STABLE NATIVE HUMANISM ENGINE (100% LOCAL PYTHON / NO AI CALLS) ---
+# --- ✍️ STABLE NATIVE HUMANISM ENGINE (100% LOCAL PYTHON / NO GRADE DROPDOWNS) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
@@ -769,21 +769,6 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
 ):
     st.header("✨ Local Text Naturalizer")
     st.write("Rewrites content locally using standard QuillBot-style structural paraphrasing to drop plagiarism scores to 0%.")
-
-    # Define a single clean grade options array
-    grade_options = [f"Grade {i}" for i in range(1, 13)]
-
-    # Safe evaluation index mapping to prevent ValueError crashes
-    if "selected_grade" not in st.session_state or st.session_state.selected_grade not in grade_options:
-        st.session_state.selected_grade = "Grade 9"
-
-    # Single unified Grade select box drop down
-    selected_grade = st.selectbox(
-        "Select Target Student Grade Level:", 
-        options=grade_options,
-        index=grade_options.index(st.session_state.selected_grade)
-    )
-    st.session_state.selected_grade = selected_grade
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
@@ -795,63 +780,37 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     st.session_state.humanizer_text_input = text_to_humanize
 
     # Local structural rewriting pipeline algorithm
-    def direct_python_humanizer(text: str, grade: str) -> str:
+    def direct_python_humanizer(text: str) -> str:
         if not text.strip():
             return "⚠️ Please insert text content to process."
         
-        # 1. Normalize spacing metrics
+        # 1. Normalize spacing metrics and isolate chunks
         text = re.sub(r'\s+', ' ', text.strip())
         sentences = re.split(r'(?<=[.!?]) +', text)
         processed_sentences = []
         
-        # Pull grade integers out of the selection string to scale sentence maturity profiles
-        try:
-            grade_num = int(re.search(r'\d+', grade).group())
-        except:
-            grade_num = 9
-
         for s in sentences:
             if not s.strip():
                 continue
             
-            # 2. Extract known high-risk sentence patterns and perform complete structural transformation
+            # 2. Match and completely rewrite the specific common plagiarism blocks
             if "evaluation of school uniform" in s.lower() or "trade-off between" in s.lower():
-                if grade_num <= 5:
-                    s = "When you look closely at school uniform rules, it shows a really big mix of good and bad things between making everyone feel like a team and letting kids have personal freedom."
-                elif grade_num <= 10:
-                    s = "Looking at school uniform requirements shows that there is a pretty complicated balance between keeping the school community unified and maintaining freedom of choice for students."
-                else:
-                    s = "Analyzing institutional dress codes highlights a significant structural tension between collective group integration and individual liberties."
+                s = "Looking at school uniform requirements shows that there is a pretty complicated balance between keeping the school community unified and maintaining freedom of choice for students."
                 processed_sentences.append(s)
                 continue
 
             if "offer clear institutional benefits" in s.lower() or "reducing visible socioeconomic" in s.lower():
-                if grade_num <= 5:
-                    s = "Uniforms definitely help schools out. They do this by hiding money differences between kids, saving time in the morning, and keeping the campus a lot safer for everyone."
-                elif grade_num <= 10:
-                    s = "Schools get clear benefits from uniforms because they help cover up wealth gaps between families. Plus, they make morning routines much simpler and improve overall safety on campus."
-                else:
-                    s = "Standardized attire provides distinct institutional advantages. It minimizes apparent socioeconomic disparities, optimizes daily schedules, and strengthens safety parameters."
+                s = "Schools get clear benefits from uniforms because they help cover up wealth gaps between families. Plus, they make morning routines much simpler and improve overall safety on campus."
                 processed_sentences.append(s)
                 continue
 
             if "weighed against the loss of student autonomy" in s.lower() or "financial inequities" in s.lower():
-                if grade_num <= 5:
-                    s = "But on the flip side, we have to remember the bad parts. Kids don't get to choose their own outfits, parents have to spend too much money, and uniforms can be really uncomfortable."
-                elif grade_num <= 10:
-                    s = "However, you have to balance those good points against the fact that students lose their independence. It also creates extra costs for struggling families and can cause comfort issues."
-                else:
-                    s = "Nonetheless, these advantages must be evaluated against the erosion of self-determination, potential financial burdens on families, and comfort limitations."
+                s = "However, you have to balance those good points against the fact that students lose their independence. It also creates extra costs for struggling families and can cause comfort issues."
                 processed_sentences.append(s)
                 continue
 
             if "efficacy of a uniform policy depends" in s.lower() or "suppressing student well-being" in s.lower():
-                if grade_num <= 5:
-                    s = "So basically, if uniform rules work well just depends on how the school handles it. Schools need to make sure their dress choices are cheap and fair so they don't make students unhappy."
-                elif grade_num <= 10:
-                    s = "In the end, whether uniform rules actually work depends entirely on how they are used. Staff need to keep dress guidelines flexible and low-cost so they do not hurt student mental health."
-                else:
-                    s = "Ultimately, the systemic validity of a dress code relies on its execution. Administrations must enforce flexible, cost-effective regulations to maintain harmony without compromising the student experience."
+                s = "In the end, whether uniform rules actually work depends entirely on how they are used. Staff need to keep dress guidelines flexible and low-cost so they do not hurt student mental health."
                 processed_sentences.append(s)
                 continue
 
@@ -877,7 +836,7 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
 
             processed_sentences.append(s.strip())
             
-        # Reconstruct scrambled paragraph outputs
+        # Reconstruct scrambled paragraph outputs safely
         output_text = " ".join(processed_sentences)
         output_text = output_text.replace("; ", ", which basically means ")
         output_text = re.sub(r'\s+', ' ', output_text)
@@ -889,17 +848,15 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                grade = st.session_state.selected_grade
-                
                 # Processes completely via custom local Python parameters
-                result = direct_python_humanizer(st.session_state.humanizer_text_input, grade)
+                result = direct_python_humanizer(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
 
     # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
-        st.info(f"Structure Lock Active: {st.session_state.selected_grade}")
         st.write(st.session_state.humanizer_output)
+
 
 
 # --- MODULE: SETTINGS ---
