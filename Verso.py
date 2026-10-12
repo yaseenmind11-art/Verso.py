@@ -856,7 +856,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (FIXED SWAP & AUTOMATIC LIVE TRANSLATION) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (FIXED STATED SWAP COMPATIBILITY) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -870,35 +870,43 @@ elif choice == "🌐 Verso Translate":
     }
     lang_list = list(lang_map.keys())
 
-    # Language Selector Swivel Selection Columns
-    col1, col_swap, col2 = st.columns([4, 1, 4])
+    # Fallback validation to protect index positions
+    if st.session_state.src_lang not in lang_list:
+        st.session_state.src_lang = "English"
+    if st.session_state.tgt_lang not in lang_list:
+        st.session_state.tgt_lang = "Arabic"
+
+    # Language Selector Columns
+    col1, col_swap, col2 = st.columns()
     with col1:
-        # Use a state key to safely anchor the selector memory value
+        # Fixed state tracking via explicit mapping index keys
         src_lang = st.selectbox(
             "From Language:", 
             options=lang_list, 
-            key="src_lang"
+            index=lang_list.index(st.session_state.src_lang),
+            key="src_lang_widget"
         )
+        st.session_state.src_lang = src_lang
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
         if st.button("🔄 Swap", use_container_width=True):
-            # Capture snapshot to cleanly cross-swivel selections without duplication
+            # Capture snapshots safely without instantiating variable colliders
             old_src = st.session_state.src_lang
             old_tgt = st.session_state.tgt_lang
             
             st.session_state.src_lang = old_tgt
             st.session_state.tgt_lang = old_src
-            st.json(st.session_state.src_lang) # Fast force variable evaluation
-            st.json(st.session_state.tgt_lang) # Fast force variable evaluation
             st.rerun()
             
     with col2:
         tgt_lang = st.selectbox(
             "To Language:", 
             options=lang_list, 
-            key="tgt_lang"
+            index=lang_list.index(st.session_state.tgt_lang),
+            key="tgt_lang_widget"
         )
+        st.session_state.tgt_lang = tgt_lang
 
     # Workspace Text Layout Fields
     input_col, output_col = st.columns(2)
@@ -913,7 +921,7 @@ elif choice == "🌐 Verso Translate":
         )
         st.session_state.translator_input = text_in
 
-    # Execution controls - Outputs directly back to session_state
+    # Execution controls 
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
@@ -931,7 +939,6 @@ elif choice == "🌐 Verso Translate":
                     st.session_state.translator_output = f"⚠️ Translation engine timeout error: {e}"
 
     with output_col:
-        # Assigned value parameter straight to the updated session state key string
         st.text_area(
             f"Translation in {st.session_state.tgt_lang}:",
             value=st.session_state.translator_output,
