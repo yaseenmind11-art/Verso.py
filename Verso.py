@@ -219,32 +219,6 @@ def trigger_master_reset():
     initialize_states(force=True)
     st.rerun()
 
-# --- 🎨 CONFIGURATION ---
-st.set_page_config(
-    page_title="Verso Research",
-    page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Inject custom CSS to lock the theme container to light mode variables
-st.markdown(
-    """
-    <script>
-        var elements = window.parent.document.querySelectorAll('.stApp');
-        elements.forEach(function(element) {
-            element.setAttribute('data-theme', 'light');
-        });
-    </script>
-    <style>
-        /* Force light mode variables across elements */
-        :root {
-            --color-theme: light !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 # --- ⏱️ BACKGROUND TIMER LOGIC ---
 if st.session_state.get('timer_active') and st.session_state.get('timer_end_time'):
     now = time.time()
