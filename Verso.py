@@ -762,14 +762,13 @@ elif choice == "⏱️ Time Tracker":
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
 # --- ✍️ STABLE HUMANISM ENGINE NAVIGATION ROUTER ---
-# This matches BOTH variants to guarantee the page stops displaying a blank view
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     'choice' in globals() and choice in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"]
 ):
     st.header("✨ AI Text Humanizer")
-    st.write("Transform raw AI content into text that sounds like it was written by an real student.")
+    st.write("Transform raw AI content into text that sounds like it was written by a real student.")
 
     # Frame choices inside standard tracking sessions
     if "education_system" not in st.session_state:
@@ -824,8 +823,7 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     st.session_state.humanizer_text_input = text_to_humanize
 
     # Native fallback optimizer engine to process text if client engine is unreachable
-    def humanize_text(input_content: str, system: str, grade: str):
-
+    def native_humanizer_engine(text: str, system: str, grade: str) -> str:
         if not text.strip():
             return "⚠️ Please insert text content to humanize."
         
@@ -859,12 +857,12 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Rewriting textual variance profiles..."):
-                if client is not None:
                 system = st.session_state.education_system
                 grade = st.session_state.selected_grade
-
+                
+                if client is not None:
                     system_instruction = f"""
-                    You are an school student studying in the {system} framework at the academic level of {grade}. 
+                    You are a school student studying in the {system} framework at the academic level of {grade}. 
                     Rewrite the text input provided by the user completely in your own words.
                     Remove all robotic AI signatures: no bulleted layout summaries, no formal structural bridges, and no complex lists. 
                     Vary sentence lengths naturally. Do not write a perfect essay. Output ONLY your updated writing.
@@ -889,7 +887,6 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
         st.subheader("📝 Humanized Academic Output")
         st.info(f"Target Structure Profile: {st.session_state.education_system} — {st.session_state.selected_grade}")
         st.write(st.session_state.humanizer_output)
-
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
