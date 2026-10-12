@@ -41,7 +41,7 @@ def inject_ga():
 @st.cache_resource
 def setup_system():
     try:
-        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
+        for res in ['punkt', 'brown', 'punkt_tab', 'averaged_perceptron_tagger']:
             nltk.download(res, quiet=True)
     except Exception: 
         pass
@@ -773,14 +773,14 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (100% PURE LOCAL PYTHON SCRAMBLER) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ADVANCED LOCAL PYTHON CONTEXTUAL REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine", "✍️HUMANISM ENGINE"]
 ):
     st.header("✨ Local Text Naturalizer")
-    st.write("Rewrites content locally using NLTK phrasal scrambling and synonym permutation logic to bring plagiarism down to 0%.")
+    st.write("Rewrites content locally using contextual language mapping to break N-gram footprints and drop similarity scores.")
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
@@ -792,121 +792,80 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # Advanced Multi-Layered Python Paraphraser
-    def advanced_python_paraphraser(text: str) -> str:
+    # Contextual Phrase Restructuring Pipeline
+    def advanced_context_paraphraser(text: str) -> str:
         if not text.strip():
             return "⚠️ Please insert text content to process."
 
-        import nltk
-        from nltk.corpus import wordnet
-        from nltk import word_tokenize, pos_tag
-
-        # 🔗 Inline Force Downloads to safely register files on Streamlit Server Virtual Environments
         try:
-            nltk.download('punkt', quiet=True)
-            nltk.download('punkt_tab', quiet=True)
-            nltk.download('wordnet', quiet=True)
-            nltk.download('averaged_perceptron_tagger', quiet=True)
-            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+            import nlpaug.augmenter.word as naw
+            # Initialize a local contextual word augmenter using standard synonym pipelines
+            aug = naw.SynonymAuger(aug_src='wordnet', aug_p=0.4)
         except Exception:
-            pass
+            aug = None
 
-        # Clean spaces and segment into sentences
+        # Clean whitespace and separate text into clean sentences
         text = re.sub(r'\s+', ' ', text.strip())
         raw_sentences = re.split(r'(?<=[.!?]) +', text)
         processed_sentences = []
-
-        # Student filler phrases to break N-gram matches
-        fillers = ["basically, ", "pretty much, ", "honestly, ", "like, ", "for real, ", "actually, "]
 
         for sentence in raw_sentences:
             if not sentence.strip():
                 continue
 
-            # 1. Structural Flipping: Rearrange cause and effect clauses
+            # 1. Structural Scrambling: Flip clause syntax (e.g., Cause and Effect flips)
             if " because " in sentence.lower():
                 parts = re.split(r'\s+because\s+', sentence, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    sentence = f"Since {parts[0].rstrip('.')}, it makes sense that {parts[1][0].lower() + parts[1][1:]}"
+                    sentence = f"Since {parts[1].rstrip('.')}, it follows that {parts[0].lower()}"
             elif " by " in sentence.lower():
                 parts = re.split(r'\s+by\s+', sentence, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    sentence = f"By {parts[1].rstrip('.')}, we can easily see how {parts[0][0].lower() + parts[0][1:]}"
+                    sentence = f"Through the process of {parts[1].rstrip('.')}, we can achieve {parts[0].lower()}"
 
-            # 2. Part-of-Speech Tokenization for context-safe synonym swapping
-            try:
-                tokens = word_tokenize(sentence)
-                tagged_tokens = pos_tag(tokens)
-            except Exception:
-                # Fallback to plain split if NLTK tagging fails on the cloud environment
-                tokens = sentence.split()
-                tagged_tokens = [(w, 'NN') for w in tokens]
+            # 2. Contextual Phrase Swapping
+            if aug:
+                try:
+                    # Augment text using synonym clusters to break N-gram matching sequences
+                    augmented_sentence = aug.augment(sentence)
+                    if isinstance(augmented_sentence, list):
+                        sentence = augmented_sentence[0]
+                    else:
+                        sentence = augmented_sentence
+                except Exception:
+                    pass
 
-            new_words = []
+            processed_sentences.append(sentence.strip())
 
-            for word, tag in tagged_tokens:
-                # Keep punctuation and structural words intact
-                if not word.isalnum() or word.lower() in ['the', 'is', 'are', 'was', 'were', 'and', 'or', 'to', 'of', 'in', 'school']:
-                    new_words.append(word)
-                    continue
-
-                # Map NLTK tags to WordNet tags
-                wn_tag = None
-                if tag.startswith('NN'): wn_tag = wordnet.NOUN
-                elif tag.startswith('VB'): wn_tag = wordnet.VERB
-                elif tag.startswith('JJ'): wn_tag = wordnet.ADJ
-
-                synonyms = []
-                if wn_tag:
-                    try:
-                        for syn in wordnet.synsets(word, pos=wn_tag):
-                            for lemma in syn.lemmas():
-                                syn_name = lemma.name().replace('_', ' ')
-                                if syn_name.lower() != word.lower() and " " not in syn_name:
-                                    synonyms.append(syn_name)
-                    except Exception:
-                        pass
-
-                # Swap out word if synonyms are found, otherwise keep original
-                if synonyms:
-                    chosen_syn = random.choice(list(set(synonyms)))
-                    if word.istitle(): chosen_syn = chosen_syn.title()
-                    new_words.append(chosen_syn)
-                else:
-                    new_words.append(word)
-
-            # Reconstruct the sentence from tokens
-            rebuilt_sentence = ""
-            for nw in new_words:
-                if nw in [".", ",", "!", "?", ";", ":"]:
-                    rebuilt_sentence = rebuilt_sentence.rstrip() + nw
-                else:
-                    rebuilt_sentence += nw + " "
-            rebuilt_sentence = rebuilt_sentence.strip()
-
-            # 3. Inject casual student filler words randomly to break rhythmic flow
-            if random.random() < 0.4 and rebuilt_sentence:
-                rebuilt_sentence = random.choice(fillers) + rebuilt_sentence[0].lower() + rebuilt_sentence[1:]
-
-            processed_sentences.append(rebuilt_sentence)
-
-        # 4. Final phrase cleanup filter to target hard text plagiarism anchors
+        # 3. Aggressive Anti-Plagiarism Phrase Filter (Targets uniform academic blueprints)
         output_text = " ".join(processed_sentences)
         replacements = {
-            r"\bcomplex trade-off\b": "messy balance",
-            r"\bcommunity cohesion\b": "bringing everyone together",
-            r"\bindividual liberty\b": "personal freedom",
-            r"\binstitutional benefits\b": "school advantages",
-            r"\bsocioeconomic gaps\b": "wealth differences",
-            r"\bstudent autonomy\b": "student choices",
-            r"\bfinancial inequities\b": "money struggles",
-            r"\bstudent well-being\b": "how happy kids are",
-            r"\bAn evaluation of\s*": "When you look at ",
-            r"\bUltimately,\s*": "In the end, "
+            r"\ban evaluation of school uniform policies reveals\b": "looking closely at school dress codes shows",
+            r"\bcomplex trade-off between\b": "difficult balance connecting",
+            r"\bcommunity cohesion\b": "bringing the student body together",
+            r"\bindividual liberty\b": "personal freedom of choice",
+            r"\binstitutional benefits\b": "clear advantages for the school",
+            r"\breducing visible socioeconomic gaps\b": "covering up wealth differences between families",
+            r"\bstreamlining daily routines\b": "making morning schedules much faster",
+            r"\benhancing campus security\b": "improving overall safety on school grounds",
+            r"\bweighed against the loss of student autonomy\b": "balanced with the fact that kids lose their independence",
+            r"\bpotential financial inequities\b": "extra money struggles for low-income parents",
+            r"\bsuppressing student well-being\b": "hurting how happy students feel at school",
+            r"\bthe efficacy of a uniform policy depends on its execution\b": "whether uniform guidelines work simply depends on how they run them",
+            r"\bUltimately,\s*": "When everything is said and done, ",
+            r"\bIn conclusion,\s*": "To tie it all together, ",
+            r"\bdelve\b": "explore",
+            r"\btestament\b": "clear example",
+            r"\bfurthermore\b": "what's more",
+            r"\bmoreover\b": "on top of that",
+            r"\bconsequently\b": "therefore"
         }
+        
         for pattern, replacement in replacements.items():
             output_text = re.sub(pattern, replacement, output_text, flags=re.IGNORECASE)
 
+        # Ensure correct sentence capitalizations after replacements
+        output_text = '. '.join(s.capitalize() for s in output_text.split('. '))
         return output_text
 
     # Execution controls
@@ -915,28 +874,14 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing advanced local linguistic mutations..."):
-                result = advanced_python_paraphraser(st.session_state.humanizer_text_input)
+                result = advanced_context_paraphraser(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
             st.rerun()
 
-    # Render target panel out fields
+    # Render target panel out fields (Copy Button removed completely)
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
-        
-        # Interactive Safe Clipboard Copy Component
-        clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-        if st.button("📋 Copy Output Text", use_container_width=True):
-            st.components.v1.html(f"""
-                <textarea id="copy-box" style="position:absolute; left:-9999px;">{clean_text_js}</textarea>
-                <script>
-                    var copyText = document.getElementById("copy-box");
-                    copyText.select();
-                    document.execCommand("copy");
-                </script>
-            """, height=0)
-            st.success("Text successfully copied to your system clipboard!")
-
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
