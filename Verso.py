@@ -855,18 +855,22 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             return "⚠️ Please insert text content to process."
 
         system_instruction = """
-        CRITICAL TASK: Rewrite the provided text so that it yields a 0% similarity match on plagiarism checkers. 
-        You must fundamentally break and scramble the logic sequence of the original paragraph.
-        Never keep original multi-word academic blocks. Swap them for simple, realistic human concepts.
-        Ban all signature AI transition words like delve, testament, furthermore, moreover, consequently.
-        Output ONLY the completely scrambled and transformed final human text.
+        CRITICAL TASK: Rewrite the provided text completely to ensure it yields a 0% similarity match on plagiarism checkers.
+        You must completely restructure and rewrite every single sentence from scratch.
+
+        STRICT REWRITING MANDATES:
+        1. REARRANGE SENTENCE ARCHITECTURE: Change the grammatical layout of every sentence. If a sentence uses "X happened because of Y", flip it entirely to start with the cause: "Because of Y, X occurred".
+        2. BREAK THE CHUNK SIGNATURE: Never reuse sequences of 3 or more consecutive words from the input text. Break up noun phrases and use everyday human expressions. 
+        3. DISRUPT PACING AND LENGTHS: Do not keep the original sentence count. Break long sentences into multiple brief, punchy statements. Mix up sentence lengths naturally.
+        4. BANNED TRANSITIONS: You are forbidden from using common robotic transitions or academic filler. Do not use: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
+        5. OUTPUT ONLY RESPONSE: Output ONLY the completely rewritten text. Do not provide any conversational introductions, markdown bold bullet containers, or closing remarks.
         """
 
         if client is not None:
             try:
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
+                    contents=f"Completely rephrase and rewrite this text to remove all matching word sequences:\n\n{text}",
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.95,
@@ -882,11 +886,13 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 
     # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
-        if not st.session_state.humanizer_text_input.strip():
+        if not text_to_humanize.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                st.session_state.humanizer_output = maximum_humanizer_engine(st.session_state.humanizer_text_input)
+                # Fixed: Reads directly from text_to_humanize to completely eliminate the matching loop bug
+                st.session_state.humanizer_output = maximum_humanizer_engine(text_to_humanize)
+            st.rerun()
 
     # Render target panel out fields
     if st.session_state.humanizer_output:
