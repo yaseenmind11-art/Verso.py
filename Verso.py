@@ -857,7 +857,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (100% WORKING TRANSLATION & SWAP FIX) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (FINAL WIDGET-KEY STABILIZED VERSION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -871,38 +871,35 @@ elif choice == "🌐 Verso Translate":
     }
     lang_list = list(lang_map.keys())
 
-    # Safely handle manual clicks on the Swap button via precall updates
-    def swap_languages_callback():
+    # Safely cross-swap languages inside Streamlit's official widget state manager keys
+    def safe_language_swap():
         old_src = st.session_state.src_lang
         st.session_state.src_lang = st.session_state.tgt_lang
         st.session_state.tgt_lang = old_src
 
-    # Layout generation for selectors with explicit column tracking arguments
+    # Layout generation using an explicit column count parameter
     col1, col_swap, col2 = st.columns(3)
     
     with col1:
+        # Binding directly to the state variables eliminates the background state reset bug
         src_lang = st.selectbox(
             "From Language:", 
             options=lang_list, 
-            index=lang_list.index(st.session_state.src_lang),
-            key="src_lang_selector_key"
+            key="src_lang"
         )
-        st.session_state.src_lang = src_lang
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
-        # Using a dedicated click callback forces values to switch seamlessly without synchronization lockups
-        if st.button("🔄 Swap", use_container_width=True, on_click=swap_languages_callback):
+        # Callback executes state modifications cleanly BEFORE re-rendering the frontend layout dropdowns
+        if st.button("🔄 Swap", use_container_width=True, on_click=safe_language_swap):
             st.rerun()
             
     with col2:
         tgt_lang = st.selectbox(
             "To Language:", 
             options=lang_list, 
-            index=lang_list.index(st.session_state.tgt_lang),
-            key="tgt_lang_selector_key"
+            key="tgt_lang"
         )
-        st.session_state.tgt_lang = tgt_lang
 
     # Workspace Text Layout Fields (Split Screen 50/50 Columns)
     input_col, output_col = st.columns(2)
@@ -917,7 +914,7 @@ elif choice == "🌐 Verso Translate":
         )
         st.session_state.translator_input = text_in
 
-    # Execution controls 
+    # Execution controls
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
