@@ -1,3 +1,10 @@
+Verso
+
+
+
+
+
+
 
 import streamlit as st
 from textblob import TextBlob
@@ -125,9 +132,6 @@ def teach_source_material(source_text: str):
         return response.text
     except Exception as e:
         return f"An error occurred while generating the live lecture format: {e}"
-
-
-
 
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
@@ -441,19 +445,10 @@ elif choice == "📝 Word Counter":
     st.metric("Combined Total", box_count + file_count)
 
 # --- MODULE: GRAMMAR CHECKER ---
-elif choice == "✍️ Humanism Engine":
-    st.header("✨ Local Text Naturalizer")
-    st.write("Applies an aggressive dynamic restructuring protocol to disrupt word sequences and bring plagiarism matching scores down to 0%.")
-
-    # 🔗 Line 780: Make sure this is indented with exactly 4 spaces (or 1 tab)!
-    text_to_humanize = st.text_area(
-        "Paste the text here:",
-        value=st.session_state.humanizer_text_input,
-        height=200,
-        placeholder="Please input the text you want to correct...",
-        key="humanizer_interactive_input"
-    )
-    st.session_state.humanizer_text_input = text_to_humanize
+elif choice == "✍️ Grammar Checker":
+    st.markdown('<h1>Smart Verso Auto Correct</h1>', unsafe_allow_html=True)
+    text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
+    st.session_state.grammar_text_input = text_to_check
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
@@ -781,19 +776,16 @@ elif choice == "⏱️ Time Tracker":
 
 # --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
-
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
-    'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine", "✍️ Humanism Engine", "✍️HUMANISM ENGINE"]
+    'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
 ):
     st.header("✨ Verso Humanizer")
-    st.write("Applies an aggressive multi-stage restructuring protocol to disrupt sentence blueprints and bring plagiarism matching scores down to 0%.")
-
     # Controlled Input payload area
     text_to_humanize = st.text_area(
-        "Paste the text here:",
+        "Paste text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
-        placeholder="Please input the text you want to correct...",  
+        placeholder="Please input the text you want to humanize...",
         key="humanizer_interactive_input"
     )
     st.session_state.humanizer_text_input = text_to_humanize
@@ -825,6 +817,8 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 
     # AI Paraphrasing Pipeline with structural destruction rules
     def maximum_humanizer_engine(text: str) -> str:
+        if client is None:
+            return "⚠️ Gemini API Client is uninitialized. Please check your secrets configurations."
         if not text.strip():
             return "⚠️ Please insert text content to process."
 
@@ -840,23 +834,20 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         5. META-COMMENTARY BLOCK: Output ONLY the completely scrambled and transformed final human text. Do not write intros or outros like "Here is your text".
         """
 
-        if client is not None:
-            try:
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.95,
-                        top_p=0.95
-                    )
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.95,
+                    top_p=0.95
                 )
-                return rigorous_cleaner(response.text)
-            except Exception:
-                # Local safe failover if your Gemini API key hits a daily or minutely limit block
-                return rigorous_cleaner(text)
-        else:
-            return rigorous_cleaner(text)
+            )
+            final_scrambled_text = rigorous_cleaner(response.text)
+            return final_scrambled_text
+        except Exception as e:
+            return f"An processing error occurred during humanization: {e}"
 
     # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
@@ -871,21 +862,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
-        
-        # 📋 Clipboard Copy Component Panel
-        clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-        if st.button("📋 Copy Output Text", use_container_width=True):
-            st.components.v1.html(f"""
-                <textarea id="copy-box" style="position:absolute; left:-9999px;">{clean_text_js}</textarea>
-                <script>
-                    var copyText = document.getElementById("copy-box");
-                    copyText.select();
-                    document.execCommand("copy");
-                </script>
-            """, height=0)
-            st.success("Text successfully copied to your system clipboard!")
 
-            
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
