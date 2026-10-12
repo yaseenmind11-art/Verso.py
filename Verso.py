@@ -374,6 +374,7 @@ with st.sidebar:
         st.error("🔑 API Key Configuration Missing")
         st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
     st.markdown("---")
+    st.title("Made by: yaseen Amr")
 
 with st.sidebar:
     st.image("z.png", width=80)
