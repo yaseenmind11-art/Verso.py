@@ -361,92 +361,13 @@ with st.sidebar:
         "📚 Citation Generator",
         "⏱️ Time Tracker",
         "📝 Word Counter",
-        "⚙️ Settings",
         "✍️HUMANISM ENGINE",
+        "⚙️ Settings",
+        
     ]
 
     choice = st.radio("Navigation Menu", nav_options, label_visibility="collapsed")
-# --- ✍️ HUMANISM ENGINE ---
-st.header("✨ AI Text Humanizer")
-st.write("Transform raw AI content into text that sounds like it was written by a real student.")
 
-# Setup Session State trackers for the buttons
-if "edu_sys" not in st.session_state:
-    st.session_state.edu_sys = "IB System"
-
-# Systems selection panel
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("🏫 IB System", use_container_width=True):
-        st.session_state.edu_sys = "IB System"
-with col2:
-    if st.button("🇺🇸 American System", use_container_width=True):
-        st.session_state.edu_sys = "American System"
-
-# Dynamic Grade options based on selected track
-if st.session_state.edu_sys == "IB System":
-    grade_options = [
-        "PYP (Primary Years Programme)",
-        "MYP (Middle Years Programme)",
-        "DP (Diplomacy Programme / Years 11-12)"
-    ]
-    label_text = "Select your IB Stage:"
-else:
-    grade_options = [f"Grade {i}" for i in range(1, 13)]
-    label_text = "Select your American School Grade Level:"
-
-selected_grade = st.selectbox(label_text, options=grade_options)
-
-# Input text payload
-text_to_humanize = st.text_area(
-    "Paste the AI generated text or prompt response here:",
-    value=st.session_state.humanizer_text_input,
-    height=200,
-    key="humanizer_text_input_area"
-)
-
-def humanize_text(input_content: str, system_type: str, academic_level: str):
-    if client is None:
-        return "⚠️ Gemini API Client is uninitialized. Check secrets key configuration."
-    if not input_content.strip():
-        return "⚠️ Please insert text content to humanize."
-
-    system_instruction = f"""
-    You are an advanced text rewriting assistant acting as a human academic optimizer.
-    Your task is to take the provided text and completely humanize it. 
-    It must lose all obvious AI signatures (such as bulleted overview summaries, words like 'delve', 'testament', 'furthermore', or pristine uniform structure).
-    
-    Target persona: An authentic school student studying inside the '{system_type}' framework, explicitly matching the writing capability of the target group '{academic_level}'.
-    
-    Guidelines:
-    - Maintain the core foundational thesis and research data.
-    - Vary sentence lengths naturally (use some fragment thoughts, conversational transitions).
-    - Adapt structural maturity and vocabulary complexity to exactly mirror a student at a '{academic_level}' performance tier.
-    - Do not add meta-commentary like "Here is your rewritten text". Output ONLY the humanized final essay/paragraph text.
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=f"Humanize this text content:\n\n{input_content}",
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.85
-            )
-        )
-        return response.text
-    except Exception as e:
-        return f"An processing error occurred during humanization: {e}"
-
-if st.button("🚀 Humanize Output Text", type="primary"):
-    with st.spinner("Rewriting code matrices to human variance profiles..."):
-        result = humanize_text(text_to_humanize, st.session_state.edu_sys, selected_grade)
-        st.session_state.humanizer_output = result
-
-if st.session_state.humanizer_output:
-    st.subheader("📝 Humanized Academic Output")
-    st.info(f"Target Structure Locked to: {st.session_state.edu_sys} — {selected_grade}")
-    st.write(st.session_state.humanizer_output)
     
 # --- HOME ---
 if choice == "🏠 Home":
@@ -839,6 +760,89 @@ elif choice == "⏱️ Time Tracker":
     rem_time = st.session_state.get('remaining_at_pause', 0)
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
+
+    # --- ✍️ HUMANISM ENGINE ---
+elif choice == "✍️ HUMANISM ENGINE":
+st.header("✨ AI Text Humanizer")
+st.write("Transform raw AI content into text that sounds like it was written by a real student.")
+
+# Setup Session State trackers for the buttons
+if "edu_sys" not in st.session_state:
+    st.session_state.edu_sys = "IB System"
+
+# Systems selection panel
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("🏫 IB System", use_container_width=True):
+        st.session_state.edu_sys = "IB System"
+with col2:
+    if st.button("🇺🇸 American System", use_container_width=True):
+        st.session_state.edu_sys = "American System"
+
+# Dynamic Grade options based on selected track
+if st.session_state.edu_sys == "IB System":
+    grade_options = [
+        "PYP (Primary Years Programme)",
+        "MYP (Middle Years Programme)",
+        "DP (Diplomacy Programme / Years 11-12)"
+    ]
+    label_text = "Select your IB Stage:"
+else:
+    grade_options = [f"Grade {i}" for i in range(1, 13)]
+    label_text = "Select your American School Grade Level:"
+
+selected_grade = st.selectbox(label_text, options=grade_options)
+
+# Input text payload
+text_to_humanize = st.text_area(
+    "Paste the AI generated text or prompt response here:",
+    value=st.session_state.humanizer_text_input,
+    height=200,
+    key="humanizer_text_input_area"
+)
+
+def humanize_text(input_content: str, system_type: str, academic_level: str):
+    if client is None:
+        return "⚠️ Gemini API Client is uninitialized. Check secrets key configuration."
+    if not input_content.strip():
+        return "⚠️ Please insert text content to humanize."
+
+    system_instruction = f"""
+    You are an advanced text rewriting assistant acting as a human academic optimizer.
+    Your task is to take the provided text and completely humanize it. 
+    It must lose all obvious AI signatures (such as bulleted overview summaries, words like 'delve', 'testament', 'furthermore', or pristine uniform structure).
+    
+    Target persona: An authentic school student studying inside the '{system_type}' framework, explicitly matching the writing capability of the target group '{academic_level}'.
+    
+    Guidelines:
+    - Maintain the core foundational thesis and research data.
+    - Vary sentence lengths naturally (use some fragment thoughts, conversational transitions).
+    - Adapt structural maturity and vocabulary complexity to exactly mirror a student at a '{academic_level}' performance tier.
+    - Do not add meta-commentary like "Here is your rewritten text". Output ONLY the humanized final essay/paragraph text.
+    """
+    
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=f"Humanize this text content:\n\n{input_content}",
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.85
+            )
+        )
+        return response.text
+    except Exception as e:
+        return f"An processing error occurred during humanization: {e}"
+
+if st.button("🚀 Humanize Output Text", type="primary"):
+    with st.spinner("Rewriting code matrices to human variance profiles..."):
+        result = humanize_text(text_to_humanize, st.session_state.edu_sys, selected_grade)
+        st.session_state.humanizer_output = result
+
+if st.session_state.humanizer_output:
+    st.subheader("📝 Humanized Academic Output")
+    st.info(f"Target Structure Locked to: {st.session_state.edu_sys} — {selected_grade}")
+    st.write(st.session_state.humanizer_output)
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
