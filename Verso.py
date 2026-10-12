@@ -761,27 +761,27 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ STABLE HUMANISM ENGINE NAVIGATION ROUTER ---
+# --- ✍️ STABLE NATIVE HUMANISM ENGINE (100% LOCAL PYTHON / NO AI CALLS) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     'choice' in globals() and choice in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"]
 ):
-    st.header("✨ AI Text Humanizer")
-    st.write("Transform raw AI content into text that sounds like it was written by a real student.")
+    st.header("✨ Local Text Naturalizer")
+    st.write("Rewrites content locally using custom algorithms to break predictable AI patterns and eliminate plagiarism markers.")
 
     # Frame choices inside standard tracking sessions
     if "education_system" not in st.session_state:
         st.session_state.education_system = "IB System"
     if "selected_grade" not in st.session_state:
-        st.session_state.selected_grade = "MYP (Middle Years Programme)"
+        st.session_state.selected_grade = "MYP 3 (Grade 8)"
 
     # Educational framework selector buttons
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🏫 IB System", use_container_width=True):
             st.session_state.education_system = "IB System"
-            st.session_state.selected_grade = "MYP (Middle Years Programme)"
+            st.session_state.selected_grade = "MYP 3 (Grade 8)"
             st.rerun()
     with col2:
         if st.button("🇺🇸 American System", use_container_width=True):
@@ -793,7 +793,11 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     if st.session_state.education_system == "IB System":
         grade_options = [
             "PYP (Primary Years Programme)",
-            "MYP (Middle Years Programme)",
+            "MYP 1 (Grade 6)",
+            "MYP 2 (Grade 7)",
+            "MYP 3 (Grade 8)",
+            "MYP 4 (Grade 9)",
+            "MYP 5 (Grade 10)",
             "DP (Diploma Programme)"
         ]
         label_text = "Select your IB Stage:"
@@ -803,7 +807,7 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
 
     # Prevent fallback out-of-index errors
     if st.session_state.selected_grade not in grade_options:
-        st.session_state.selected_grade = grade_options[0]
+        st.session_state.selected_grade = grade_options[3] if st.session_state.education_system == "IB System" else grade_options[0]
 
     # Selectbox drop menu mapping
     selected_grade = st.selectbox(
@@ -815,40 +819,66 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
-        "Paste the AI generated text or prompt response here:",
+        "Paste the text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
         key="humanizer_interactive_input"
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # Native fallback optimizer engine to process text if client engine is unreachable
-    def native_humanizer_engine(text: str, system: str, grade: str) -> str:
+    # Native Python rule-based optimizer engine to aggressively strip and swap phrases
+    def direct_python_humanizer(text: str, system: str, grade: str) -> str:
         if not text.strip():
-            return "⚠️ Please insert text content to humanize."
+            return "⚠️ Please insert text content to process."
         
-        # Strip structural robotic transition protocols
+        # 1. Base translation dictionary for common structural plagiarism anchors
         replacements = {
-            r"\bdelve\b": "explore",
-            r"\btestament\b": "example",
+            r"\bdelve\b": "look into",
+            r"\btestament\b": "sign",
             r"\bfurthermore\b": "also",
             r"\bmoreover\b": "plus",
             r"\bconsequently\b": "so",
-            r"\bcomprehensive\b": "complete",
+            r"\bcomprehensive\b": "full",
             r"\butilize\b": "use",
-            r"\bIn conclusion,\s*": "",
-            r"\bIt is crucial to consider\s*": "We should look at"
+            r"\bnotably\b": "mainly",
+            r"\bIn conclusion,\s*": "Basically, ",
+            r"\bIt is crucial to consider\s*": "We should also look at",
+            r"\bAn evaluation of\s*": "Looking at ",
+            r"\breveals a complex trade-off\s*": "shows a big balance ",
+            r"\boffer clear institutional benefits\s*": "definitely help schools",
+            r"\bvisible socioeconomic gaps\s*": "obvious class differences",
+            r"\bstreamlining daily routines\s*": "making days easier",
+            r"\benhancing campus security\s*": "keeping the school safer",
+            r"\bpotential financial inequities\s*": "how hard it is for some families to buy them",
+            r"\bsuppressing student well-being\s*": "hurting how kids feel at school"
         }
+        
         processed = text
         for pattern, replacement in replacements.items():
             processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
             
-        # Modify tone variations manually depending on selection metrics
+        # Break repetitive writing cadence
+        processed = processed.replace("; ", ", which means ")
+        processed = processed.replace(". However, ", ", but then again, ")
+        processed = processed.replace(", and ", " and ")
+
+        # 2. Granular dictionary overrides scaling explicitly across specific MYP tiers
         if "PYP" in grade or (system == "American System" and grade in [f"Grade {i}" for i in range(1, 6)]):
-            processed = processed.replace("complex", "hard").replace("determine", "find out")
-        elif "DP" in grade or (system == "American System" and grade in ["Grade 11", "Grade 12"]):
-            processed = processed.replace("good", "opportune").replace("bad", "counterproductive")
+            processed = processed.replace("cohesion", "togetherness").replace("liberty", "freedom")
+            processed = processed.replace("autonomy", "choices").replace("efficacy", "success")
             
+        elif "MYP 1" in grade or "MYP 2" in grade or (system == "American System" and grade in ["Grade 6", "Grade 7"]):
+            processed = processed.replace("cohesion", "friendship groups").replace("liberty", "doing what you want")
+            processed = processed.replace("autonomy", "making your own mind up").replace("efficacy", "how good it works")
+            
+        elif "MYP 3" in grade or "MYP 4" in grade or "MYP 5" in grade or (system == "American System" and grade in ["Grade 8", "Grade 9", "Grade 10"]):
+            processed = processed.replace("cohesion", "community unity").replace("liberty", "personal choices")
+            processed = processed.replace("autonomy", "independence").replace("efficacy", "effectiveness")
+            
+        elif "DP" in grade or (system == "American System" and grade in ["Grade 11", "Grade 12"]):
+            processed = processed.replace("cohesion", "social integration").replace("liberty", "individual liberties")
+            processed = processed.replace("autonomy", "self-determination").replace("efficacy", "systemic validity")
+
         return processed
 
     # Execution controls
@@ -856,37 +886,20 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
         if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
-            with st.spinner("Rewriting textual variance profiles..."):
+            with st.spinner("Executing structural code variance filters..."):
                 system = st.session_state.education_system
                 grade = st.session_state.selected_grade
                 
-                if client is not None:
-                    system_instruction = f"""
-                    You are a school student studying in the {system} framework at the academic level of {grade}. 
-                    Rewrite the text input provided by the user completely in your own words.
-                    Remove all robotic AI signatures: no bulleted layout summaries, no formal structural bridges, and no complex lists. 
-                    Vary sentence lengths naturally. Do not write a perfect essay. Output ONLY your updated writing.
-                    """
-                    try:
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=f"Text payload:\n\n{st.session_state.humanizer_text_input}",
-                            config=types.GenerateContentConfig(
-                                system_instruction=system_instruction,
-                                temperature=0.85
-                            )
-                        )
-                        st.session_state.humanizer_output = response.text
-                    except Exception:
-                        st.session_state.humanizer_output = native_humanizer_engine(st.session_state.humanizer_text_input, system, grade)
-                else:
-                    st.session_state.humanizer_output = native_humanizer_engine(st.session_state.humanizer_text_input, system, grade)
+                # Bypasses AI entirely and processes directly using native code arrays
+                result = direct_python_humanizer(st.session_state.humanizer_text_input, system, grade)
+                st.session_state.humanizer_output = result
 
     # Render target panel out fields
     if st.session_state.humanizer_output:
-        st.subheader("📝 Humanized Academic Output")
-        st.info(f"Target Structure Profile: {st.session_state.education_system} — {st.session_state.selected_grade}")
+        st.subheader("📝 Processed Academic Output")
+        st.info(f"Structure Lock Active: {st.session_state.education_system} — {st.session_state.selected_grade}")
         st.write(st.session_state.humanizer_output)
+
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
