@@ -857,10 +857,10 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 VERSO GOOGLE TRANSLATE ENGINE ---
-elif choice == "🌐 Verso Translate":
-    st.header("🌐 Verso Language Link")
-    st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
+# --- 🌐 TRANSLATOR MODULE ENGINE ---
+elif choice == "✍️HUMANISM ENGINE":
+    st.header("🌐 Google Translate Engine")
+    st.write("Instant, context-aware translations matching Google Translate matrices for your workflows.")
 
     # Core language mapping framework
     lang_map = {
@@ -871,8 +871,8 @@ elif choice == "🌐 Verso Translate":
     }
     lang_list = list(lang_map.keys())
 
-    # Language Selector Swivel Bars
-    col1, col_swap, col2 = st.columns([2, 1, 2])
+    # Language Selector Swivel Columns
+    col1, col_swap, col2 = st.columns([4, 1, 4])
     with col1:
         src_lang = st.selectbox(
             "From Language:", 
@@ -884,7 +884,6 @@ elif choice == "🌐 Verso Translate":
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
         if st.button("🔄 Swap", use_container_width=True):
-            # Swivel selected languages immediately
             old_src = st.session_state.src_lang
             st.session_state.src_lang = st.session_state.tgt_lang
             st.session_state.tgt_lang = old_src
@@ -898,7 +897,7 @@ elif choice == "🌐 Verso Translate":
         )
         st.session_state.tgt_lang = tgt_lang
 
-    # Workspace Text Layouts
+    # Workspace Text Input and Outputs
     input_col, output_col = st.columns(2)
     
     with input_col:
@@ -906,26 +905,26 @@ elif choice == "🌐 Verso Translate":
             f"Enter text in {st.session_state.src_lang}:",
             value=st.session_state.translator_input,
             height=250,
-            placeholder="Type or paste context here...",
+            placeholder="Please input the text you want to correct...",  # Placeholder setting
             key="translate_input_area"
         )
         st.session_state.translator_input = text_in
 
-    # Execution wrapper
+    # Run the translator backend pipeline payload
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
-            st.warning("Please type some characters to process translation.")
+            st.warning("Please add some text content to translate first!")
         else:
-            with st.spinner("Accessing global translation matrices..."):
+            with st.spinner("Accessing translation matrices..."):
                 try:
-                    # Initialize deep translator core configurations
                     translated_text = GoogleTranslator(
                         source=lang_map[st.session_state.src_lang], 
                         target=lang_map[st.session_state.tgt_lang]
                     ).translate(st.session_state.translator_input)
                     st.session_state.translator_output = translated_text
+                    st.rerun()
                 except Exception as e:
-                    st.session_state.translator_output = f"⚠️ Translation engine timeout error: {e}"
+                    st.session_state.translator_output = f"⚠️ Translation timeout error: {e}"
 
     with output_col:
         st.text_area(
