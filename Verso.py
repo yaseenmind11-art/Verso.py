@@ -761,10 +761,10 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ HUMANISM ENGINE VIEW BRANCH ---
-# Change 'choice' to match whatever variable name your sidebar radio uses!
-if choice == "✍️ HUMANISM ENGINE":
+if st.session_state.get("menu_selection") == "✍️ HUMANISM ENGINE":
     st.header("✨ AI Text Humanizer")
+    # ... (the rest of the code matches the block above)
+
     st.write("Transform raw AI content into text that sounds like it was written by a real student.")
 
     col1, col2 = st.columns(2)
