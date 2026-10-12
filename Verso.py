@@ -763,7 +763,6 @@ elif choice == "⏱️ Time Tracker":
 
 # --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
-st.text_input"(placeholder="Paste URL..."
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
 ):
