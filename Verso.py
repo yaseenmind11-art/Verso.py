@@ -763,14 +763,14 @@ elif choice == "⏱️ Time Tracker":
 
 # --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
-st.text_input("Link Hub", placeholder="Paste URL..."
+st.text_input(placeholder="Paste URL..."
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
 ):
     st.header("✨ Verso Humanizer")
     # Controlled Input payload area
     text_to_humanize = st.text_area(
-        "Paste the text here:"
+        "Paste text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
         key="humanizer_interactive_input"
