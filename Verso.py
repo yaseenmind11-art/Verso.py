@@ -824,7 +824,8 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     st.session_state.humanizer_text_input = text_to_humanize
 
     # Native fallback optimizer engine to process text if client engine is unreachable
-    def native_humanizer_engine(text: str, system: str, grade: str) -> str:
+  def humanize_text(input_content: str, system: str, grade: str):
+
         if not text.strip():
             return "⚠️ Please insert text content to humanize."
         
