@@ -856,8 +856,6 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
 
-
-python
 # --- 🌐 TRANSLATOR MODULE ENGINE (100% STABLE LOCAL REWRITER WITH WEB BACKUPS) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
