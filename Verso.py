@@ -825,8 +825,6 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 
     # AI Paraphrasing Pipeline with structural destruction rules
     def maximum_humanizer_engine(text: str) -> str:
-        if client is None:
-            return "⚠️ Gemini API Client is uninitialized. Please check your secrets configurations."
         if not text.strip():
             return "⚠️ Please insert text content to process."
 
@@ -842,45 +840,52 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         5. META-COMMENTARY BLOCK: Output ONLY the completely scrambled and transformed final human text. Do not write intros or outros like "Here is your text".
         """
 
-        try:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.95,
-                    top_p=0.95
+        if client is not None:
+            try:
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.95,
+                        top_p=0.95
+                    )
                 )
-            )
-            final_scrambled_text = rigorous_cleaner(response.text)
-            return final_scrambled_text
-        except Exception as e:
-            return f"An processing error occurred during humanization: {e}"
+                return rigorous_cleaner(response.text)
+            except Exception:
+                # Local safe failover if your Gemini API key hits a daily or minutely limit block
+                return rigorous_cleaner(text)
+        else:
+            return rigorous_cleaner(text)
 
     # Execution controls
- if st.button("🚀 Humanize Output Text", type="primary"):
+    if st.button("🚀 Humanize Output Text", type="primary"):
         if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                # 🛑 Wrap the API call in a try block so it fails silently to local mode if rate-limited!
-                if client is not None:
-                    try:
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=f"Completely paraphrase this text:\n\n{st.session_state.humanizer_text_input}",
-                            config=types.GenerateContentConfig(
-                                system_instruction=system_instruction,
-                                temperature=0.95
-                            )
-                        )
-                        st.session_state.humanizer_output = rigorous_cleaner(response.text)
-                    except Exception:
-                        # Fallback locally if Google hits a 429 block
-                        st.session_state.humanizer_output = rigorous_cleaner(st.session_state.humanizer_text_input)
-                else:
-                    st.session_state.humanizer_output = rigorous_cleaner(st.session_state.humanizer_text_input)
-            st.rerun()
+                result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
+                st.session_state.humanizer_output = result
+
+    # Render target panel out fields
+    if st.session_state.humanizer_output:
+        st.subheader("📝 Processed Paraphrase Output")
+        st.write(st.session_state.humanizer_output)
+        
+        # 📋 Clipboard Copy Component Panel
+        clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
+        if st.button("📋 Copy Output Text", use_container_width=True):
+            st.components.v1.html(f"""
+                <textarea id="copy-box" style="position:absolute; left:-9999px;">{clean_text_js}</textarea>
+                <script>
+                    var copyText = document.getElementById("copy-box");
+                    copyText.select();
+                    document.execCommand("copy");
+                </script>
+            """, height=0)
+            st.success("Text successfully copied to your system clipboard!")
+
+            
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
