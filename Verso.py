@@ -856,7 +856,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (100% STABLE LOCAL REWRITER WITH WEB BACKUPS) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -909,74 +909,36 @@ elif choice == "🌐 Verso Translate":
             key="translator_input"
         )
 
-    # 📋 Certified Local Translation Backup Matrix
-    def certified_local_dictionary(text: str, src: str, tgt: str) -> str:
-        clean_in = text.strip().lower().rstrip('.!? ')
-        
-        # Core academic vocabulary pairing maps
-        phrases = {
-            "good morning": {"ar": "صباح الخير", "fr": "bonjour", "de": "guten morgen"},
-            "hello": {"ar": "مرحبا", "fr": "bonjour", "de": "hallo"},
-            "how are you": {"ar": "كيف حالك", "fr": "comment ça va", "de": "wie geht es dir"},
-            "thank you": {"ar": "شكرا لك", "fr": "merci", "de": "danke"},
-            "school uniform": {"ar": "الزي المدرسي", "fr": "uniforme scolaire", "de": "schuluniform"},
-            "education": {"ar": "التعليم", "fr": "éducation", "de": "bildung"},
-            "research paper": {"ar": "ورقة بحثية", "fr": "document de recherche", "de": "forschungspapier"}
-        }
-        
-        # Reverse mapping if starting from non-English sources
-        if src != "English" and tgt == "English":
-            src_code = lang_map[src]
-            for eng_phrase, trans_dict in phrases.items():
-                if trans_dict.get(src_code) == clean_in:
-                    return eng_phrase.capitalize()
-                    
-        # Standard directional routing from English hubs
-        if clean_in in phrases:
-            tgt_code = lang_map[tgt]
-            return phrases[clean_in].get(tgt_code, text).capitalize()
-            
-        return f"[{text}]"
-
-    # Execution controls
+    # Execution controls using Gemini infrastructure to completely bypass IP bans
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
         else:
-            with st.spinner("Accessing translation matrices..."):
-                src_code = lang_map[st.session_state.src_lang]
-                tgt_code = lang_map[st.session_state.tgt_lang]
+            with st.spinner("Processing context-aware translation..."):
+                src_full = st.session_state.src_lang
+                tgt_full = st.session_state.tgt_lang
                 
-                # --- STAGE 1: TRY DEFAULT GOOGLE TRANSLATOR ENVIRONMENT ---
-                try:
-                    from deep_translator import GoogleTranslator
-                    translator = GoogleTranslator(source=src_code, target=tgt_code)
-                    translated_text = translator.translate(st.session_state.translator_input)
-                    
-                    if "too many requests" in str(translated_text).lower() or not translated_text:
-                        raise Exception("Rate Limited")
-                        
-                    st.session_state.translator_output = translated_text
-                    st.rerun()
-                    
-                except Exception:
-                    # --- STAGE 2: STABLE WEBSERVICE API BYPASS ---
+                if client is not None:
+                    system_instruction = f"""
+                    You are a professional, exact translation assistant. Your task is to translate the user text from {src_full} to {tgt_full}.
+                    Maintain exact meaning, tone, and punctuation structure.
+                    Output ONLY the translated result text. Do not add any introductory or explanatory text.
+                    """
                     try:
-                        clean_payload = requests.utils.quote(st.session_state.translator_input)
-                        api_url = f"https://translated.net{clean_payload}&langpair={src_code}|{tgt_code}"
-                        res = requests.get(api_url, timeout=5)
-                        
-                        if res.ok:
-                            result_data = res.json()
-                            st.session_state.translator_output = result_data["responseData"]["translatedText"]
-                            st.rerun()
-                        else:
-                            raise Exception("Web API Busy")
-                    except Exception:
-                        # --- STAGE 3: 100% INTERNAL STANDALONE PYTHON FALLBACK MATRIX ---
-                        local_res = certified_local_dictionary(st.session_state.translator_input, st.session_state.src_lang, st.session_state.tgt_lang)
-                        st.session_state.translator_output = local_res
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=f"Translate this text payload:\n\n{st.session_state.translator_input}",
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_instruction,
+                                temperature=0.3
+                            )
+                        )
+                        st.session_state.translator_output = response.text.strip()
                         st.rerun()
+                    except Exception as ai_err:
+                        st.session_state.translator_output = f"⚠️ System Connection Error: {ai_err}"
+                else:
+                    st.session_state.translator_output = "⚠️ Gemini Client is not initialized. Please verify your API Key in secrets."
 
     with output_col:
         st.text_area(
