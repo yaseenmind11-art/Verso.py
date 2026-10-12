@@ -762,88 +762,97 @@ elif choice == "⏱️ Time Tracker":
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
     # --- MODULE: HUMANISM ENGINE ---
-elif choice == "✍️ HUMANISM ENGINE":
-    st.title("✨ AI Text Humanizer")
+if st.session_state.get("menu_selection") == "HUMANISM ENGINE" or (
+    'choice' in globals() and choice == "HUMANISM ENGINE"
+):
+    st.header("✨ AI Text Humanizer")
     st.write("Transform raw AI content into text that sounds like it was written by a real student.")
 
-# Setup Session State trackers for the buttons
-if "edu_sys" not in st.session_state:
-    st.session_state.edu_sys = "IB System"
+    # Educational framework selector buttons
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🏫 IB System", use_container_width=True):
+            st.session_state.education_system = "IB System"
+    with col2:
+        if st.button("🇺🇸 American System", use_container_width=True):
+            st.session_state.education_system = "American System"
 
-# Systems selection panel
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("🏫 IB System", use_container_width=True):
-        st.session_state.edu_sys = "IB System"
-with col2:
-    if st.button(" 🏫 American System", use_container_width=True):
-        st.session_state.edu_sys = "American System"
+    # Dynamic grade assignment configurations
+    if st.session_state.education_system == "IB System":
+        grade_options = [
+            "PYP (Primary Years Programme)",
+            "MYP (Middle Years Programme)",
+            "DP (Diploma Programme)"
+        ]
+        label_text = "Select your IB Stage:"
+    else:
+        grade_options = [f"Grade {i}" for i in range(1, 13)]
+        label_text = "Select your American School Grade Level:"
 
-# Dynamic Grade options based on selected track
-if st.session_state.edu_sys == "IB System":
-    grade_options = [
-        "PYP (Primary Years Programme)",
-        "MYP (Middle Years Programme)",
-        "DP (Diplomacy Programme / Years 11-12)"
-    ]
-    label_text = "Select your IB Stage:"
-else:
-    grade_options = [f"Grade {i}" for i in range(1, 13)]
-    label_text = "Select your American School Grade Level:"
+    # Track selection changes inside the state engine
+    selected_grade = st.selectbox(
+        label_text, 
+        options=grade_options,
+        index=grade_options.index(st.session_state.selected_grade) if st.session_state.selected_grade in grade_options else 0
+    )
+    st.session_state.selected_grade = selected_grade
 
-selected_grade = st.selectbox(label_text, options=grade_options)
+    # Input payload element
+    text_to_humanize = st.text_area(
+        "Paste the AI generated text or prompt response here:",
+        value=st.session_state.humanizer_text_input,
+        height=200,
+        key="humanizer_text_area_input"
+    )
+    st.session_state.humanizer_text_input = text_to_humanize
 
-# Input text payload
-text_to_humanize = st.text_area(
-    "Paste the AI generated text or prompt response here:",
-    value=st.session_state.humanizer_text_input,
-    height=200,
-    key="humanizer_text_input_area"
-)
+    # Humanizer engine logic matching generation framework pipelines
+    def humanize_text(input_content: str, system_type: str, academic_level: str):
+        if client is None:
+            return "⚠️ Gemini API Client is uninitialized. Check secrets key configuration."
+        if not input_content.strip():
+            return "⚠️ Please insert text content to humanize."
 
-def humanize_text(input_content: str, system_type: str, academic_level: str):
-    if client is None:
-        return "⚠️ Gemini API Client is uninitialized. Check secrets key configuration."
-    if not input_content.strip():
-        return "⚠️ Please insert text content to humanize."
-
-    system_instruction = f"""
-    You are an advanced text rewriting assistant acting as a human academic optimizer.
-    Your task is to take the provided text and completely humanize it. 
-    It must lose all obvious AI signatures (such as bulleted overview summaries, words like 'delve', 'testament', 'furthermore', or pristine uniform structure).
-    
-    Target persona: An authentic school student studying inside the '{system_type}' framework, explicitly matching the writing capability of the target group '{academic_level}'.
-    
-    Guidelines:
-    - Maintain the core foundational thesis and research data.
-    - Vary sentence lengths naturally (use some fragment thoughts, conversational transitions).
-    - Adapt structural maturity and vocabulary complexity to exactly mirror a student at a '{academic_level}' performance tier.
-    - Do not add meta-commentary like "Here is your rewritten text". Output ONLY the humanized final essay/paragraph text.
-    """
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=f"Humanize this text content:\n\n{input_content}",
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.85
+        system_instruction = f"""
+        You are an advanced text rewriting assistant acting as a human academic optimizer.
+        Your task is to take the provided text and completely humanize it. 
+        It must lose all obvious AI signatures (such as bulleted overview summaries, words like 'delve', 'testament', 'furthermore', or pristine uniform structure).
+        
+        Target persona: An authentic school student studying inside the '{system_type}' framework, explicitly matching the writing capability of the target group '{academic_level}'.
+        
+        Guidelines:
+        - Maintain the core foundational thesis and research data.
+        - Vary sentence lengths naturally (use some fragment thoughts, conversational transitions).
+        - Adapt structural maturity and vocabulary complexity to exactly mirror a student at a '{academic_level}' performance tier.
+        - Do not add meta-commentary like "Here is your rewritten text". Output ONLY the humanized final essay/paragraph text.
+        """
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=f"Humanize this text content:\n\n{input_content}",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.85
+                )
             )
-        )
-        return response.text
-    except Exception as e:
-        return f"An processing error occurred during humanization: {e}"
+            return response.text
+        except Exception as e:
+            return f"An processing error occurred during humanization: {e}"
 
-if st.button("🚀 Humanize Output Text", type="primary"):
-    with st.spinner("Rewriting code matrices to human variance profiles..."):
-        result = humanize_text(text_to_humanize, st.session_state.edu_sys, selected_grade)
-        st.session_state.humanizer_output = result
+    if st.button("🚀 Humanize Output Text", type="primary"):
+        with st.spinner("Rewriting content parameters..."):
+            result = humanize_text(
+                st.session_state.humanizer_text_input, 
+                st.session_state.education_system, 
+                st.session_state.selected_grade
+            )
+            st.session_state.humanizer_output = result
 
-if st.session_state.humanizer_output:
-    st.subheader("📝 Humanized Academic Output")
-    st.info(f"Target Structure Locked to: {st.session_state.edu_sys} — {selected_grade}")
-    st.write(st.session_state.humanizer_output)
-
+    if st.session_state.humanizer_output:
+        st.subheader("¼📝 Humanized Academic Output")
+        st.info(f"Target Structure Locked to: {st.session_state.education_system} — {st.session_state.selected_grade}")
+        st.write(st.session_state.humanizer_output)
+        
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
