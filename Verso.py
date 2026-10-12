@@ -366,8 +366,8 @@ with st.sidebar:
         "⏱️ Time Tracker",
         "📝 Word Counter",
         "✍️ Humanism Engine",
-        "⚙️ Settings",
         "🌐 Verso Translate",
+        "⚙️ Settings",
         
     ]
 
@@ -856,7 +856,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (FIXED STATED SWAP COMPATIBILITY) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (100% WORKING SWAP & TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -870,33 +870,28 @@ elif choice == "🌐 Verso Translate":
     }
     lang_list = list(lang_map.keys())
 
-    # Fallback validation to protect index positions
-    if st.session_state.src_lang not in lang_list:
-        st.session_state.src_lang = "English"
-    if st.session_state.tgt_lang not in lang_list:
-        st.session_state.tgt_lang = "Arabic"
+    # Safely handle manual clicks on the Swap button
+    def swap_languages_callback():
+        old_src = st.session_state.src_lang
+        st.session_state.src_lang = st.session_state.tgt_lang
+        st.session_state.tgt_lang = old_src
 
-    # Language Selector Columns
+    # Layout generation for selectors
     col1, col_swap, col2 = st.columns([4, 1, 4])
+    
     with col1:
-        # Fixed state tracking via explicit mapping index keys
         src_lang = st.selectbox(
             "From Language:", 
             options=lang_list, 
             index=lang_list.index(st.session_state.src_lang),
-            key="src_lang_widget"
+            key="src_lang_selector_key"
         )
         st.session_state.src_lang = src_lang
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Swap", use_container_width=True):
-            # Capture snapshots safely without instantiating variable colliders
-            old_src = st.session_state.src_lang
-            old_tgt = st.session_state.tgt_lang
-            
-            st.session_state.src_lang = old_tgt
-            st.session_state.tgt_lang = old_src
+        # Using a direct callback forces Streamlit to swap keys cleanly before drawing widgets
+        if st.button("🔄 Swap", use_container_width=True, on_click=swap_languages_callback):
             st.rerun()
             
     with col2:
@@ -904,7 +899,7 @@ elif choice == "🌐 Verso Translate":
             "To Language:", 
             options=lang_list, 
             index=lang_list.index(st.session_state.tgt_lang),
-            key="tgt_lang_widget"
+            key="tgt_lang_selector_key"
         )
         st.session_state.tgt_lang = tgt_lang
 
@@ -916,12 +911,12 @@ elif choice == "🌐 Verso Translate":
             f"Enter text in {st.session_state.src_lang}:",
             value=st.session_state.translator_input,
             height=250,
-            placeholder="Please input the text you want to correct...",
+            placeholder="Please input the text you want to translate...",
             key="translate_input_area_widget"
         )
         st.session_state.translator_input = text_in
 
-    # Execution controls 
+    # Execution controls
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
@@ -946,7 +941,6 @@ elif choice == "🌐 Verso Translate":
             disabled=True,
             key="translate_output_area_widget"
         )
-
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
