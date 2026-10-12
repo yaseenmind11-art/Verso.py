@@ -378,6 +378,7 @@ with st.sidebar:
 with st.sidebar:
     st.image("z.png", width=80)
     st.title("VERSO PRO")
+    st.subtitle("Made by Yaseen Amr")
     nav_options = [
         "🏠 Home",
         "📒 Study Assistant",
