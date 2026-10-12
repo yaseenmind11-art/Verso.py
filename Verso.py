@@ -857,16 +857,10 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (COMPLETE FAULT-TOLERANT REWRITE) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (100% WORKING TRANSLATION & SWAP FIX) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
-
-    # 🔗 Inline Import Safeguard to completely eliminate NameErrors
-    try:
-        from deep_translator import GoogleTranslator
-    except ImportError:
-        st.error("⚠️ Package 'deep-translator' is not installed in your runtime environment. Please run: pip install deep-translator")
 
     # Core language mapping framework configurations
     lang_map = {
@@ -877,14 +871,14 @@ elif choice == "🌐 Verso Translate":
     }
     lang_list = list(lang_map.keys())
 
-    # Safely handle manual clicks on the Swap button
+    # Safely handle manual clicks on the Swap button via precall updates
     def swap_languages_callback():
         old_src = st.session_state.src_lang
         st.session_state.src_lang = st.session_state.tgt_lang
         st.session_state.tgt_lang = old_src
 
-    # Layout generation for selectors with explicit width adjustments
-    col1, col_swap, col2 = st.columns([4, 1, 4])
+    # Layout generation for selectors with explicit column tracking arguments
+    col1, col_swap, col2 = st.columns(3)
     
     with col1:
         src_lang = st.selectbox(
@@ -897,7 +891,7 @@ elif choice == "🌐 Verso Translate":
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
-        # Callback updates state values securely BEFORE re-rendering the frontend layout dropdowns
+        # Using a dedicated click callback forces values to switch seamlessly without synchronization lockups
         if st.button("🔄 Swap", use_container_width=True, on_click=swap_languages_callback):
             st.rerun()
             
@@ -923,24 +917,26 @@ elif choice == "🌐 Verso Translate":
         )
         st.session_state.translator_input = text_in
 
-    # Execution controls
+    # Execution controls 
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
         else:
             with st.spinner("Accessing translation matrices..."):
                 try:
-                    # Execute translation query pipeline stably using background APIs
-                    translated_text = GoogleTranslator(
+                    # Instantiating a clean translator instance using deep-translator profiles
+                    translator = GoogleTranslator(
                         source=lang_map[st.session_state.src_lang], 
                         target=lang_map[st.session_state.tgt_lang]
-                    ).translate(st.session_state.translator_input)
+                    )
+                    translated_text = translator.translate(st.session_state.translator_input)
                     st.session_state.translator_output = translated_text
                     st.rerun()
                 except Exception as e:
-                    st.session_state.translator_output = f"⚠️ Translation engine connection error: {e}"
+                    st.session_state.translator_output = f"⚠️ Translation engine execution error: {e}"
 
     with output_col:
+        # Securely pass the raw translation string straight into your display container widget
         st.text_area(
             f"Translation in {st.session_state.tgt_lang}:",
             value=st.session_state.translator_output,
