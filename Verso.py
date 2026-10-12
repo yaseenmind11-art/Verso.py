@@ -761,10 +761,10 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-    # --- ✍️ HUMANISM ENGINE ---
+    # --- MODULE: HUMANISM ENGINE ---
 elif choice == "✍️ HUMANISM ENGINE":
-st.header("✨ AI Text Humanizer")
-st.write("Transform raw AI content into text that sounds like it was written by a real student.")
+  st.header("✨ AI Text Humanizer")
+  st.write("Transform raw AI content into text that sounds like it was written by a real student.")
 
 # Setup Session State trackers for the buttons
 if "edu_sys" not in st.session_state:
