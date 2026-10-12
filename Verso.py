@@ -761,50 +761,129 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-if st.session_state.get("menu_selection") == "✍️ HUMANISM ENGINE":
+# --- ✍️ STABLE HUMANISM ENGINE NAVIGATION ROUTER ---
+# This matches BOTH variants to guarantee the page stops displaying a blank view
+current_menu = st.session_state.get("menu_selection", "")
+
+if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
+    'choice' in globals() and choice in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"]
+):
     st.header("✨ AI Text Humanizer")
-    # ... (the rest of the code matches the block above)
+    st.write("Transform raw AI content into text that sounds like it was written by an real student.")
 
-    st.write("Transform raw AI content into text that sounds like it was written by a real student.")
+    # Frame choices inside standard tracking sessions
+    if "education_system" not in st.session_state:
+        st.session_state.education_system = "IB System"
+    if "selected_grade" not in st.session_state:
+        st.session_state.selected_grade = "MYP (Middle Years Programme)"
 
+    # Educational framework selector buttons
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🏫 IB System", use_container_width=True):
             st.session_state.education_system = "IB System"
+            st.session_state.selected_grade = "MYP (Middle Years Programme)"
+            st.rerun()
     with col2:
         if st.button("🇺🇸 American System", use_container_width=True):
             st.session_state.education_system = "American System"
+            st.session_state.selected_grade = "Grade 9"
+            st.rerun()
 
+    # Dynamic grade configurations based on the button selected above
     if st.session_state.education_system == "IB System":
-        grade_options = ["PYP (Primary Years Programme)", "MYP (Middle Years Programme)", "DP (Diploma Programme)"]
+        grade_options = [
+            "PYP (Primary Years Programme)",
+            "MYP (Middle Years Programme)",
+            "DP (Diploma Programme)"
+        ]
         label_text = "Select your IB Stage:"
     else:
         grade_options = [f"Grade {i}" for i in range(1, 13)]
         label_text = "Select your American School Grade Level:"
 
-    current_selected = st.session_state.get('selected_grade', grade_options[0])
-    if current_selected not in grade_options:
-        current_selected = grade_options[0]
-        
-    selected_grade = st.selectbox(label_text, options=grade_options, index=grade_options.index(current_selected))
+    # Prevent fallback out-of-index errors
+    if st.session_state.selected_grade not in grade_options:
+        st.session_state.selected_grade = grade_options[0]
+
+    # Selectbox drop menu mapping
+    selected_grade = st.selectbox(
+        label_text, 
+        options=grade_options,
+        index=grade_options.index(st.session_state.selected_grade)
+    )
     st.session_state.selected_grade = selected_grade
 
-    text_to_humanize = st.text_area("Paste the AI text here:", value=st.session_state.humanizer_text_input, height=200, key="humanizer_text_area_input")
+    # Controlled Input payload area
+    text_to_humanize = st.text_area(
+        "Paste the AI generated text or prompt response here:",
+        value=st.session_state.humanizer_text_input,
+        height=200,
+        key="humanizer_interactive_input"
+    )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    def local_humanize_engine(text: str, system: str, grade: str) -> str:
-        if not text.strip(): return "⚠️ Please insert text content to humanize."
-        ai_phrases = {r"\bdelve\b": "look into", r"\btestament\b": "proof", r"\bfurthermore\b": "also", r"\butilize\b": "use", r"\bIn conclusion,\s*": ""}
+    # Native fallback optimizer engine to process text if client engine is unreachable
+    def native_humanizer_engine(text: str, system: str, grade: str) -> str:
+        if not text.strip():
+            return "⚠️ Please insert text content to humanize."
+        
+        # Strip structural robotic transition protocols
+        replacements = {
+            r"\bdelve\b": "explore",
+            r"\btestament\b": "example",
+            r"\bfurthermore\b": "also",
+            r"\bmoreover\b": "plus",
+            r"\bconsequently\b": "so",
+            r"\bcomprehensive\b": "complete",
+            r"\butilize\b": "use",
+            r"\bIn conclusion,\s*": "",
+            r"\bIt is crucial to consider\s*": "We should look at"
+        }
         processed = text
-        for pattern, replacement in ai_phrases.items():
+        for pattern, replacement in replacements.items():
             processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
+            
+        # Modify tone variations manually depending on selection metrics
+        if "PYP" in grade or (system == "American System" and grade in [f"Grade {i}" for i in range(1, 6)]):
+            processed = processed.replace("complex", "hard").replace("determine", "find out")
+        elif "DP" in grade or (system == "American System" and grade in ["Grade 11", "Grade 12"]):
+            processed = processed.replace("good", "opportune").replace("bad", "counterproductive")
+            
         return processed
 
+    # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
-        st.session_state.humanizer_output = local_humanize_engine(st.session_state.humanizer_text_input, st.session_state.education_system, selected_grade)
+        if not st.session_state.humanizer_text_input.strip():
+            st.warning("Please add some text first!")
+        else:
+            with st.spinner("Rewriting textual variance profiles..."):
+                if client is not None:
+                    system_instruction = f"""
+                    You are an school student studying in the {system} framework at the academic level of {grade}. 
+                    Rewrite the text input provided by the user completely in your own words.
+                    Remove all robotic AI signatures: no bulleted layout summaries, no formal structural bridges, and no complex lists. 
+                    Vary sentence lengths naturally. Do not write a perfect essay. Output ONLY your updated writing.
+                    """
+                    try:
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=f"Text payload:\n\n{st.session_state.humanizer_text_input}",
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_instruction,
+                                temperature=0.85
+                            )
+                        )
+                        st.session_state.humanizer_output = response.text
+                    except Exception:
+                        st.session_state.humanizer_output = native_humanizer_engine(st.session_state.humanizer_text_input, system, grade)
+                else:
+                    st.session_state.humanizer_output = native_humanizer_engine(st.session_state.humanizer_text_input, system, grade)
 
+    # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Humanized Academic Output")
+        st.info(f"Target Structure Profile: {st.session_state.education_system} — {st.session_state.selected_grade}")
         st.write(st.session_state.humanizer_output)
 
 
