@@ -767,8 +767,7 @@ current_menu = st.session_state.get("menu_selection", "")
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
 ):
-    st.header("✨ Local Text Naturalizer")
-    st.write("Applies an aggressive multi-stage restructuring protocol to disrupt sentence blueprints and bring plagiarism matching scores down to 0%.")
+    st.header("✨ Verso Humanizer")
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
