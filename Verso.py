@@ -841,17 +841,16 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             if " because " in s.lower():
                 parts = re.split(r'\s+because\s+', s, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    s = f"Since {parts[1].rstrip('.')}, it makes sense that {parts[0][0].lower() + parts[0][1:]}."
+                    s = f"Since {parts[0].rstrip('.')}, it makes sense that {parts[1][0].lower() + parts[1][1:]}."
             elif " by " in s.lower():
                 parts = re.split(r'\s+by\s+', s, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    s = f"By {parts[1].rstrip('.')}, we can see that it helps to {parts[0][0].lower() + parts[0][1:]}."
+                    s = f"By {parts[0].rstrip('.')}, we can see that it helps to {parts[1][0].lower() + parts[1][1:]}."
 
             processed_sentences.append(s.strip())
             
         # 5. Rearrange paragraph architecture: Swap the sequence order of the sentences to defeat string checking
         if len(processed_sentences) >= 3:
-            # Shift the thesis sentence to break consecutive layout matching signatures
             first = processed_sentences.pop(0)
             processed_sentences.insert(1, first)
 
@@ -863,19 +862,20 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 
     # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
-        if not st.session_state.humanizer_text_input.strip():
+        if not text_to_humanize.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
                 # Processes completely via custom local Python parameters
-                result = direct_python_humanizer(st.session_state.humanizer_text_input)
+                result = direct_python_humanizer(text_to_humanize)
                 st.session_state.humanizer_output = result
-            st.rerun()
 
-    # Render target panel out fields (Copy Button stays fully removed)
+    # Render target panel out fields (Clean display area without copy button)
     if st.session_state.humanizer_output:
-        st.subheader("📝 Processed Paraphrase Output")
+        st.subheader("¼📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
+
+        
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
