@@ -126,6 +126,9 @@ def teach_source_material(source_text: str):
     except Exception as e:
         return f"An error occurred while generating the live lecture format: {e}"
 
+
+
+
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
     if uploaded_file is None: return ""
@@ -774,11 +777,11 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 ):
     st.header("✨ Verso Humanizer")
     # Controlled Input payload area
-    text_to_humanize = st.text_area(
-        "Paste text here:",
+  text_to_humanize = st.text_area(
+        "Paste the text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
-        placeholder="Please input the text you want to humanize...",
+        placeholder="Please input the text you want to correct...",  
         key="humanizer_interactive_input"
     )
     st.session_state.humanizer_text_input = text_to_humanize
@@ -843,19 +846,29 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             return f"An processing error occurred during humanization: {e}"
 
     # Execution controls
-    if st.button("🚀 Humanize Output Text", type="primary"):
+ if st.button("🚀 Humanize Output Text", type="primary"):
         if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
-                st.session_state.humanizer_output = result
-
-    # Render target panel out fields
-    if st.session_state.humanizer_output:
-        st.subheader("📝 Processed Paraphrase Output")
-        st.write(st.session_state.humanizer_output)
-
+                # 🛑 Wrap the API call in a try block so it fails silently to local mode if rate-limited!
+                if client is not None:
+                    try:
+                        response = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=f"Completely paraphrase this text:\n\n{st.session_state.humanizer_text_input}",
+                            config=types.GenerateContentConfig(
+                                system_instruction=system_instruction,
+                                temperature=0.95
+                            )
+                        )
+                        st.session_state.humanizer_output = rigorous_cleaner(response.text)
+                    except Exception:
+                        # Fallback locally if Google hits a 429 block
+                        st.session_state.humanizer_output = rigorous_cleaner(st.session_state.humanizer_text_input)
+                else:
+                    st.session_state.humanizer_output = rigorous_cleaner(st.session_state.humanizer_text_input)
+            st.rerun()
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
