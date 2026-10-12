@@ -860,6 +860,9 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
         else:
             with st.spinner("Rewriting textual variance profiles..."):
                 if client is not None:
+                system = st.session_state.education_system
+                grade = st.session_state.selected_grade
+
                     system_instruction = f"""
                     You are an school student studying in the {system} framework at the academic level of {grade}. 
                     Rewrite the text input provided by the user completely in your own words.
