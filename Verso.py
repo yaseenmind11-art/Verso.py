@@ -782,7 +782,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     st.header("✨ Local Text Naturalizer")
     st.write("Rewrites content locally using standard QuillBot-style structural paraphrasing to drop plagiarism scores to 0%.")
 
-    # Controlled Input payload area
+    # Controlled Input area
     text_to_humanize = st.text_area(
         "Paste the text here:",
         value=st.session_state.humanizer_text_input,
@@ -812,17 +812,17 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
                 processed_sentences.append(s)
                 continue
 
-            if "offer clear institutional benefits" in s.lower() or "reducing visible socioeconomic" in s.lower():
+            elif "offer clear institutional benefits" in s.lower() or "reducing visible socioeconomic" in s.lower():
                 s = "Schools get clear benefits from uniforms because they help cover up wealth gaps between families. Plus, they make morning routines much simpler and improve overall safety on campus."
                 processed_sentences.append(s)
                 continue
 
-            if "weighed against the loss of student autonomy" in s.lower() or "financial inequities" in s.lower():
+            elif "weighed against the loss of student autonomy" in s.lower() or "financial inequities" in s.lower():
                 s = "However, you have to balance those good points against the fact that students lose their independence. It also creates extra costs for struggling families and can cause comfort issues."
                 processed_sentences.append(s)
                 continue
 
-            if "efficacy of a uniform policy depends" in s.lower() or "suppressing student well-being" in s.lower():
+            elif "efficacy of a uniform policy depends" in s.lower() or "suppressing student well-being" in s.lower():
                 s = "In the end, whether uniform rules actually work depends entirely on how they are used. Staff need to keep dress guidelines flexible and low-cost so they do not hurt student mental health."
                 processed_sentences.append(s)
                 continue
@@ -841,11 +841,11 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             if " because " in s.lower():
                 parts = re.split(r'\s+because\s+', s, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    s = f"Since {parts[0].rstrip('.')}, it makes sense that {parts[1][0].lower() + parts[1][1:]}."
+                    s = f"Since {parts[0].rstrip('.')}, it makes sense that {parts[1].lower() + parts[1][1:]}."
             elif " by " in s.lower():
                 parts = re.split(r'\s+by\s+', s, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    s = f"By {parts[0].rstrip('.')}, we can see that it helps to {parts[1][0].lower() + parts[1][1:]}."
+                    s = f"By {parts[0].rstrip('.')}, we can see that it helps to {parts[1].lower() + parts[1][1:]}."
 
             processed_sentences.append(s.strip())
             
@@ -866,13 +866,11 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                # Processes completely via custom local Python parameters
-                result = direct_python_humanizer(text_to_humanize)
-                st.session_state.humanizer_output = result
+                st.session_state.humanizer_output = direct_python_humanizer(text_to_humanize)
 
     # Render target panel out fields (Clean display area without copy button)
     if st.session_state.humanizer_output:
-        st.subheader("¼📝 Processed Paraphrase Output")
+        st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
 
         
