@@ -761,7 +761,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER WITH COPY BUTTON) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
@@ -781,7 +781,6 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
 
     # Local Python Post-Processor to clean up and scramble residual AI structures
     def rigorous_cleaner(text: str) -> str:
-        # Dictionary targeting phrase combinations often flagged by matching sequences
         cleanup_maps = {
             r"\bcomplex trade-off\b": "messy balance",
             r"\bcommunity cohesion\b": "bringing everyone together",
@@ -800,7 +799,6 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
         for pattern, replacement in cleanup_maps.items():
             processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
         
-        # Break apart large string blocks by modifying joining words
         processed = processed.replace(". However, ", ". But on the flip side, ")
         processed = processed.replace(", and ", " and ")
         processed = processed.replace(" because ", " since ")
@@ -831,11 +829,10 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
                 contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
-                    temperature=0.95,  # Maximum temperature for highest structural fluidity
+                    temperature=0.95,
                     top_p=0.95
                 )
             )
-            # Run the AI response through the local python cleanup scrubber for safety
             final_scrambled_text = rigorous_cleaner(response.text)
             return final_scrambled_text
         except Exception as e:
@@ -847,7 +844,6 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                # Processes text through both AI prompt structures and a local cleanup algorithm
                 result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
 
@@ -855,6 +851,20 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
+        
+        # 📋 Interactive Copy Button Panel
+        clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
+        
+        if st.button("📋 Copy Output Text", use_container_width=True):
+            copy_script = f"""
+            <script>
+            navigator.clipboard.writeText("{clean_text_js}").then(() => {{
+                parent.window.alert("Text successfully copied to clipboard! 📋");
+            }});
+            </script>
+            """
+            components.html(copy_script, height=0)
+            st.success("Text sent to your system clipboard!")
 
 
 
