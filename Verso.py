@@ -73,7 +73,7 @@ def initialize_states(force=False):
         'fc_correct': 0,
         'fc_wrong': 0,
         'reveal_fc': False,
-        'generated_lecture_text': ""
+        'generated_lecture_text': "",
          'humanizer_text_input': "",
         'humanizer_output': "",
         'education_system': "IB System",
