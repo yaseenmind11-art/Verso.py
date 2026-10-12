@@ -20,7 +20,38 @@ from google.genai import types
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# --- 🌐 SOPHOS PROTECTION & CAMPUS ROUTING LOGIC ---
+# Define the expected local name for the Carleton Sophos root certificate
+SOPHOS_CERT_FILE = "carleton_sophos_ca.pem"
 
+# Setup custom Session to handle deep packet inspection and network proxies cleanly
+campus_session = requests.Session()
+
+# Grab system or network proxies automatically if pushed by the IT department
+campus_session.proxies = {
+    "http": os.getenv("HTTP_PROXY") or os.getenv("http_proxy"),
+    "https": os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
+}
+# Remove any empty values
+campus_session.proxies = {k: v for k, v in campus_session.proxies.items() if v}
+
+# Determine SSL validation protocol based on file presence
+if os.path.exists(SOPHOS_CERT_FILE):
+    # Safe Method: Cryptographically trust Carleton's Sophos Authority
+    campus_session.verify = SOPHOS_CERT_FILE
+else:
+    # Fallback Method: Turn off strict validation if running at home or cert is missing
+    campus_session.verify = False
+
+# Optimized Headers to resemble a standard browser request bypassing strict firewall flags
+CAMPUS_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1'
+}
+campus_session.headers.update(CAMPUS_HEADERS)
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
@@ -339,15 +370,16 @@ st.markdown(f"""
 
 # --- SIDEBAR ---
 with st.sidebar:
+    st.markdown("<p style='color: gray; margin-bottom: 25px;'>Universal Academic Suite</p>", unsafe_allow_html=True)
+
     if client is None:
         st.error("🔑 API Key Configuration Missing")
         st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
-    st.caption("Made by: yaseen Amr")
     st.markdown("---")
 
 with st.sidebar:
     st.image("z.png", width=80)
-    st.title("Verso Pro")
+    st.title("VERSO PRO")
     nav_options = [
         "🏠 Home",
         "📒 Study Assistant",
@@ -364,8 +396,7 @@ with st.sidebar:
 # --- HOME ---
 if choice == "🏠 Home":
     st.title("VERSO RESEARCH")
-    st.markdown("### 🎓 Verso Academic Engine ")
-    st.caption("use it to filter unsuitable websites for studying and writing essays like .com Websites and Wikipedia")
+    st.markdown("### 🎓 Universal Academic Engine")
 
     source_options = {
         "Educational (.edu)": "site:.edu",
@@ -410,7 +441,7 @@ if choice == "🏠 Home":
 
 # --- MODULE: WORD COUNTER ---
 elif choice == "📝 Word Counter":
-    st.title("Verso Word Counter")
+    st.title("Verso Word Metrics")
     st.markdown("### 📥 Analyze Content")
     uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
     file_text = extract_text(uploaded_file)
@@ -592,7 +623,7 @@ elif choice == "📒 Study Assistant":
                     st.rerun()
 
         with t3:
-            st.markdown("### Verso Flashcards (25 Cards)")
+            st.markdown("### NotebookLM Style Flashcards (25 Cards)")
             total_fc = 25
             if st.session_state.fc_step < total_fc:
                 curr_idx = st.session_state.fc_step
@@ -792,3 +823,4 @@ if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
     components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
     if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
+
