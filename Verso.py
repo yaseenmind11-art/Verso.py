@@ -856,12 +856,12 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE ---
-elif choice == "✍️HUMANISM ENGINE":
+# --- 🌐 TRANSLATOR MODULE ENGINE (SYNCED WITH SIDEBAR LABEL STRING) ---
+elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
-    st.write("Instant, context-aware translations matching Google Translate matrices for your workflows.")
+    st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
 
-    # Core language mapping framework
+    # Core language mapping framework configurations
     lang_map = {
         "Arabic": "ar",
         "English": "en",
@@ -870,7 +870,7 @@ elif choice == "✍️HUMANISM ENGINE":
     }
     lang_list = list(lang_map.keys())
 
-    # Language Selector Swivel Columns
+    # Language Selector Swivel Selection Columns
     col1, col_swap, col2 = st.columns([4, 1, 4])
     with col1:
         src_lang = st.selectbox(
@@ -883,6 +883,7 @@ elif choice == "✍️HUMANISM ENGINE":
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
         if st.button("🔄 Swap", use_container_width=True):
+            # Swivel selected languages inside session state maps immediately
             old_src = st.session_state.src_lang
             st.session_state.src_lang = st.session_state.tgt_lang
             st.session_state.tgt_lang = old_src
@@ -896,7 +897,7 @@ elif choice == "✍️HUMANISM ENGINE":
         )
         st.session_state.tgt_lang = tgt_lang
 
-    # Workspace Text Input and Outputs
+    # Workspace Text Layout Fields
     input_col, output_col = st.columns(2)
     
     with input_col:
@@ -904,18 +905,19 @@ elif choice == "✍️HUMANISM ENGINE":
             f"Enter text in {st.session_state.src_lang}:",
             value=st.session_state.translator_input,
             height=250,
-            placeholder="Please input the text you want to correct...",  # Placeholder setting
+            placeholder="Please input the text you want to correct...",
             key="translate_input_area"
         )
         st.session_state.translator_input = text_in
 
-    # Run the translator backend pipeline payload
+    # Execution controls
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
-            st.warning("Please add some text content to translate first!")
+            st.warning("Please type some characters to process translation.")
         else:
             with st.spinner("Accessing translation matrices..."):
                 try:
+                    # Execute translation query pipeline safely via Google backend wrapper APIs
                     translated_text = GoogleTranslator(
                         source=lang_map[st.session_state.src_lang], 
                         target=lang_map[st.session_state.tgt_lang]
@@ -923,7 +925,7 @@ elif choice == "✍️HUMANISM ENGINE":
                     st.session_state.translator_output = translated_text
                     st.rerun()
                 except Exception as e:
-                    st.session_state.translator_output = f"⚠️ Translation timeout error: {e}"
+                    st.session_state.translator_output = f"⚠️ Translation engine timeout error: {e}"
 
     with output_col:
         st.text_area(
@@ -933,7 +935,6 @@ elif choice == "✍️HUMANISM ENGINE":
             disabled=True,
             key="translate_output_area"
         )
-
 
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
