@@ -857,7 +857,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (FINAL WIDGET-KEY STABILIZED VERSION) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (100% INSTANT TRANSLATION & SWAP FIX) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -881,8 +881,7 @@ elif choice == "🌐 Verso Translate":
     col1, col_swap, col2 = st.columns(3)
     
     with col1:
-        # Binding directly to the state variables eliminates the background state reset bug
-        src_lang = st.selectbox(
+        st.selectbox(
             "From Language:", 
             options=lang_list, 
             key="src_lang"
@@ -890,12 +889,11 @@ elif choice == "🌐 Verso Translate":
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
-        # Callback executes state modifications cleanly BEFORE re-rendering the frontend layout dropdowns
         if st.button("🔄 Swap", use_container_width=True, on_click=safe_language_swap):
             st.rerun()
             
     with col2:
-        tgt_lang = st.selectbox(
+        st.selectbox(
             "To Language:", 
             options=lang_list, 
             key="tgt_lang"
@@ -905,14 +903,13 @@ elif choice == "🌐 Verso Translate":
     input_col, output_col = st.columns(2)
     
     with input_col:
-        text_in = st.text_area(
+        # Binding directly to a dynamic state tracking key forces live input caching
+        st.text_area(
             f"Enter text in {st.session_state.src_lang}:",
-            value=st.session_state.translator_input,
             height=250,
             placeholder="Please input the text you want to translate...",
-            key="translate_input_area_widget"
+            key="translator_input"
         )
-        st.session_state.translator_input = text_in
 
     # Execution controls
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
@@ -933,13 +930,12 @@ elif choice == "🌐 Verso Translate":
                     st.session_state.translator_output = f"⚠️ Translation engine execution error: {e}"
 
     with output_col:
-        # Securely pass the raw translation string straight into your display container widget
+        # Binding directly to the verified state output key forces the view window to display text instantly
         st.text_area(
             f"Translation in {st.session_state.tgt_lang}:",
-            value=st.session_state.translator_output,
             height=250,
             disabled=True,
-            key="translate_output_area_widget"
+            key="translator_output"
         )
         
 # --- MODULE: SETTINGS ---
