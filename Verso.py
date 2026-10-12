@@ -1,4 +1,3 @@
-
 import streamlit as st
 from textblob import TextBlob
 import nltk
@@ -23,7 +22,6 @@ from deep_translator import GoogleTranslator
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
     ga_id = "G-030XWBG97P"
@@ -38,15 +36,18 @@ def inject_ga():
     """
     components.html(ga_code, height=0)
 
+
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
 def setup_system():
     try:
         for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
             nltk.download(res, quiet=True)
-    except Exception: pass
+    except Exception: 
+        pass
 
 setup_system()
+
 
 # --- ⚙️ STATE MANAGEMENT ---
 def initialize_states(force=False):
@@ -75,7 +76,7 @@ def initialize_states(force=False):
         'fc_wrong': 0,
         'reveal_fc': False,
         'generated_lecture_text': "",
-         'humanizer_text_input': "",
+        'humanizer_text_input': "",
         'humanizer_output': "",
         'education_system': "IB System",
         'selected_grade': "MYP (Middle Years Programme)",
@@ -90,6 +91,7 @@ def initialize_states(force=False):
 
 initialize_states()
 
+
 # --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -97,7 +99,10 @@ try:
 except Exception:
     client = None
 
+
+# --- 🛠️ ISOLATED ENGINE ACTIONS ---
 def teach_source_material(source_text: str):
+    """Launches an isolated API request protected from automatic render runs."""
     if client is None:
         return "⚠️ sorry this isn't supposed to happen 😥  (Key problem = API)"
 
@@ -126,6 +131,7 @@ def teach_source_material(source_text: str):
     except Exception as e:
         return f"An error occurred while generating the live lecture format: {e}"
 
+
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
     if uploaded_file is None: return ""
@@ -142,15 +148,16 @@ def extract_text(uploaded_file):
             return str(uploaded_file.read(), "utf-8")
     except Exception: return ""
 
+
 def extract_from_url(url):
     if not url: return ""
     try:
-        # Replaced requests.get with custom campus_session to bypass Sophos issues
-        res = campus_session.get(url, timeout=6)
+        res = requests.get(url, timeout=6)
         soup = BeautifulSoup(res.content, 'html.parser')
         for s in soup(['script', 'style']): s.decompose()
         return soup.get_text(separator=' ', strip=True)
     except: return ""
+
 
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
@@ -163,8 +170,7 @@ def generate_scribbr_citation(url, style_format):
     access_date = time.strftime("%d %b. %Y")
 
     try:
-        # Replaced requests.get with custom campus_session to bypass Sophos issues
-        res = campus_session.get(url, timeout=5)
+        res = requests.get(url, timeout=5)
         soup = BeautifulSoup(res.content, 'html.parser')
 
         title_tag = soup.find('meta', property='og:title')
