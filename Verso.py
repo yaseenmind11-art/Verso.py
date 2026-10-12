@@ -786,7 +786,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 ):
     st.header("✨ Verso Humanizer")
     # Controlled Input payload area
-  text_to_humanize = st.text_area(
+    text_to_humanize = st.text_area(
         "Paste the text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
