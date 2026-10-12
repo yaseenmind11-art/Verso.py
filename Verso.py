@@ -761,14 +761,14 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ STABLE NATIVE HUMANISM ENGINE (100% LOCAL PYTHON / NO GRADE DROPDOWNS) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (GEMINI-POWERED 0% PLAGIARISM PARAPHRASER) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     'choice' in globals() and choice in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"]
 ):
     st.header("✨ Local Text Naturalizer")
-    st.write("Rewrites content locally using standard QuillBot-style structural paraphrasing to drop plagiarism scores to 0%.")
+    st.write("Rewrites content using deep structural permutation logic to bypass N-gram matches and lower plagiarism to 0%.")
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
@@ -779,68 +779,36 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # Local structural rewriting pipeline algorithm
-    def direct_python_humanizer(text: str) -> str:
+    # AI Paraphrasing Pipeline with structural destruction rules
+    def ai_humanizer_engine(text: str) -> str:
+        if client is None:
+            return "⚠️ Gemini API Client is uninitialized. Please check your secrets configurations."
         if not text.strip():
             return "⚠️ Please insert text content to process."
+
+        system_instruction = """
+        You are a strict, top-tier academic paraphrasing assistant. Your primary directive is to reduce plagiarism string matches to exactly 0%.
         
-        # 1. Normalize spacing metrics and isolate chunks
-        text = re.sub(r'\s+', ' ', text.strip())
-        sentences = re.split(r'(?<=[.!?]) +', text)
-        processed_sentences = []
-        
-        for s in sentences:
-            if not s.strip():
-                continue
-            
-            # 2. Match and completely rewrite the specific common plagiarism blocks
-            if "evaluation of school uniform" in s.lower() or "trade-off between" in s.lower():
-                s = "Looking at school uniform requirements shows that there is a pretty complicated balance between keeping the school community unified and maintaining freedom of choice for students."
-                processed_sentences.append(s)
-                continue
+        Rules:
+        1. Completely dismantle the original sentence structures. If the input uses "X leads to Y because of Z", rearrange it entirely to start with Z or use an entirely new clause layout.
+        2. Never keep original multi-word academic blocks (e.g., replace 'community cohesion', 'individual liberty', 'institutional benefits', 'socioeconomic gaps', 'student autonomy'). Swap them for simple, realistic human concepts.
+        3. Do not use uniform sentence lengths. Vary them dramatically. Write some short, punchy sentences, and some casual compound sentences.
+        4. Ban all signature AI transition words: do not use 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'it is crucial'.
+        5. Output ONLY the rewritten text. Do not provide any conversational introductions, meta-commentary, or wrap-up remarks.
+        """
 
-            if "offer clear institutional benefits" in s.lower() or "reducing visible socioeconomic" in s.lower():
-                s = "Schools get clear benefits from uniforms because they help cover up wealth gaps between families. Plus, they make morning routines much simpler and improve overall safety on campus."
-                processed_sentences.append(s)
-                continue
-
-            if "weighed against the loss of student autonomy" in s.lower() or "financial inequities" in s.lower():
-                s = "However, you have to balance those good points against the fact that students lose their independence. It also creates extra costs for struggling families and can cause comfort issues."
-                processed_sentences.append(s)
-                continue
-
-            if "efficacy of a uniform policy depends" in s.lower() or "suppressing student well-being" in s.lower():
-                s = "In the end, whether uniform rules actually work depends entirely on how they are used. Staff need to keep dress guidelines flexible and low-cost so they do not hurt student mental health."
-                processed_sentences.append(s)
-                continue
-
-            # 3. Generic Fallback Phrasal Shuffling for structural variance matching
-            s = re.sub(r"\bdelve\b", "look into", s, flags=re.IGNORECASE)
-            s = re.sub(r"\btestament\b", "clear proof", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bfurthermore\b", "also", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bmoreover\b", "plus", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bconsequently\b", "as a result", s, flags=re.IGNORECASE)
-            s = re.sub(r"\butilize\b", "use", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bhowever\b", "but on the other hand", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bIn conclusion,\s*", "To wrap things up, ", s, flags=re.IGNORECASE)
-
-            # 4. Clause Flip structural modifier loops
-            if " because " in s.lower():
-                parts = re.split(r'\s+because\s+', s, flags=re.IGNORECASE)
-                if len(parts) == 2:
-                    s = f"Since {parts[1].rstrip('.')}, it makes sense that {parts[0][0].lower() + parts[0][1:]}."
-            elif " by " in s.lower():
-                parts = re.split(r'\s+by\s+', s, flags=re.IGNORECASE)
-                if len(parts) == 2:
-                    s = f"By {parts[1].rstrip('.')}, we can see that it helps to {parts[0][0].lower() + parts[0][1:]}."
-
-            processed_sentences.append(s.strip())
-            
-        # Reconstruct scrambled paragraph outputs safely
-        output_text = " ".join(processed_sentences)
-        output_text = output_text.replace("; ", ", which basically means ")
-        output_text = re.sub(r'\s+', ' ', output_text)
-        return output_text
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=f"Completely rewrite this text to avoid plagiarism checkers:\n\n{text}",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.9  # Raised temperature to introduce maximum vocabulary and structural variation
+                )
+            )
+            return response.text
+        except Exception as e:
+            return f"An processing error occurred during humanization: {e}"
 
     # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
@@ -848,14 +816,15 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                # Processes completely via custom local Python parameters
-                result = direct_python_humanizer(st.session_state.humanizer_text_input)
+                # Processes using Gemini with strict system parameters
+                result = ai_humanizer_engine(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
 
     # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
+
 
 
 
