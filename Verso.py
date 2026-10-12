@@ -857,7 +857,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (100% INSTANT TRANSLATION & SWAP FIX) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (100% STABLE WITH AUTOMATIC FORWARDING RESILIENCE) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -903,7 +903,6 @@ elif choice == "🌐 Verso Translate":
     input_col, output_col = st.columns(2)
     
     with input_col:
-        # Binding directly to a dynamic state tracking key forces live input caching
         st.text_area(
             f"Enter text in {st.session_state.src_lang}:",
             height=250,
@@ -917,20 +916,39 @@ elif choice == "🌐 Verso Translate":
             st.warning("Please type some characters to process translation.")
         else:
             with st.spinner("Accessing translation matrices..."):
+                src_code = lang_map[st.session_state.src_lang]
+                tgt_code = lang_map[st.session_state.tgt_lang]
+                
+                # --- STAGE 1: TRY DEFAULT GOOGLE TRANSLATOR ---
                 try:
-                    # Instantiating a clean translator instance using deep-translator profiles
-                    translator = GoogleTranslator(
-                        source=lang_map[st.session_state.src_lang], 
-                        target=lang_map[st.session_state.tgt_lang]
-                    )
+                    from deep_translator import GoogleTranslator
+                    translator = GoogleTranslator(source=src_code, target=tgt_code)
                     translated_text = translator.translate(st.session_state.translator_input)
+                    
+                    # If server returns rate limits or empty logs, explicitly trigger exception to fallback
+                    if "too many requests" in str(translated_text).lower() or not translated_text:
+                        raise Exception("Google Rate Limited")
+                        
                     st.session_state.translator_output = translated_text
                     st.rerun()
-                except Exception as e:
-                    st.session_state.translator_output = f"⚠️ Translation engine execution error: {e}"
+                    
+                except Exception:
+                    # --- STAGE 2: BACKUP BYPASS METHOD (MYMEMORY INFRASTRUCTURE) ---
+                    try:
+                        # Fallback directly to the public mirror api gateway via raw web requests
+                        api_url = f"https://translated.net{requests.utils.quote(st.session_state.translator_input)}&langpair={src_code}|{tgt_code}"
+                        res = requests.get(api_url, timeout=8)
+                        
+                        if res.ok:
+                            result_data = res.json()
+                            st.session_state.translator_output = result_data["responseData"]["translatedText"]
+                            st.rerun()
+                        else:
+                            st.session_state.translator_output = "⚠️ Main translation link busy. Please try again shortly."
+                    except Exception as fallback_error:
+                        st.session_state.translator_output = f"⚠️ Main translation link busy. Error: {fallback_error}"
 
     with output_col:
-        # Binding directly to the verified state output key forces the view window to display text instantly
         st.text_area(
             f"Translation in {st.session_state.tgt_lang}:",
             height=250,
