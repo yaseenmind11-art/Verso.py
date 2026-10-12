@@ -441,10 +441,19 @@ elif choice == "📝 Word Counter":
     st.metric("Combined Total", box_count + file_count)
 
 # --- MODULE: GRAMMAR CHECKER ---
-elif choice == "✍️ Grammar Checker":
-    st.markdown('<h1>Smart Verso Auto Correct</h1>', unsafe_allow_html=True)
-    text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
-    st.session_state.grammar_text_input = text_to_check
+elif choice == "✍️ Humanism Engine":
+    st.header("✨ Local Text Naturalizer")
+    st.write("Applies an aggressive dynamic restructuring protocol to disrupt word sequences and bring plagiarism matching scores down to 0%.")
+
+    # 🔗 Line 780: Make sure this is indented with exactly 4 spaces (or 1 tab)!
+    text_to_humanize = st.text_area(
+        "Paste the text here:",
+        value=st.session_state.humanizer_text_input,
+        height=200,
+        placeholder="Please input the text you want to correct...",
+        key="humanizer_interactive_input"
+    )
+    st.session_state.humanizer_text_input = text_to_humanize
     if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
