@@ -761,14 +761,14 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (GEMINI-POWERED 0% PLAGIARISM PARAPHRASER) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     'choice' in globals() and choice in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"]
 ):
     st.header("✨ Local Text Naturalizer")
-    st.write("Rewrites content using deep structural permutation logic to bypass N-gram matches and lower plagiarism to 0%.")
+    st.write("Applies an aggressive multi-stage restructuring protocol to disrupt sentence blueprints and bring plagiarism matching scores down to 0%.")
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
@@ -779,34 +779,65 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
+    # Local Python Post-Processor to clean up and scramble residual AI structures
+    def rigorous_cleaner(text: str) -> str:
+        # Dictionary targeting phrase combinations often flagged by matching sequences
+        cleanup_maps = {
+            r"\bcomplex trade-off\b": "messy balance",
+            r"\bcommunity cohesion\b": "bringing everyone together",
+            r"\bindividual liberty\b": "personal freedom",
+            r"\binstitutional benefits\b": "school advantages",
+            r"\bsocioeconomic gaps\b": "wealth differences",
+            r"\bstudent autonomy\b": "student choices",
+            r"\bfinancial inequities\b": "money struggles",
+            r"\bstudent well-being\b": "how happy students are",
+            r"\binstitutional harmony\b": "a peaceful campus",
+            r"\buniform policies\b": "dress codes",
+            r"\bAn evaluation of\s*": "When you look at ",
+            r"\bUltimately,\s*": "In the end, "
+        }
+        processed = text
+        for pattern, replacement in cleanup_maps.items():
+            processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
+        
+        # Break apart large string blocks by modifying joining words
+        processed = processed.replace(". However, ", ". But on the flip side, ")
+        processed = processed.replace(", and ", " and ")
+        processed = processed.replace(" because ", " since ")
+        return processed
+
     # AI Paraphrasing Pipeline with structural destruction rules
-    def ai_humanizer_engine(text: str) -> str:
+    def maximum_humanizer_engine(text: str) -> str:
         if client is None:
             return "⚠️ Gemini API Client is uninitialized. Please check your secrets configurations."
         if not text.strip():
             return "⚠️ Please insert text content to process."
 
         system_instruction = """
-        You are a strict, top-tier academic paraphrasing assistant. Your primary directive is to reduce plagiarism string matches to exactly 0%.
-        
-        Rules:
-        1. Completely dismantle the original sentence structures. If the input uses "X leads to Y because of Z", rearrange it entirely to start with Z or use an entirely new clause layout.
-        2. Never keep original multi-word academic blocks (e.g., replace 'community cohesion', 'individual liberty', 'institutional benefits', 'socioeconomic gaps', 'student autonomy'). Swap them for simple, realistic human concepts.
-        3. Do not use uniform sentence lengths. Vary them dramatically. Write some short, punchy sentences, and some casual compound sentences.
-        4. Ban all signature AI transition words: do not use 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'it is crucial'.
-        5. Output ONLY the rewritten text. Do not provide any conversational introductions, meta-commentary, or wrap-up remarks.
+        CRITICAL TASK: Rewrite the provided text so that it yields a 0% similarity match on plagiarism checkers. 
+        You must fundamentally break and scramble the logic sequence of the original paragraph.
+
+        STRICT REWRITING MANDATES:
+        1. REARRANGE PARAGRAPH ARCHITECTURE: Change the order in which ideas are introduced. If the source begins with a claim and follows with examples, start your rewritten version with the examples or the conclusion first.
+        2. DESTROY THE SENTENCE FINGERPRINT: Split long compound sentences into multiple extremely short, simple sentences. Mix short 4-word sentences with casual medium ones. Never match the original text's clause layout.
+        3. AGGRESSIVE VOCABULARY MUTATION: You are strictly forbidden from reusing any key noun/adjective combinations from the input text. Find unexpected everyday synonyms. Do not sound like an AI textbook essay.
+        4. BANNED PATTERNS: Do not utilize lists, bullet points, colon structures, or formal transitional phrases. Completely avoid words like: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
+        5. META-COMMENTARY BLOCK: Output ONLY the completely scrambled and transformed final human text. Do not write intros or outros like "Here is your text".
         """
 
         try:
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
-                contents=f"Completely rewrite this text to avoid plagiarism checkers:\n\n{text}",
+                contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
-                    temperature=0.9  # Raised temperature to introduce maximum vocabulary and structural variation
+                    temperature=0.95,  # Maximum temperature for highest structural fluidity
+                    top_p=0.95
                 )
             )
-            return response.text
+            # Run the AI response through the local python cleanup scrubber for safety
+            final_scrambled_text = rigorous_cleaner(response.text)
+            return final_scrambled_text
         except Exception as e:
             return f"An processing error occurred during humanization: {e}"
 
@@ -816,14 +847,15 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                # Processes using Gemini with strict system parameters
-                result = ai_humanizer_engine(st.session_state.humanizer_text_input)
+                # Processes text through both AI prompt structures and a local cleanup algorithm
+                result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
 
     # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
+
 
 
 
