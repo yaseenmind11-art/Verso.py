@@ -877,7 +877,7 @@ elif choice == "🌐 Verso Translate":
         st.session_state.tgt_lang = "Arabic"
 
     # Language Selector Columns
-    col1, col_swap, col2 = st.columns()
+    col1, col_swap, col2 = st.columns([4, 1, 4])
     with col1:
         # Fixed state tracking via explicit mapping index keys
         src_lang = st.selectbox(
