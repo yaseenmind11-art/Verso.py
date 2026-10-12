@@ -761,7 +761,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER WITH COPY BUTTON) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
@@ -851,6 +851,19 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
+        
+        # 📋 Interactive Safe Clipboard Copy Component
+        if st.button("📋 Copy Output Text", use_container_width=True):
+            # Uses safe local browser copy execution via html text fields to avoid alerts/crashes
+            st.components.v1.html(f"""
+                <textarea id="copy-box" style="position:absolute; left:-9999px;">{st.session_state.humanizer_output}</textarea>
+                <script>
+                    var copyText = document.getElementById("copy-box");
+                    copyText.select();
+                    document.execCommand("copy");
+                </script>
+            """, height=0)
+            st.success("Text successfully copied to your system clipboard!")
 
 
 
