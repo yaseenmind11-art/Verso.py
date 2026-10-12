@@ -859,7 +859,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 
 python
 # --- 🌐 TRANSLATOR MODULE ENGINE (100% STABLE LOCAL REWRITER WITH WEB BACKUPS) ---
-    elif choice == "🌐 Verso Translate":
+elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
 
