@@ -22,6 +22,7 @@ from deep_translator import GoogleTranslator
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
     ga_id = "G-030XWBG97P"
@@ -36,18 +37,15 @@ def inject_ga():
     """
     components.html(ga_code, height=0)
 
-
 # --- 🛠️ ACADEMIC ENGINE SETUP ---
 @st.cache_resource
 def setup_system():
     try:
-        for res in ['punkt', 'brown', 'punkt_tab', 'averaged_perceptron_tagger']:
+        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
             nltk.download(res, quiet=True)
-    except Exception: 
-        pass
+    except Exception: pass
 
 setup_system()
-
 
 # --- ⚙️ STATE MANAGEMENT ---
 def initialize_states(force=False):
@@ -76,7 +74,7 @@ def initialize_states(force=False):
         'fc_wrong': 0,
         'reveal_fc': False,
         'generated_lecture_text': "",
-        'humanizer_text_input': "",
+         'humanizer_text_input': "",
         'humanizer_output': "",
         'education_system': "IB System",
         'selected_grade': "MYP (Middle Years Programme)",
@@ -91,7 +89,6 @@ def initialize_states(force=False):
 
 initialize_states()
 
-
 # --- 🤖 GEMINI CLIENT INITIALIZATION (SECURED VIA SECRETS) ---
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -99,10 +96,7 @@ try:
 except Exception:
     client = None
 
-
-# --- 🛠️ ISOLATED ENGINE ACTIONS ---
 def teach_source_material(source_text: str):
-    """Launches an isolated API request protected from automatic render runs."""
     if client is None:
         return "⚠️ sorry this isn't supposed to happen 😥  (Key problem = API)"
 
@@ -131,7 +125,6 @@ def teach_source_material(source_text: str):
     except Exception as e:
         return f"An error occurred while generating the live lecture format: {e}"
 
-
 # --- 🛠️ EXTRACTION HELPERS ---
 def extract_text(uploaded_file):
     if uploaded_file is None: return ""
@@ -148,16 +141,15 @@ def extract_text(uploaded_file):
             return str(uploaded_file.read(), "utf-8")
     except Exception: return ""
 
-
 def extract_from_url(url):
     if not url: return ""
     try:
-        res = requests.get(url, timeout=6)
+        # Replaced requests.get with custom campus_session to bypass Sophos issues
+        res = campus_session.get(url, timeout=6)
         soup = BeautifulSoup(res.content, 'html.parser')
         for s in soup(['script', 'style']): s.decompose()
         return soup.get_text(separator=' ', strip=True)
     except: return ""
-
 
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
@@ -170,7 +162,8 @@ def generate_scribbr_citation(url, style_format):
     access_date = time.strftime("%d %b. %Y")
 
     try:
-        res = requests.get(url, timeout=5)
+        # Replaced requests.get with custom campus_session to bypass Sophos issues
+        res = campus_session.get(url, timeout=5)
         soup = BeautifulSoup(res.content, 'html.parser')
 
         title_tag = soup.find('meta', property='og:title')
@@ -773,133 +766,95 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (GEMINI-POWERED WITH AUTOMATIC QUOTA FALLBACK) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
-
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
-    'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine", "✍️HUMANISM ENGINE"]
+    'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
 ):
-    st.header("✨ Local Text Naturalizer")
-    st.write("Applies an aggressive multi-stage restructuring protocol to disrupt sentence blueprints and bring plagiarism matching scores down to 0%.")
-
-    # Controlled Input payload area with interactive layout constraints
+    st.header("✨ Verso Humanizer")
+    # Controlled Input payload area
     text_to_humanize = st.text_area(
-        "Paste the text here:",
+        "Paste text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
-        placeholder="Please input the text you want to correct...",  
+        placeholder="Please input the text you want to humanize...",
         key="humanizer_interactive_input"
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # 🛠️ 100% LOCAL PYTHON ENGINE (Runs automatically if Gemini hits a 429 quota block)
-    def local_fallback_paraphraser(text: str) -> str:
-        text = re.sub(r'\s+', ' ', text.strip())
-        sentences = re.split(r'(?<=[.!?]) +', text)
-        processed_sentences = []
+    # Local Python Post-Processor to clean up and scramble residual AI structures
+    def rigorous_cleaner(text: str) -> str:
+        cleanup_maps = {
+            r"\bcomplex trade-off\b": "messy balance",
+            r"\bcommunity cohesion\b": "bringing everyone together",
+            r"\bindividual liberty\b": "personal freedom",
+            r"\binstitutional benefits\b": "school advantages",
+            r"\bsocioeconomic gaps\b": "wealth differences",
+            r"\bstudent autonomy\b": "student choices",
+            r"\bfinancial inequities\b": "money struggles",
+            r"\bstudent well-being\b": "how happy students are",
+            r"\binstitutional harmony\b": "a peaceful campus",
+            r"\buniform policies\b": "dress codes",
+            r"\bAn evaluation of\s*": "When you look at ",
+            r"\bUltimately,\s*": "In the end, "
+        }
+        processed = text
+        for pattern, replacement in cleanup_maps.items():
+            processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
         
-        for s in sentences:
-            if not s.strip():
-                continue
-            
-            # Scramble common matching plagiarism block phrases
-            if "evaluation of school uniform" in s.lower() or "trade-off between" in s.lower():
-                s = "Looking at school uniform requirements shows that there is a pretty complicated balance between keeping the school community unified and maintaining freedom of choice for students."
-                processed_sentences.append(s)
-                continue
+        processed = processed.replace(". However, ", ". But on the flip side, ")
+        processed = processed.replace(", and ", " and ")
+        processed = processed.replace(" because ", " since ")
+        return processed
 
-            if "offer clear institutional benefits" in s.lower() or "reducing visible socioeconomic" in s.lower():
-                s = "Schools get clear benefits from uniforms because they help cover up wealth gaps between families. Plus, they make morning routines much simpler and improve overall safety on campus."
-                processed_sentences.append(s)
-                continue
-
-            if "weighed against the loss of student autonomy" in s.lower() or "financial inequities" in s.lower():
-                s = "However, you have to balance those good points against the fact that students lose their independence. It also creates extra costs for struggling families and can cause comfort issues."
-                processed_sentences.append(s)
-                continue
-
-            if "efficacy of a uniform policy depends" in s.lower() or "suppressing student well-being" in s.lower():
-                s = "In the end, whether uniform rules actually work depends entirely on how they are used. Staff need to keep dress guidelines flexible and low-cost so they do not hurt student mental health."
-                processed_sentences.append(s)
-                continue
-
-            # Strip generic corporate signature words
-            s = re.sub(r"\bdelve\b", "look into", s, flags=re.IGNORECASE)
-            s = re.sub(r"\btestament\b", "clear proof", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bfurthermore\b", "also", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bmoreover\b", "plus", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bconsequently\b", "as a result", s, flags=re.IGNORECASE)
-            s = re.sub(r"\butilize\b", "use", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bhowever\b", "but on the other hand", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bIn conclusion,\s*", "To wrap things up, ", s, flags=re.IGNORECASE)
-
-            # Flip structural clauses (Cause and Effect ordering swap)
-            if " because " in s.lower():
-                parts = re.split(r'\s+because\s+', s, flags=re.IGNORECASE)
-                if len(parts) == 2:
-                    s = f"Since {parts.rstrip('.')}, it makes sense that {parts.lower() + parts[1:]}."
-            elif " by " in s.lower():
-                parts = re.split(r'\s+by\s+', s, flags=re.IGNORECASE)
-                if len(parts) == 2:
-                    s = f"By {parts.rstrip('.')}, we can see that it helps to {parts.lower() + parts[1:]}."
-
-            processed_sentences.append(s.strip())
-            
-        output_text = " ".join(processed_sentences)
-        output_text = output_text.replace("; ", ", which basically means ")
-        return re.sub(r'\s+', ' ', output_text)
-
-    # Main orchestration processing engine
+    # AI Paraphrasing Pipeline with structural destruction rules
     def maximum_humanizer_engine(text: str) -> str:
+        if client is None:
+            return "⚠️ Gemini API Client is uninitialized. Please check your secrets configurations."
         if not text.strip():
             return "⚠️ Please insert text content to process."
 
         system_instruction = """
-        CRITICAL TASK: Rewrite the provided text completely to ensure it yields a 0% similarity match on plagiarism checkers.
-        You must completely restructure and rewrite every single sentence from scratch.
+        CRITICAL TASK: Rewrite the provided text so that it yields a 0% similarity match on plagiarism checkers. 
+        You must fundamentally break and scramble the logic sequence of the original paragraph.
 
         STRICT REWRITING MANDATES:
-        1. REARRANGE SENTENCE ARCHITECTURE: Change the grammatical layout of every sentence. If a sentence uses "X happened because of Y", flip it entirely to start with the cause: "Because of Y, X occurred".
-        2. BREAK THE CHUNK SIGNATURE: Never reuse sequences of 3 or more consecutive words from the input text. Break up noun phrases and use everyday human expressions. 
-        3. DISRUPT PACING AND LENGTHS: Do not keep the original sentence count. Break long sentences into multiple brief, punchy statements. Mix up sentence lengths naturally.
-        4. BANNED TRANSITIONS: You are forbidden from using common robotic transitions or academic filler. Do not use: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
-        5. OUTPUT ONLY RESPONSE: Output ONLY the completely rewritten text. Do not provide any conversational introductions, markdown bold bullet containers, or closing remarks.
+        1. REARRANGE PARAGRAPH ARCHITECTURE: Change the order in which ideas are introduced. If the source begins with a claim and follows with examples, start your rewritten version with the examples or the conclusion first.
+        2. DESTROY THE SENTENCE FINGERPRINT: Split long compound sentences into multiple extremely short, simple sentences. Mix short 4-word sentences with casual medium ones. Never match the original text's clause layout.
+        3. AGGRESSIVE VOCABULARY MUTATION: You are strictly forbidden from reusing any key noun/adjective combinations from the input text. Find unexpected everyday synonyms. Do not sound like an AI textbook essay.
+        4. BANNED PATTERNS: Do not utilize lists, bullet points, colon structures, or formal transitional phrases. Completely avoid words like: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
+        5. META-COMMENTARY BLOCK: Output ONLY the completely scrambled and transformed final human text. Do not write intros or outros like "Here is your text".
         """
 
-        if client is not None:
-            try:
-                response = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=f"Completely rephrase and rewrite this text to remove all matching word sequences:\n\n{text}",
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.95,
-                        top_p=0.95
-                    )
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.95,
+                    top_p=0.95
                 )
-                return local_fallback_paraphraser(response.text)
-            except Exception:
-                # Silent Fallback: Runs local algorithm if Google rate-limits your API key or hits a 429 error
-                return local_fallback_paraphraser(text)
-        else:
-            return local_fallback_paraphraser(text)
+            )
+            final_scrambled_text = rigorous_cleaner(response.text)
+            return final_scrambled_text
+        except Exception as e:
+            return f"An processing error occurred during humanization: {e}"
 
     # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
-        if not text_to_humanize.strip():
+        if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                # Fixed: Reads directly from text_to_humanize to completely eliminate the matching loop bug
-                st.session_state.humanizer_output = maximum_humanizer_engine(text_to_humanize)
-            st.rerun()
+                result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
+                st.session_state.humanizer_output = result
 
     # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
 
-        
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
