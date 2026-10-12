@@ -763,8 +763,8 @@ elif choice == "⏱️ Time Tracker":
 
     # --- MODULE: HUMANISM ENGINE ---
 elif choice == "✍️ HUMANISM ENGINE":
-  st.title("✨ AI Text Humanizer")
-  st.write("Transform raw AI content into text that sounds like it was written by a real student.")
+    st.title("✨ AI Text Humanizer")
+    st.write("Transform raw AI content into text that sounds like it was written by a real student.")
 
 # Setup Session State trackers for the buttons
 if "edu_sys" not in st.session_state:
