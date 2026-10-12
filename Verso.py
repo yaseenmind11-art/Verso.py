@@ -761,7 +761,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (DYNAMIC ZERO-MATCH REWRITER WITH NATIVE COPY WORKSPACE) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (DYNAMIC ZERO-MATCH REWRITER WITH DEFAULT COPY WORKSPACE) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
@@ -840,22 +840,25 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
 
     # Execution controls
     if st.button("🚀 Humanize Output Text", use_container_width=True, type="primary"):
-        if not text_to_humanize.strip():
+        if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Executing structural code variance filters..."):
-                result = maximum_humanizer_engine(text_to_humanize)
+                result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
 
-    # Render target panel out fields with native copy utility icon
+    # Render target panel out fields with default safe copy window box
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
-        st.info("📋 Click the icon in the top right of the box below to instantly copy your text:")
-        st.code(st.session_state.humanizer_output, language="text")
-
-
-
-
+        
+        # Using a read-only native dropdown area with copy functionalities intact
+        st.text_area(
+            label="📋 Click inside and press Ctrl+A then Ctrl+C to copy instantly:",
+            value=st.session_state.humanizer_output,
+            height=250,
+            disabled=True,
+            key="humanizer_output_copy_box"
+        )
 
 
 # --- MODULE: SETTINGS ---
