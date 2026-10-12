@@ -17,6 +17,7 @@ import urllib3
 import os  
 from google import genai
 from google.genai import types
+from deep_translator import GoogleTranslator
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -77,7 +78,11 @@ def initialize_states(force=False):
          'humanizer_text_input': "",
         'humanizer_output': "",
         'education_system': "IB System",
-        'selected_grade': "MYP (Middle Years Programme)"
+        'selected_grade': "MYP (Middle Years Programme)",
+        'translator_input': "",
+        'translator_output': "",
+        'src_lang': "English",
+        'tgt_lang': "Arabic",
     }
     for key, value in defaults.items():
         if force or key not in st.session_state:
@@ -363,6 +368,7 @@ with st.sidebar:
         "📝 Word Counter",
         "✍️ Humanism Engine",
         "⚙️ Settings",
+        "🌐 Verso Translate",
         
     ]
 
@@ -851,6 +857,84 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
+# --- 🌐 VERSO GOOGLE TRANSLATE ENGINE ---
+elif choice == "🌐 Verso Translate":
+    st.header("🌐 Verso Language Link")
+    st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
+
+    # Core language mapping framework
+    lang_map = {
+        "Arabic": "ar",
+        "English": "en",
+        "French": "fr",
+        "German": "de"
+    }
+    lang_list = list(lang_map.keys())
+
+    # Language Selector Swivel Bars
+    col1, col_swap, col2 = st.columns([2, 1, 2])
+    with col1:
+        src_lang = st.selectbox(
+            "From Language:", 
+            options=lang_list, 
+            index=lang_list.index(st.session_state.src_lang)
+        )
+        st.session_state.src_lang = src_lang
+        
+    with col_swap:
+        st.write("<br>", unsafe_allow_html=True)
+        if st.button("🔄 Swap", use_container_width=True):
+            # Swivel selected languages immediately
+            old_src = st.session_state.src_lang
+            st.session_state.src_lang = st.session_state.tgt_lang
+            st.session_state.tgt_lang = old_src
+            st.rerun()
+            
+    with col2:
+        tgt_lang = st.selectbox(
+            "To Language:", 
+            options=lang_list, 
+            index=lang_list.index(st.session_state.tgt_lang)
+        )
+        st.session_state.tgt_lang = tgt_lang
+
+    # Workspace Text Layouts
+    input_col, output_col = st.columns(2)
+    
+    with input_col:
+        text_in = st.text_area(
+            f"Enter text in {st.session_state.src_lang}:",
+            value=st.session_state.translator_input,
+            height=250,
+            placeholder="Type or paste context here...",
+            key="translate_input_area"
+        )
+        st.session_state.translator_input = text_in
+
+    # Execution wrapper
+    if st.button("✨ Translate Content", type="primary", use_container_width=True):
+        if not st.session_state.translator_input.strip():
+            st.warning("Please type some characters to process translation.")
+        else:
+            with st.spinner("Accessing global translation matrices..."):
+                try:
+                    # Initialize deep translator core configurations
+                    translated_text = GoogleTranslator(
+                        source=lang_map[st.session_state.src_lang], 
+                        target=lang_map[st.session_state.tgt_lang]
+                    ).translate(st.session_state.translator_input)
+                    st.session_state.translator_output = translated_text
+                except Exception as e:
+                    st.session_state.translator_output = f"⚠️ Translation engine timeout error: {e}"
+
+    with output_col:
+        st.text_area(
+            f"Translation in {st.session_state.tgt_lang}:",
+            value=st.session_state.translator_output,
+            height=250,
+            disabled=True,
+            key="translate_output_area"
+        )
 
 
 # --- MODULE: SETTINGS ---
