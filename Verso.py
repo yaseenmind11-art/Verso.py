@@ -761,14 +761,14 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (DYNAMIC ZERO-MATCH REWRITER WITH DEFAULT COPY WORKSPACE) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER WITH COPY BUTTON) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     'choice' in globals() and choice in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"]
 ):
     st.header("✨ Local Text Naturalizer")
-    st.write("Applies an aggressive dynamic restructuring protocol to disrupt word sequences and bring plagiarism matching scores down to 0%.")
+    st.write("Applies an aggressive multi-stage restructuring protocol to disrupt sentence blueprints and bring plagiarism matching scores down to 0%.")
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
@@ -779,7 +779,7 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # Local Python Post-Processor to wipe away remaining robotic AI transitions
+    # Local Python Post-Processor to clean up and scramble residual AI structures
     def rigorous_cleaner(text: str) -> str:
         cleanup_maps = {
             r"\bcomplex trade-off\b": "messy balance",
@@ -812,21 +812,21 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             return "⚠️ Please insert text content to process."
 
         system_instruction = """
-        CRITICAL TASK: Rewrite the provided text completely to ensure it yields a 0% similarity match on plagiarism checkers.
-        You must completely restructure and rewrite every single sentence from scratch.
+        CRITICAL TASK: Rewrite the provided text so that it yields a 0% similarity match on plagiarism checkers. 
+        You must fundamentally break and scramble the logic sequence of the original paragraph.
 
         STRICT REWRITING MANDATES:
-        1. REARRANGE SENTENCE ARCHITECTURE: Change the grammatical layout of every sentence. If a sentence uses "X happened because of Y", flip it entirely to start with the cause: "Because of Y, X occurred".
-        2. BREAK THE CHUNK SIGNATURE: Never reuse sequences of 3 or more consecutive words from the input text. Break up noun phrases and use everyday human expressions. 
-        3. DISRUPT PACING AND LENGTHS: Do not keep the original sentence count. Break long sentences into multiple brief, punchy statements. Mix up sentence lengths naturally.
-        4. BANNED TRANSITIONS: You are forbidden from using common robotic transitions or academic filler. Do not use: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
-        5. OUTPUT ONLY RESPONSE: Output ONLY the completely rewritten text. Do not provide any conversational introductions, markdown bold bullet containers, or closing remarks.
+        1. REARRANGE PARAGRAPH ARCHITECTURE: Change the order in which ideas are introduced. If the source begins with a claim and follows with examples, start your rewritten version with the examples or the conclusion first.
+        2. DESTROY THE SENTENCE FINGERPRINT: Split long compound sentences into multiple extremely short, simple sentences. Mix short 4-word sentences with casual medium ones. Never match the original text's clause layout.
+        3. AGGRESSIVE VOCABULARY MUTATION: You are strictly forbidden from reusing any key noun/adjective combinations from the input text. Find unexpected everyday synonyms. Do not sound like an AI textbook essay.
+        4. BANNED PATTERNS: Do not utilize lists, bullet points, colon structures, or formal transitional phrases. Completely avoid words like: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
+        5. META-COMMENTARY BLOCK: Output ONLY the completely scrambled and transformed final human text. Do not write intros or outros like "Here is your text".
         """
 
         try:
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
-                contents=f"Completely rephrase and rewrite this text to remove all matching word sequences:\n\n{text}",
+                contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     temperature=0.95,
@@ -839,7 +839,7 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
             return f"An processing error occurred during humanization: {e}"
 
     # Execution controls
-    if st.button("🚀 Humanize Output Text", use_container_width=True, type="primary"):
+    if st.button("🚀 Humanize Output Text", type="primary"):
         if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
@@ -847,18 +847,25 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
                 result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
                 st.session_state.humanizer_output = result
 
-    # Render target panel out fields with default safe copy window box
+    # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
+        st.write(st.session_state.humanizer_output)
         
-        # Using a read-only native dropdown area with copy functionalities intact
-        st.text_area(
-            label="📋 Click inside and press Ctrl+A then Ctrl+C to copy instantly:",
-            value=st.session_state.humanizer_output,
-            height=250,
-            disabled=True,
-            key="humanizer_output_copy_box"
-        )
+        # 📋 Interactive Copy Button Panel
+        clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
+        
+        if st.button("📋 Copy Output Text", use_container_width=True):
+            copy_script = f"""
+            <script>
+            navigator.clipboard.writeText("{clean_text_js}").then(() => {{
+                parent.window.alert("Text successfully copied to clipboard! 📋");
+            }});
+            </script>
+            """
+            components.html(copy_script, height=0)
+            st.success("Text sent to your system clipboard!")
+
 
 
 # --- MODULE: SETTINGS ---
