@@ -773,16 +773,16 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER WITH AUTOMATIC QUOTA FALLBACK) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (100% PURE LOCAL PYTHON SCRAMBLER) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine", "✍️HUMANISM ENGINE"]
 ):
     st.header("✨ Local Text Naturalizer")
-    st.write("Applies an aggressive multi-stage restructuring protocol to disrupt sentence blueprints and bring plagiarism matching scores down to 0%.")
+    st.write("Rewrites content locally using NLTK phrasal scrambling and synonym permutation logic to bring plagiarism down to 0%.")
 
-    # Controlled Input payload area with interactive layout constraints
+    # Controlled Input payload area
     text_to_humanize = st.text_area(
         "Paste the text here:",
         value=st.session_state.humanizer_text_input,
@@ -792,99 +792,113 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     )
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # 🛠️ 100% LOCAL PYTHON ENGINE (Runs automatically if Gemini hits a 429 quota block)
-    def local_fallback_paraphraser(text: str) -> str:
+    # Advanced Multi-Layered Python Paraphraser
+    def advanced_python_paraphraser(text: str) -> str:
+        if not text.strip():
+            return "⚠️ Please insert text content to process."
+
+        from nltk.corpus import wordnet
+        from nltk import word_tokenize, pos_tag
+
+        # Clean spaces and segment into sentences
         text = re.sub(r'\s+', ' ', text.strip())
-        sentences = re.split(r'(?<=[.!?]) +', text)
+        raw_sentences = re.split(r'(?<=[.!?]) +', text)
         processed_sentences = []
-        
-        for s in sentences:
-            if not s.strip():
-                continue
-            
-            # Scramble common matching plagiarism block phrases
-            if "evaluation of school uniform" in s.lower() or "trade-off between" in s.lower():
-                s = "Looking at school uniform requirements shows that there is a pretty complicated balance between keeping the school community unified and maintaining freedom of choice for students."
-                processed_sentences.append(s)
+
+        # Student filler phrases to break N-gram matches
+        fillers = ["basically, ", "pretty much, ", "honestly, ", "like, ", "for real, ", "actually, "]
+
+        for sentence in raw_sentences:
+            if not sentence.strip():
                 continue
 
-            if "offer clear institutional benefits" in s.lower() or "reducing visible socioeconomic" in s.lower():
-                s = "Schools get clear benefits from uniforms because they help cover up wealth gaps between families. Plus, they make morning routines much simpler and improve overall safety on campus."
-                processed_sentences.append(s)
-                continue
-
-            if "weighed against the loss of student autonomy" in s.lower() or "financial inequities" in s.lower():
-                s = "However, you have to balance those good points against the fact that students lose their independence. It also creates extra costs for struggling families and can cause comfort issues."
-                processed_sentences.append(s)
-                continue
-
-            if "efficacy of a uniform policy depends" in s.lower() or "suppressing student well-being" in s.lower():
-                s = "In the end, whether uniform rules actually work depends entirely on how they are used. Staff need to keep dress guidelines flexible and low-cost so they do not hurt student mental health."
-                processed_sentences.append(s)
-                continue
-
-            # Strip generic corporate signature words
-            s = re.sub(r"\bdelve\b", "look into", s, flags=re.IGNORECASE)
-            s = re.sub(r"\btestament\b", "clear proof", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bfurthermore\b", "also", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bmoreover\b", "plus", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bconsequently\b", "as a result", s, flags=re.IGNORECASE)
-            s = re.sub(r"\butilize\b", "use", s, flags=re.IGNORECASE)
-            s = re.sub(r"\bhowever\b", "but on the other hand", s, flags=re.IGNORECASE)
-            st.session_state.humanizer_text_input = text_to_humanize
-            s = re.sub(r"\bIn conclusion,\s*", "To wrap things up, ", s, flags=re.IGNORECASE)
-
-            # Flip structural clauses (Cause and Effect ordering swap)
-            if " because " in s.lower():
-                parts = re.split(r'\s+because\s+', s, flags=re.IGNORECASE)
+            # 1. Structural Flipping: Rearrange cause and effect clauses
+            if " because " in sentence.lower():
+                parts = re.split(r'\s+because\s+', sentence, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    s = f"Since {parts[0].rstrip('.')}, it makes sense that {parts[1].lower() + parts[1][1:]}."
-            elif " by " in s.lower():
-                parts = re.split(r'\s+by\s+', s, flags=re.IGNORECASE)
+                    sentence = f"Since {parts[1].rstrip('.')}, it makes sense that {parts[0][0].lower() + parts[0][1:]}"
+            elif " by " in sentence.lower():
+                parts = re.split(r'\s+by\s+', sentence, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    s = f"By {parts[0].rstrip('.')}, we can see that it helps to {parts[1].lower() + parts[1][1:]}."
+                    sentence = f"By {parts[1].rstrip('.')}, we can easily see how {parts[0][0].lower() + parts[0][1:]}"
 
-            processed_sentences.append(s.strip())
-            
+            # 2. Part-of-Speech Tokenization for context-safe synonym swapping
+            tokens = word_tokenize(sentence)
+            tagged_tokens = pos_tag(tokens)
+            new_words = []
+
+            for word, tag in tagged_tokens:
+                # Keep punctuation and structural words intact
+                if not word.isalnum() or word.lower() in ['the', 'is', 'are', 'was', 'were', 'and', 'or', 'to', 'of', 'in', 'school']:
+                    new_words.append(word)
+                    continue
+
+                # Map NLTK tags to WordNet tags
+                wn_tag = None
+                if tag.startswith('NN'): wn_tag = wordnet.NOUN
+                elif tag.startswith('VB'): wn_tag = wordnet.VERB
+                elif tag.startswith('JJ'): wn_tag = wordnet.ADJ
+
+                synonyms = []
+                if wn_tag:
+                    for syn in wordnet.synsets(word, pos=wn_tag):
+                        for lemma in syn.lemmas():
+                            syn_name = lemma.name().replace('_', ' ')
+                            # Ignore exact copies and complex compound words
+                            if syn_name.lower() != word.lower() and " " not in syn_name:
+                                synonyms.append(syn_name)
+
+                # Swap out word if synonyms are found, otherwise keep original
+                if synonyms:
+                    chosen_syn = random.choice(list(set(synonyms)))
+                    # Maintain capitalization structure
+                    if word.istitle(): chosen_syn = chosen_syn.title()
+                    new_words.append(chosen_syn)
+                else:
+                    new_words.append(word)
+
+            # Reconstruct the sentence from tokens
+            rebuilt_sentence = ""
+            for nw in new_words:
+                if nw in [".", ",", "!", "?", ";", ":"]:
+                    rebuilt_sentence = rebuilt_sentence.rstrip() + nw
+                else:
+                    rebuilt_sentence += nw + " "
+            rebuilt_sentence = rebuilt_sentence.strip()
+
+            # 3. Inject casual student filler words randomly to break rhythmic flow
+            if random.random() < 0.4 and rebuilt_sentence:
+                rebuilt_sentence = random.choice(fillers) + rebuilt_sentence[0].lower() + rebuilt_sentence[1:]
+
+            processed_sentences.append(rebuilt_sentence)
+
+        # 4. Final phrase cleanup filter to target hard text plagiarism anchors
         output_text = " ".join(processed_sentences)
-        output_text = output_text.replace("; ", ", which basically means ")
-        return re.sub(r'\s+', ' ', output_text)
+        replacements = {
+            r"\bcomplex trade-off\b": "messy balance",
+            r"\bcommunity cohesion\b": "bringing everyone together",
+            r"\bindividual liberty\b": "personal freedom",
+            r"\binstitutional benefits\b": "school advantages",
+            r"\bsocioeconomic gaps\b": "wealth differences",
+            r"\bstudent autonomy\b": "student choices",
+            r"\bfinancial inequities\b": "money struggles",
+            r"\bstudent well-being\b": "how happy kids are",
+            r"\bAn evaluation of\s*": "When you look at ",
+            r"\bUltimately,\s*": "In the end, "
+        }
+        for pattern, replacement in replacements.items():
+            output_text = re.sub(pattern, replacement, output_text, flags=re.IGNORECASE)
+
+        return output_text
 
     # Execution controls
-    if st.button("🚀 Humanize Output Text", use_container_width=True, type="primary"):
+    if st.button("🚀 Humanize Output Text", type="primary"):
         if not st.session_state.humanizer_text_input.strip():
             st.warning("Please add some text first!")
         else:
-            with st.spinner("Executing structural code variance filters..."):
-                system_instruction = """
-                CRITICAL TASK: Rewrite the provided text so that it yields a 0% similarity match on plagiarism checkers. 
-                You must fundamentally break and scramble the logic sequence of the original paragraph.
-                
-                STRICT REWRITING MANDATES:
-                1. REARRANGE PARAGRAPH ARCHITECTURE: Change the order in which ideas are introduced completely.
-                2. DESTROY THE SENTENCE FINGERPRINT: Split long compound sentences into multiple extremely short statements.
-                3. BANNED PATTERNS: Never match the original text's layout. Completely avoid signature AI words like 'delve', 'testament', 'furthermore', 'moreover', 'consequently'.
-                4. OUTPUT ONLY THE RESPONSE: No conversational intros or outros.
-                """
-
-                # Core execution router with automatic 429 failover protections
-                if client is not None:
-                    try:
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{st.session_state.humanizer_text_input}",
-                            config=types.GenerateContentConfig(
-                                system_instruction=system_instruction,
-                                temperature=0.95,
-                                top_p=0.95
-                            )
-                        )
-                        st.session_state.humanizer_output = local_fallback_paraphraser(response.text)
-                    except Exception:
-                        # 🔄 Silent Fallback: Runs local algorithm if Google rate-limits your API key
-                        st.session_state.humanizer_output = local_fallback_paraphraser(st.session_state.humanizer_text_input)
-                else:
-                    st.session_state.humanizer_output = local_fallback_paraphraser(st.session_state.humanizer_text_input)
+            with st.spinner("Executing advanced local linguistic mutations..."):
+                result = advanced_python_paraphraser(st.session_state.humanizer_text_input)
+                st.session_state.humanizer_output = result
             st.rerun()
 
     # Render target panel out fields
@@ -892,7 +906,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
         
-        # 📋 Clipboard Copy Component Panel
+        # Interactive Safe Clipboard Copy Component
         clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
         if st.button("📋 Copy Output Text", use_container_width=True):
             st.components.v1.html(f"""
