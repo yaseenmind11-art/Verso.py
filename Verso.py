@@ -361,7 +361,8 @@ with st.sidebar:
         "📚 Citation Generator",
         "⏱️ Time Tracker",
         "📝 Word Counter",
-        "⚙️ Settings"
+        "⚙️ Settings",
+        "✍️HUMANISM ENGINE",
     ]
 
     choice = st.radio("Navigation Menu", nav_options, label_visibility="collapsed")
