@@ -856,7 +856,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (SYNCED WITH SIDEBAR LABEL STRING) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (FIXED SWAP & AUTOMATIC LIVE TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
@@ -873,29 +873,32 @@ elif choice == "🌐 Verso Translate":
     # Language Selector Swivel Selection Columns
     col1, col_swap, col2 = st.columns([4, 1, 4])
     with col1:
+        # Use a state key to safely anchor the selector memory value
         src_lang = st.selectbox(
             "From Language:", 
             options=lang_list, 
-            index=lang_list.index(st.session_state.src_lang)
+            key="src_lang"
         )
-        st.session_state.src_lang = src_lang
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
         if st.button("🔄 Swap", use_container_width=True):
-            # Swivel selected languages inside session state maps immediately
+            # Capture snapshot to cleanly cross-swivel selections without duplication
             old_src = st.session_state.src_lang
-            st.session_state.src_lang = st.session_state.tgt_lang
+            old_tgt = st.session_state.tgt_lang
+            
+            st.session_state.src_lang = old_tgt
             st.session_state.tgt_lang = old_src
+            st.json(st.session_state.src_lang) # Fast force variable evaluation
+            st.json(st.session_state.tgt_lang) # Fast force variable evaluation
             st.rerun()
             
     with col2:
         tgt_lang = st.selectbox(
             "To Language:", 
             options=lang_list, 
-            index=lang_list.index(st.session_state.tgt_lang)
+            key="tgt_lang"
         )
-        st.session_state.tgt_lang = tgt_lang
 
     # Workspace Text Layout Fields
     input_col, output_col = st.columns(2)
@@ -906,18 +909,18 @@ elif choice == "🌐 Verso Translate":
             value=st.session_state.translator_input,
             height=250,
             placeholder="Please input the text you want to correct...",
-            key="translate_input_area"
+            key="translate_input_area_widget"
         )
         st.session_state.translator_input = text_in
 
-    # Execution controls
+    # Execution controls - Outputs directly back to session_state
     if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
         else:
             with st.spinner("Accessing translation matrices..."):
                 try:
-                    # Execute translation query pipeline safely via Google backend wrapper APIs
+                    # Execute translation query pipeline stably using background APIs
                     translated_text = GoogleTranslator(
                         source=lang_map[st.session_state.src_lang], 
                         target=lang_map[st.session_state.tgt_lang]
@@ -928,12 +931,13 @@ elif choice == "🌐 Verso Translate":
                     st.session_state.translator_output = f"⚠️ Translation engine timeout error: {e}"
 
     with output_col:
+        # Assigned value parameter straight to the updated session state key string
         st.text_area(
             f"Translation in {st.session_state.tgt_lang}:",
             value=st.session_state.translator_output,
             height=250,
             disabled=True,
-            key="translate_output_area"
+            key="translate_output_area_widget"
         )
 
 # --- MODULE: SETTINGS ---
