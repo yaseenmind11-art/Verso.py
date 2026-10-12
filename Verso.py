@@ -768,7 +768,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
     'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
 ):
     st.header("✨ Verso Humanizer")
-q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
+   placeholder="Research your topic here...")
 
     # Controlled Input payload area
     text_to_humanize = st.text_area(
