@@ -20,38 +20,7 @@ from google.genai import types
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- 🌐 SOPHOS PROTECTION & CAMPUS ROUTING LOGIC ---
-# Define the expected local name for the Carleton Sophos root certificate
-SOPHOS_CERT_FILE = "carleton_sophos_ca.pem"
 
-# Setup custom Session to handle deep packet inspection and network proxies cleanly
-campus_session = requests.Session()
-
-# Grab system or network proxies automatically if pushed by the IT department
-campus_session.proxies = {
-    "http": os.getenv("HTTP_PROXY") or os.getenv("http_proxy"),
-    "https": os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
-}
-# Remove any empty values
-campus_session.proxies = {k: v for k, v in campus_session.proxies.items() if v}
-
-# Determine SSL validation protocol based on file presence
-if os.path.exists(SOPHOS_CERT_FILE):
-    # Safe Method: Cryptographically trust Carleton's Sophos Authority
-    campus_session.verify = SOPHOS_CERT_FILE
-else:
-    # Fallback Method: Turn off strict validation if running at home or cert is missing
-    campus_session.verify = False
-
-# Optimized Headers to resemble a standard browser request bypassing strict firewall flags
-CAMPUS_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/119.0',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1'
-}
-campus_session.headers.update(CAMPUS_HEADERS)
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
 def inject_ga():
