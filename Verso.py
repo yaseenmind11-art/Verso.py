@@ -761,7 +761,7 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER WITH COPY BUTTON) ---
+# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
 current_menu = st.session_state.get("menu_selection", "")
 
 if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
@@ -851,20 +851,7 @@ if current_menu in ["HUMANISM ENGINE", "✍️ HUMANISM ENGINE"] or (
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
-        
-        # 📋 Interactive Copy Button Panel
-        clean_text_js = st.session_state.humanizer_output.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-        
-        if st.button("📋 Copy Output Text", use_container_width=True):
-            copy_script = f"""
-            <script>
-            navigator.clipboard.writeText("{clean_text_js}").then(() => {{
-                parent.window.alert("Text successfully copied to clipboard! 📋");
-            }});
-            </script>
-            """
-            components.html(copy_script, height=0)
-            st.success("Text sent to your system clipboard!")
+
 
 
 
