@@ -777,7 +777,7 @@ with col1:
         st.session_state.edu_sys = "IB System"
 with col2:
     if st.button(":us: American System", use_container_width=True):
-        st.session_state.edu_sys = ":flag_us: American System"
+        st.session_state.edu_sys = "🏫 American System"
 
 # Dynamic Grade options based on selected track
 if st.session_state.edu_sys == "IB System":
