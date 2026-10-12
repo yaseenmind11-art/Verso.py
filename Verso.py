@@ -797,8 +797,19 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         if not text.strip():
             return "⚠️ Please insert text content to process."
 
+        import nltk
         from nltk.corpus import wordnet
         from nltk import word_tokenize, pos_tag
+
+        # 🔗 Inline Force Downloads to safely register files on Streamlit Server Virtual Environments
+        try:
+            nltk.download('punkt', quiet=True)
+            nltk.download('punkt_tab', quiet=True)
+            nltk.download('wordnet', quiet=True)
+            nltk.download('averaged_perceptron_tagger', quiet=True)
+            nltk.download('averaged_perceptron_tagger_eng', quiet=True)
+        except Exception:
+            pass
 
         # Clean spaces and segment into sentences
         text = re.sub(r'\s+', ' ', text.strip())
@@ -816,15 +827,21 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
             if " because " in sentence.lower():
                 parts = re.split(r'\s+because\s+', sentence, flags=re.IGNORECASE)
                 if len(parts) == 2:
-                    sentence = f"Since {parts[1].rstrip('.')}, it makes sense that {parts[0][0].lower() + parts[0][1:]}"
+                    sentence = f"Since {parts[0].rstrip('.')}, it makes sense that {parts[1][0].lower() + parts[1][1:]}"
             elif " by " in sentence.lower():
                 parts = re.split(r'\s+by\s+', sentence, flags=re.IGNORECASE)
                 if len(parts) == 2:
                     sentence = f"By {parts[1].rstrip('.')}, we can easily see how {parts[0][0].lower() + parts[0][1:]}"
 
             # 2. Part-of-Speech Tokenization for context-safe synonym swapping
-            tokens = word_tokenize(sentence)
-            tagged_tokens = pos_tag(tokens)
+            try:
+                tokens = word_tokenize(sentence)
+                tagged_tokens = pos_tag(tokens)
+            except Exception:
+                # Fallback to plain split if NLTK tagging fails on the cloud environment
+                tokens = sentence.split()
+                tagged_tokens = [(w, 'NN') for w in tokens]
+
             new_words = []
 
             for word, tag in tagged_tokens:
@@ -841,17 +858,18 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
 
                 synonyms = []
                 if wn_tag:
-                    for syn in wordnet.synsets(word, pos=wn_tag):
-                        for lemma in syn.lemmas():
-                            syn_name = lemma.name().replace('_', ' ')
-                            # Ignore exact copies and complex compound words
-                            if syn_name.lower() != word.lower() and " " not in syn_name:
-                                synonyms.append(syn_name)
+                    try:
+                        for syn in wordnet.synsets(word, pos=wn_tag):
+                            for lemma in syn.lemmas():
+                                syn_name = lemma.name().replace('_', ' ')
+                                if syn_name.lower() != word.lower() and " " not in syn_name:
+                                    synonyms.append(syn_name)
+                    except Exception:
+                        pass
 
                 # Swap out word if synonyms are found, otherwise keep original
                 if synonyms:
                     chosen_syn = random.choice(list(set(synonyms)))
-                    # Maintain capitalization structure
                     if word.istitle(): chosen_syn = chosen_syn.title()
                     new_words.append(chosen_syn)
                 else:
