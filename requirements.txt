@@ -1,6 +1,5 @@
 streamlit
 textblob
-nltk
 language-tool-python
 docx2txt
 PyPDF2
@@ -10,3 +9,5 @@ requests
 urllib3
 google-genai
 deep-translator
+nlpaug
+gdown
