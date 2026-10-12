@@ -772,6 +772,7 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         "Paste text here:",
         value=st.session_state.humanizer_text_input,
         height=200,
+        placeholder="Please input the text you want to humanize...",
         key="humanizer_interactive_input"
     )
     st.session_state.humanizer_text_input = text_to_humanize
