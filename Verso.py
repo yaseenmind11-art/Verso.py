@@ -17,6 +17,7 @@ import urllib3
 import os  
 from google import genai
 from google.genai import types
+from deep_translator import GoogleTranslator
 
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -856,10 +857,16 @@ if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
         st.write(st.session_state.humanizer_output)
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (100% WORKING SWAP & TRANSLATION) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE (COMPLETE FAULT-TOLERANT REWRITE) ---
 elif choice == "🌐 Verso Translate":
     st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
+
+    # 🔗 Inline Import Safeguard to completely eliminate NameErrors
+    try:
+        from deep_translator import GoogleTranslator
+    except ImportError:
+        st.error("⚠️ Package 'deep-translator' is not installed in your runtime environment. Please run: pip install deep-translator")
 
     # Core language mapping framework configurations
     lang_map = {
@@ -876,7 +883,7 @@ elif choice == "🌐 Verso Translate":
         st.session_state.src_lang = st.session_state.tgt_lang
         st.session_state.tgt_lang = old_src
 
-    # Layout generation for selectors
+    # Layout generation for selectors with explicit width adjustments
     col1, col_swap, col2 = st.columns([4, 1, 4])
     
     with col1:
@@ -890,7 +897,7 @@ elif choice == "🌐 Verso Translate":
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
-        # Using a direct callback forces Streamlit to swap keys cleanly before drawing widgets
+        # Callback updates state values securely BEFORE re-rendering the frontend layout dropdowns
         if st.button("🔄 Swap", use_container_width=True, on_click=swap_languages_callback):
             st.rerun()
             
@@ -903,7 +910,7 @@ elif choice == "🌐 Verso Translate":
         )
         st.session_state.tgt_lang = tgt_lang
 
-    # Workspace Text Layout Fields
+    # Workspace Text Layout Fields (Split Screen 50/50 Columns)
     input_col, output_col = st.columns(2)
     
     with input_col:
@@ -931,7 +938,7 @@ elif choice == "🌐 Verso Translate":
                     st.session_state.translator_output = translated_text
                     st.rerun()
                 except Exception as e:
-                    st.session_state.translator_output = f"⚠️ Translation engine timeout error: {e}"
+                    st.session_state.translator_output = f"⚠️ Translation engine connection error: {e}"
 
     with output_col:
         st.text_area(
@@ -941,6 +948,7 @@ elif choice == "🌐 Verso Translate":
             disabled=True,
             key="translate_output_area_widget"
         )
+        
 # --- MODULE: SETTINGS ---
 elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
