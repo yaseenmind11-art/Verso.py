@@ -378,6 +378,7 @@ with st.sidebar:
 
 with st.sidebar:
     st.image("z.png", width=80)
+    st.title("Verso Pro")
     nav_options = [
         "🏠 Home",
         "📒 Study Assistant",
