@@ -11,3 +11,6 @@ google-genai
 deep-translator
 nlpaug
 gdown
+transformers
+torch
+sentencepiece
