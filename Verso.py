@@ -21,6 +21,10 @@ from deep_translator import GoogleTranslator
 # Disable insecure request warnings if connection requires SSL bypass on a managed proxy network
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# BUG FIX: campus_session was used but never defined (caused NameError in Citation Generator / URL extraction)
+campus_session = requests.Session()
+campus_session.verify = False
+
 
 
 # --- 🛰️ GOOGLE ANALYTICS INTEGRATION ---
@@ -41,7 +45,8 @@ def inject_ga():
 @st.cache_resource
 def setup_system():
     try:
-        for res in ['punkt', 'brown', 'wordnet', 'punkt_tab', 'averaged_perceptron_tagger']:
+        for res in ['punkt', 'brown', 'wordnet', 'omw-1.4', 'punkt_tab',
+                    'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng']:
             nltk.download(res, quiet=True)
     except Exception: pass
 
@@ -150,6 +155,139 @@ def extract_from_url(url):
         for s in soup(['script', 'style']): s.decompose()
         return soup.get_text(separator=' ', strip=True)
     except: return ""
+
+# --- 🧬 PURE PYTHON HUMANIZER ENGINE (NO GEMINI) ---
+from nltk.corpus import wordnet as wn
+
+_STOP = set("""a an the and or but if then else of to in on at by for with from as is are was were be been
+being am do does did have has had having this that these those it its he she they we you i me him her them
+us my your his their our not no nor so than too very can could will would shall should may might must
+there here which who whom whose what when where why how all any each few more most other some such only
+own same just also into over under again further once about above below up down out off""".split())
+
+_PHRASES = {
+    r"\bin order to\b": "to", r"\bdue to the fact that\b": "because",
+    r"\bin addition,?\b": "plus,", r"\bfurthermore,?\b": "also,", r"\bmoreover,?\b": "what's more,",
+    r"\bconsequently,?\b": "so", r"\btherefore,?\b": "so", r"\bhowever,?\b": "still,",
+    r"\bnevertheless,?\b": "even so,", r"\bin conclusion,?\b": "all in all,",
+    r"\bultimately,?\b": "in the end,", r"\bsignificant(ly)?\b": "major",
+    r"\ba large number of\b": "many", r"\bas a result of\b": "because of",
+    r"\bwith regard to\b": "about", r"\bin the event that\b": "if",
+    r"\bit is important to note that\b": "keep in mind that",
+    r"\bplays? a (crucial|vital|key) role in\b": "matters a lot for",
+    r"\bdelve into\b": "dig into", r"\butilize\b": "use", r"\bdemonstrate\b": "show",
+    r"\bnumerous\b": "plenty of", r"\bpivotal\b": "key", r"\bmultifaceted\b": "many-sided",
+}
+
+_CONTRACTIONS = {
+    r"\bdo not\b": "don't", r"\bdoes not\b": "doesn't", r"\bdid not\b": "didn't",
+    r"\bis not\b": "isn't", r"\bare not\b": "aren't", r"\bcannot\b": "can't",
+    r"\bit is\b": "it's", r"\bthey are\b": "they're", r"\bwe are\b": "we're",
+    r"\bwill not\b": "won't", r"\bhas not\b": "hasn't", r"\bhave not\b": "haven't",
+}
+
+_POS_MAP = {'NN': wn.NOUN, 'NNS': wn.NOUN, 'JJ': wn.ADJ, 'RB': wn.ADV,
+            'VB': wn.VERB, 'VBP': wn.VERB, 'VBZ': wn.VERB, 'VBG': wn.VERB,
+            'VBD': wn.VERB, 'VBN': wn.VERB}
+
+def _inflect(w: str, tag: str):
+    """Very small inflector. Returns None if unsafe."""
+    if tag in ('NNS', 'VBZ'):
+        if re.search(r'[^aeiou]y$', w): return w[:-1] + "ies"
+        if w.endswith(('s', 'x', 'z', 'ch', 'sh')): return w + "es"
+        return w + "s"
+    if tag in ('VBD', 'VBN'):
+        if re.search(r'[^aeiou][aeiou][^aeiouwxy]$', w): return None  # doubling risk
+        if w.endswith('e'): return w + "d"
+        if re.search(r'[^aeiou]y$', w): return w[:-1] + "ied"
+        return w + "ed"
+    if tag == 'VBG':
+        if re.search(r'[^aeiou][aeiou][^aeiouwxy]$', w): return None
+        if w.endswith('e') and not w.endswith('ee'): return w[:-1] + "ing"
+        return w + "ing"
+    return w
+
+def _synonym(word: str, tag: str, rng: random.Random):
+    pos = _POS_MAP.get(tag)
+    if not pos: return None
+    lemma = wn.morphy(word.lower(), pos) or word.lower()
+    cands = []
+    for syn in wn.synsets(lemma, pos=pos)[:2]:          # top senses only = safer meaning
+        for l in syn.lemmas():
+            name = l.name()
+            if name.isalpha() and name.lower() != lemma and len(name) > 2:
+                cands.append(name.lower())
+    cands = list(dict.fromkeys(cands))
+    if not cands: return None
+    new = _inflect(rng.choice(cands), tag)
+    return new
+
+def _swap_words(sentence: str, rng: random.Random, strength: float) -> str:
+    tokens = re.findall(r"\w+(?:'\w+)?|[^\w\s]", sentence)
+    try:
+        tagged = nltk.pos_tag(tokens)
+    except Exception:
+        return sentence
+    out = []
+    for i, (tok, tag) in enumerate(tagged):
+        replace = (tok.isalpha() and len(tok) > 3 and tok.lower() not in _STOP
+                   and tag in _POS_MAP and not (tok[0].isupper() and i > 0)
+                   and rng.random() < strength)
+        if replace:
+            new = _synonym(tok, tag, rng)
+            if new:
+                tok = new.capitalize() if tagged[i][0][0].isupper() else new
+        out.append(tok)
+    text = " ".join(out)
+    text = re.sub(r"\s+([,.;:!?%)\]])", r"\1", text)
+    text = re.sub(r"([(\[])\s+", r"\1", text)
+    return re.sub(r"\s+'(\w)", r"'\1", text)
+
+def _split_long(sentence: str, rng: random.Random) -> list:
+    """Break long compound sentences into shorter ones."""
+    if len(sentence.split()) < 18: return [sentence]
+    m = re.search(r",\s+(and|but|while|whereas|so)\s+|;\s+", sentence)
+    if not m: return [sentence]
+    left, right = sentence[:m.start()].rstrip(",;"), sentence[m.end():]
+    joiner = (m.group(1) or "").lower()
+    right = right[0].upper() + right[1:] if right else right
+    if joiner == "but":  right = "But " + right[0].lower() + right[1:]
+    elif joiner == "so": right = "So " + right[0].lower() + right[1:]
+    return [left.rstrip(".") + ".", right]
+
+def ngram_overlap(original: str, rewritten: str, n: int = 4) -> float:
+    """% of the original's word n-grams that still appear in the rewrite."""
+    def grams(t):
+        w = re.findall(r"\w+", t.lower())
+        return {tuple(w[i:i+n]) for i in range(len(w) - n + 1)}
+    a, b = grams(original), grams(rewritten)
+    return 0.0 if not a else round(100 * len(a & b) / len(a), 1)
+
+def pure_python_humanizer(text: str, strength: float = 0.8,
+                          shuffle_sentences: bool = False, seed=None) -> str:
+    rng = random.Random(seed)
+    text = text.strip()
+    for pat, rep in _PHRASES.items():
+        text = re.sub(pat, rep, text, flags=re.IGNORECASE)
+
+    paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
+    final_pars = []
+    for p in paragraphs:
+        sentences = re.split(r"(?<=[.!?])\s+", p.strip())
+        new_sents = []
+        for s in sentences:
+            for piece in _split_long(s, rng):
+                new_sents.append(_swap_words(piece, rng, strength))
+        if shuffle_sentences and len(new_sents) > 3:
+            first, rest = new_sents[0], new_sents[1:]   # keep the opener in place
+            rng.shuffle(rest)
+            new_sents = [first] + rest
+        par = " ".join(new_sents)
+        for pat, rep in _CONTRACTIONS.items():
+            par = re.sub(pat, rep, par, flags=re.IGNORECASE)
+        par = re.sub(r"(^|[.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), par)
+        final_pars.append(par)
+    return "\n\n".join(final_pars)
 
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
@@ -766,94 +904,35 @@ elif choice == "⏱️ Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-# --- ✍️ NATIVE HUMANISM ENGINE (ULTIMATE ZERO-MATCH REWRITER) ---
-current_menu = st.session_state.get("menu_selection", "")
-if current_menu in ["Humanism Engine", "✍️ Humanism Engine"] or (
-    'choice' in globals() and choice in ["Humanism Engine", "✍️ Humanism Engine"]
-):
+# --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
+elif choice == "✍️ Humanism Engine":
     st.header("✨ Verso Humanizer")
-    # Controlled Input payload area
     text_to_humanize = st.text_area(
-        "Paste text here:",
-        value=st.session_state.humanizer_text_input,
-        height=200,
+        "Paste text here:", value=st.session_state.humanizer_text_input, height=200,
         placeholder="Please input the text you want to humanize...",
-        key="humanizer_interactive_input"
-    )
+        key="humanizer_interactive_input")
     st.session_state.humanizer_text_input = text_to_humanize
 
-    # Local Python Post-Processor to clean up and scramble residual AI structures
-    def rigorous_cleaner(text: str) -> str:
-        cleanup_maps = {
-            r"\bcomplex trade-off\b": "messy balance",
-            r"\bcommunity cohesion\b": "bringing everyone together",
-            r"\bindividual liberty\b": "personal freedom",
-            r"\binstitutional benefits\b": "school advantages",
-            r"\bsocioeconomic gaps\b": "wealth differences",
-            r"\bstudent autonomy\b": "student choices",
-            r"\bfinancial inequities\b": "money struggles",
-            r"\bstudent well-being\b": "how happy students are",
-            r"\binstitutional harmony\b": "a peaceful campus",
-            r"\buniform policies\b": "dress codes",
-            r"\bAn evaluation of\s*": "When you look at ",
-            r"\bUltimately,\s*": "In the end, "
-        }
-        processed = text
-        for pattern, replacement in cleanup_maps.items():
-            processed = re.sub(pattern, replacement, processed, flags=re.IGNORECASE)
-        
-        processed = processed.replace(". However, ", ". But on the flip side, ")
-        processed = processed.replace(", and ", " and ")
-        processed = processed.replace(" because ", " since ")
-        return processed
+    c1, c2 = st.columns(2)
+    strength = c1.slider("Rewrite strength", 0.3, 1.0, 0.8, step=0.1)
+    shuffle = c2.checkbox("Reorder sentences (stronger, may hurt flow)", value=False)
 
-    # AI Paraphrasing Pipeline with structural destruction rules
-    def maximum_humanizer_engine(text: str) -> str:
-        if client is None:
-            return "⚠️ Gemini API Client is uninitialized. Please check your secrets configurations."
-        if not text.strip():
-            return "⚠️ Please insert text content to process."
-
-        system_instruction = """
-        CRITICAL TASK: Rewrite the provided text so that it yields a 0% similarity match on plagiarism checkers. 
-        You must fundamentally break and scramble the logic sequence of the original paragraph.
-
-        STRICT REWRITING MANDATES:
-        1. REARRANGE PARAGRAPH ARCHITECTURE: Change the order in which ideas are introduced. If the source begins with a claim and follows with examples, start your rewritten version with the examples or the conclusion first.
-        2. DESTROY THE SENTENCE FINGERPRINT: Split long compound sentences into multiple extremely short, simple sentences. Mix short 4-word sentences with casual medium ones. Never match the original text's clause layout.
-        3. AGGRESSIVE VOCABULARY MUTATION: You are strictly forbidden from reusing any key noun/adjective combinations from the input text. Find unexpected everyday synonyms. Do not sound like an AI textbook essay.
-        4. BANNED PATTERNS: Do not utilize lists, bullet points, colon structures, or formal transitional phrases. Completely avoid words like: 'delve', 'testament', 'furthermore', 'moreover', 'consequently', 'notably', 'in conclusion', 'pivotal', 'multifaceted', 'harmony', 'cohesion', 'autonomy', 'liberty'.
-        5. META-COMMENTARY BLOCK: Output ONLY the completely scrambled and transformed final human text. Do not write intros or outros like "Here is your text".
-        """
-
-        try:
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=f"Completely mutate and paraphrase this text to ensure a 0% matching signature:\n\n{text}",
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    temperature=0.95,
-                    top_p=0.95
-                )
-            )
-            final_scrambled_text = rigorous_cleaner(response.text)
-            return final_scrambled_text
-        except Exception as e:
-            return f"An processing error occurred during humanization: {e}"
-
-    # Execution controls
     if st.button("🚀 Humanize Output Text", type="primary"):
-        if not st.session_state.humanizer_text_input.strip():
+        if not text_to_humanize.strip():
             st.warning("Please add some text first!")
         else:
-            with st.spinner("Executing structural code variance filters..."):
-                result = maximum_humanizer_engine(st.session_state.humanizer_text_input)
-                st.session_state.humanizer_output = result
+            with st.spinner("Rewriting..."):
+                st.session_state.humanizer_output = pure_python_humanizer(
+                    text_to_humanize, strength, shuffle)
 
-    # Render target panel out fields
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
         st.write(st.session_state.humanizer_output)
+        overlap = ngram_overlap(st.session_state.humanizer_text_input,
+                                st.session_state.humanizer_output)
+        st.metric("Remaining 4-word overlap with original", f"{overlap}%")
+        st.caption("This measures overlap with your input only. It is not a real "
+                   "plagiarism-checker score. Re-run for a different variation.")
 
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
@@ -989,4 +1068,3 @@ if st.session_state.get('timer_finished_trigger'):
     st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
     components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
     if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
-
