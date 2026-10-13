@@ -1030,34 +1030,16 @@ elif choice == "✍️ Humanism Engine":
         key="humanizer_interactive_input")
     st.session_state.humanizer_text_input = text_to_humanize
 
-    c1, c2 = st.columns(2)
-    strength = c1.slider("Synonym strength", 0.3, 1.0, 0.9, step=0.1)
-    tries = c2.slider("Variations to try (keeps the lowest overlap)", 1, 10, 5)
-    o1, o2, o3 = st.columns(3)
-    creative = o1.checkbox("Creative mode (also swap nouns)", value=True)
-    shuffle = o2.checkbox("Reorder sentences", value=False)
-    use_neural = o3.checkbox("Neural paraphraser (QuillBot-style)", value=False,
-                             help="Runs a T5 paraphrasing model locally (no API). Needs transformers, torch and sentencepiece, "
-                                  "a ~900 MB first-run download, and is slow on CPU. May not fit on free cloud hosting.")
-
-    force_zero = st.checkbox("Force 0% overlap (aggressive final pass: edits every repeated phrase, may reduce readability)", value=True)
-
     if st.button("🚀 Humanize Output Text", type="primary"):
         if not text_to_humanize.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Rewriting..."):
-                neural = None
-                if use_neural:
-                    try:
-                        neural = load_neural_paraphraser()
-                    except Exception as e:
-                        st.error(f"Neural model could not be loaded, using the rule-based engine only. ({e})")
                 best, best_ov = "", 101.0
-                for _ in range(tries):
-                    cand = pure_python_humanizer(text_to_humanize, strength, shuffle,
+                for _ in range(5):
+                    cand = pure_python_humanizer(text_to_humanize, 0.9, False,
                                                  seed=random.randint(0, 10**6),
-                                                 include_nouns=creative, neural=neural, force_zero=force_zero)
+                                                 include_nouns=True, neural=None, force_zero=True)
                     ov = ngram_overlap(text_to_humanize, cand)
                     if ov < best_ov:
                         best, best_ov = cand, ov
