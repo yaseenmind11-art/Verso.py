@@ -648,13 +648,12 @@ elif choice == "🛡️ Plagiarism Checker":
     st.title("Plagiarism Pro Scanner")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
-    orig_text = st.text_area("Original text to compare against (optional):", height=150, placeholder="Paste the original text here to measure how much of it your version still repeats. If you scan the Humanizer's output and leave this empty, the original is used automatically.", key="p_orig")
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
                 time.sleep(2.5)
                 sentences = re.split(r'(?<=[.!?]) +', plag_text)
-                reference = orig_text.strip() or (st.session_state.humanizer_text_input.strip() if plag_text.strip() == st.session_state.humanizer_output.strip() else "")
+                reference = st.session_state.humanizer_text_input.strip() if (st.session_state.humanizer_output.strip() and ngram_overlap(st.session_state.humanizer_output, plag_text, 3) >= 50) else ""
                 ref_grams = set()
                 if reference:
                     _rw = re.findall(r"\w+", reference.lower())
@@ -675,7 +674,7 @@ elif choice == "🛡️ Plagiarism Checker":
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
                 if reference:
                     plag_percent = int(ngram_overlap(reference, plag_text))
-                    st.caption("Mode: comparing against your original text (4-word sequences).")
+                    st.caption("Mode: comparing against the original text you gave the Humanizer (4-word sequences).")
                 if plag_percent > 20:
                     st.error(f"⚠️ Similarity Found: {plag_percent}%")
                     st.progress(plag_percent / 100)
