@@ -1048,7 +1048,7 @@ elif choice == "✍️ Humanism Engine":
                 st.session_state.humanizer_output = best
 
     if st.session_state.humanizer_output:
-        st.subheader("📝 Processed Paraphrase Output")
+        st.subheader("📝 Humanized")
         st.write(st.session_state.humanizer_output.replace("\n", "  \n"))
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
