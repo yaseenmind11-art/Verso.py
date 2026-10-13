@@ -209,7 +209,7 @@ def _inflect(w: str, tag: str):
         return w + "ing"
     return w
 
-def _synonym(word: str, tag: str, rng: random.Random, pos_map: dict, context=None):
+def _synonym(word: str, tag: str, rng: random.Random, pos_map: dict, context=None, allow_rare: bool = False):
     pos = pos_map.get(tag)
     if not pos: return None
     lemma = wn.morphy(word.lower(), pos) or word.lower()
@@ -221,12 +221,12 @@ def _synonym(word: str, tag: str, rng: random.Random, pos_map: dict, context=Non
             best = None
         if best: synsets = [best]
     if not synsets:
-        synsets = wn.synsets(lemma, pos=pos)[:1]
+        synsets = wn.synsets(lemma, pos=pos)[:2 if allow_rare else 1]
     cands = []
     for syn in synsets:
         for l in syn.lemmas():
             name = l.name()
-            if name.isalpha() and name.lower() != lemma and len(name) > 2 and l.count() > 0:
+            if name.isalpha() and name.lower() != lemma and len(name) > 2 and (allow_rare or l.count() > 0):
                 cands.append(name.lower())
     cands = list(dict.fromkeys(cands))
     if not cands: return None
@@ -300,12 +300,65 @@ def ngram_overlap(original: str, rewritten: str, n: int = 4) -> float:
     a, b = grams(original), grams(rewritten)
     return 0.0 if not a else round(100 * len(a & b) / len(a), 1)
 
+_FILLERS = ["really", "quite", "actually", "generally", "often", "clearly"]
+
+def force_low_overlap(original: str, text: str, rng: random.Random, n: int = 4, max_rounds: int = 8) -> str:
+    """Targeted final pass: finds word runs still shared with the original and edits them until none remain."""
+    ow = re.findall(r"\w+", original.lower())
+    ogr = {tuple(ow[i:i+n]) for i in range(len(ow) - n + 1)}
+    if not ogr:
+        return text
+    all_map = {**_POS_MAP_NOUNS, 'RB': wn.ADV}
+    for rnd in range(max_rounds):
+        ms = list(re.finditer(r"\w+", text))
+        ws = [m.group().lower() for m in ms]
+        bad = [i for i in range(len(ws) - n + 1) if tuple(ws[i:i+n]) in ogr]
+        if not bad:
+            break
+        try:
+            tagged = nltk.pos_tag([m.group() for m in ms])
+        except Exception:
+            tagged = [(m.group(), 'XX') for m in ms]
+        edited, edits = set(), []
+        for i in bad:
+            if any(j in edited for j in range(i, i + n)):
+                continue                      # an earlier edit already breaks this run
+            for j in (i + 1, i + 2, i, i + 3):
+                s0, e0 = ms[j].span()
+                tok, tag = tagged[j]
+                if ((s0 > 0 and text[s0 - 1] in "-'’") or (e0 < len(text) and text[e0] in "-'’")
+                        or not tok.isalpha() or len(tok) < 3):
+                    continue                  # leave hyphenated / apostrophe words and numbers alone
+                new = None
+                if tag in all_map and tok.lower() not in _STOP:
+                    ctx = [t for t, _ in tagged[max(0, j - 8): j + 8]]
+                    new = _synonym(tok, tag, rng, all_map, context=ctx, allow_rare=(rnd >= 2))
+                if new:
+                    edits.append((s0, e0, new.capitalize() if tok[0].isupper() else new))
+                    edited.add(j)
+                    break
+                if rnd >= 1 and tag in ('JJ', 'VB', 'VBP', 'VBZ', 'VBD', 'VBN', 'VBG') and tok[0].islower():
+                    edits.append((s0, s0, rng.choice(_FILLERS) + " "))
+                    edited.add(j)
+                    break
+        if not edits:
+            break
+        for s0, e0, rep in sorted(edits, reverse=True):
+            text = text[:s0] + rep + text[e0:]
+    return text
+
+def _is_heading(line: str) -> bool:
+    l = line.strip()
+    return 0 < len(l.split()) <= 6 and not re.search(r"[.!?:]$", l)
+
 def pure_python_humanizer(text: str, strength: float = 0.8,
                           shuffle_sentences: bool = False, seed=None,
-                          include_nouns: bool = False, neural=None) -> str:
+                          include_nouns: bool = False, neural=None,
+                          force_zero: bool = False) -> str:
     rng = random.Random(seed)
     pos_map = _POS_MAP_NOUNS if include_nouns else _POS_MAP
-    text = text.strip()
+    original = text.strip()
+    text = original
     for pat, rep in _PHRASES.items():
         text = re.sub(pat, rep, text, flags=re.IGNORECASE)
     text = re.sub(r",\s*,", ",", text)
@@ -313,22 +366,33 @@ def pure_python_humanizer(text: str, strength: float = 0.8,
     paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
     final_pars = []
     for p in paragraphs:
-        sentences = re.split(r"(?<=[.!?])\s+", p.strip())
-        new_sents = []
-        for s in sentences:
-            for piece in _split_long(s, rng):
-                piece = neural_paraphrase(piece, neural)          # neural rewrite first (if enabled)
-                new_sents.append(_swap_words(piece, rng, strength, pos_map))
-        if shuffle_sentences and len(new_sents) > 3:
-            first, rest = new_sents[0], new_sents[1:]   # keep the opener in place
-            rng.shuffle(rest)
-            new_sents = [first] + rest
-        par = " ".join(new_sents)
-        for pat, rep in _CONTRACTIONS.items():
-            par = re.sub(pat, rep, par, flags=re.IGNORECASE)
-        par = re.sub(r"(^|[.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), par)
-        final_pars.append(par)
-    return "\n\n".join(final_pars)
+        out_lines = []
+        for line in p.split("\n"):
+            if not line.strip():
+                continue
+            if _is_heading(line):                       # keep short title lines on their own line
+                out_lines.append(line.strip())
+                continue
+            sentences = re.split(r"(?<=[.!?])\s+", line.strip())
+            new_sents = []
+            for s in sentences:
+                for piece in _split_long(s, rng):
+                    piece = neural_paraphrase(piece, neural)          # neural rewrite first (if enabled)
+                    new_sents.append(_swap_words(piece, rng, strength, pos_map))
+            if shuffle_sentences and len(new_sents) > 3:
+                first, rest = new_sents[0], new_sents[1:]   # keep the opener in place
+                rng.shuffle(rest)
+                new_sents = [first] + rest
+            par = " ".join(new_sents)
+            for pat, rep in _CONTRACTIONS.items():
+                par = re.sub(pat, rep, par, flags=re.IGNORECASE)
+            par = re.sub(r"(^|[.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), par)
+            out_lines.append(par)
+        final_pars.append("\n".join(out_lines))
+    result = "\n\n".join(final_pars)
+    if force_zero:
+        result = force_low_overlap(original, result, rng)
+    return result
 
 # --- 📜 CITATION GENERATOR ENGINE ---
 def generate_scribbr_citation(url, style_format):
@@ -976,6 +1040,8 @@ elif choice == "✍️ Humanism Engine":
                              help="Runs a T5 paraphrasing model locally (no API). Needs transformers, torch and sentencepiece, "
                                   "a ~900 MB first-run download, and is slow on CPU. May not fit on free cloud hosting.")
 
+    force_zero = st.checkbox("Force 0% overlap (aggressive final pass: edits every repeated phrase, may reduce readability)", value=True)
+
     if st.button("🚀 Humanize Output Text", type="primary"):
         if not text_to_humanize.strip():
             st.warning("Please add some text first!")
@@ -991,15 +1057,17 @@ elif choice == "✍️ Humanism Engine":
                 for _ in range(tries):
                     cand = pure_python_humanizer(text_to_humanize, strength, shuffle,
                                                  seed=random.randint(0, 10**6),
-                                                 include_nouns=creative, neural=neural)
+                                                 include_nouns=creative, neural=neural, force_zero=force_zero)
                     ov = ngram_overlap(text_to_humanize, cand)
                     if ov < best_ov:
                         best, best_ov = cand, ov
+                    if best_ov == 0:
+                        break
                 st.session_state.humanizer_output = best
 
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
-        st.write(st.session_state.humanizer_output)
+        st.write(st.session_state.humanizer_output.replace("\n", "  \n"))
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
         st.metric("Remaining 4-word overlap with original", f"{overlap}%")
