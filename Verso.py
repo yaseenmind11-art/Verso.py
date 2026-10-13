@@ -608,21 +608,34 @@ elif choice == "🛡️ Plagiarism Checker":
     st.title("Plagiarism Pro Scanner")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
+    orig_text = st.text_area("Original text to compare against (optional):", height=150, placeholder="Paste the original text here to measure how much of it your version still repeats. If you scan the Humanizer's output and leave this empty, the original is used automatically.", key="p_orig")
     if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
                 time.sleep(2.5)
                 sentences = re.split(r'(?<=[.!?]) +', plag_text)
+                reference = orig_text.strip() or (st.session_state.humanizer_text_input.strip() if plag_text.strip() == st.session_state.humanizer_output.strip() else "")
+                ref_grams = set()
+                if reference:
+                    _rw = re.findall(r"\w+", reference.lower())
+                    ref_grams = {tuple(_rw[i:i+4]) for i in range(len(_rw) - 3)}
                 academic_triggers = ["infrastructure", "implementation", "federal funding", "neurological", "opportunity", "assessment", "significant"]
                 marked_text = ""
                 match_count = 0
                 for s in sentences:
-                    is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
+                    if reference:
+                        _sw = re.findall(r"\w+", s.lower())
+                        is_match = any(tuple(_sw[i:i+4]) in ref_grams for i in range(len(_sw) - 3))
+                    else:
+                        is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
                     if is_match:
                         marked_text += f'<span class="plag-highlight" style="background-color:#7f1d1d; color:#fecaca;">{s}</span> '
                         match_count += 1
                     else: marked_text += f'{s} '
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
+                if reference:
+                    plag_percent = int(ngram_overlap(reference, plag_text))
+                    st.caption("Mode: comparing against your original text (4-word sequences).")
                 if plag_percent > 20:
                     st.error(f"⚠️ Similarity Found: {plag_percent}%")
                     st.progress(plag_percent / 100)
