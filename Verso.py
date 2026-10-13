@@ -158,6 +158,7 @@ def extract_from_url(url):
 
 # --- 🧬 PURE PYTHON HUMANIZER ENGINE (NO GEMINI) ---
 from nltk.corpus import wordnet as wn
+from nltk.wsd import lesk
 
 _STOP = set("""a an the and or but if then else of to in on at by for with from as is are was were be been
 being am do does did have has had having this that these those it its he she they we you i me him her them
@@ -189,6 +190,7 @@ _CONTRACTIONS = {
 _POS_MAP = {'JJ': wn.ADJ,
             'VB': wn.VERB, 'VBP': wn.VERB, 'VBZ': wn.VERB, 'VBG': wn.VERB,
             'VBD': wn.VERB, 'VBN': wn.VERB}
+_POS_MAP_NOUNS = {**_POS_MAP, 'NN': wn.NOUN, 'NNS': wn.NOUN}
 
 def _inflect(w: str, tag: str):
     """Very small inflector. Returns None if unsafe."""
@@ -207,22 +209,31 @@ def _inflect(w: str, tag: str):
         return w + "ing"
     return w
 
-def _synonym(word: str, tag: str, rng: random.Random):
-    pos = _POS_MAP.get(tag)
+def _synonym(word: str, tag: str, rng: random.Random, pos_map: dict, context=None):
+    pos = pos_map.get(tag)
     if not pos: return None
     lemma = wn.morphy(word.lower(), pos) or word.lower()
+    synsets = []
+    if context:                                   # pick the sense that fits the sentence (Lesk)
+        try:
+            best = lesk([t.lower() for t in context], lemma, pos)
+        except Exception:
+            best = None
+        if best: synsets = [best]
+    if not synsets:
+        synsets = wn.synsets(lemma, pos=pos)[:1]
     cands = []
-    for syn in wn.synsets(lemma, pos=pos)[:2]:          # top senses only = safer meaning
+    for syn in synsets:
         for l in syn.lemmas():
             name = l.name()
             if name.isalpha() and name.lower() != lemma and len(name) > 2 and l.count() > 0:
                 cands.append(name.lower())
     cands = list(dict.fromkeys(cands))
     if not cands: return None
-    new = _inflect(rng.choice(cands), tag)
-    return new
+    return _inflect(rng.choice(cands), tag)
 
-def _swap_words(sentence: str, rng: random.Random, strength: float) -> str:
+def _swap_words(sentence: str, rng: random.Random, strength: float, pos_map: dict = None) -> str:
+    pos_map = pos_map or _POS_MAP
     tokens = re.findall(r"\w+(?:[-']\w+)*|[^\w\s]", sentence)
     try:
         tagged = nltk.pos_tag(tokens)
@@ -231,10 +242,10 @@ def _swap_words(sentence: str, rng: random.Random, strength: float) -> str:
     out = []
     for i, (tok, tag) in enumerate(tagged):
         replace = (tok.isalpha() and len(tok) > 3 and tok.lower() not in _STOP
-                   and tag in _POS_MAP and not (tok[0].isupper() and i > 0)
+                   and tag in pos_map and not (tok[0].isupper() and i > 0)
                    and rng.random() < strength)
         if replace:
-            new = _synonym(tok, tag, rng)
+            new = _synonym(tok, tag, rng, pos_map, context=tokens)
             if new:
                 tok = new.capitalize() if tagged[i][0][0].isupper() else new
         out.append(tok)
@@ -255,6 +266,32 @@ def _split_long(sentence: str, rng: random.Random) -> list:
     elif joiner == "so": right = "So " + right[0].lower() + right[1:]
     return [left.rstrip(".") + ".", right]
 
+# ---------- OPTIONAL NEURAL PARAPHRASER (QuillBot-style, runs locally, no API) ----------
+@st.cache_resource
+def load_neural_paraphraser():
+    """Needs: pip install transformers torch sentencepiece (first run downloads ~900 MB)."""
+    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+    name = "humarin/chatgpt_paraphraser_on_T5_base"
+    tok = AutoTokenizer.from_pretrained(name)
+    model = AutoModelForSeq2SeqLM.from_pretrained(name)
+    model.eval()
+    return tok, model
+
+def neural_paraphrase(sentence: str, neural) -> str:
+    if neural is None or len(sentence.split()) < 4:
+        return sentence
+    try:
+        import torch
+        tok, model = neural
+        inputs = tok("paraphrase: " + sentence, return_tensors="pt", truncation=True, max_length=256)
+        with torch.no_grad():
+            out = model.generate(**inputs, max_length=256, do_sample=True, top_k=50, top_p=0.95,
+                                 temperature=0.8, repetition_penalty=1.3, no_repeat_ngram_size=3)
+        result = tok.decode(out[0], skip_special_tokens=True).strip()
+        return result or sentence
+    except Exception:
+        return sentence
+
 def ngram_overlap(original: str, rewritten: str, n: int = 4) -> float:
     """% of the original's word n-grams that still appear in the rewrite."""
     def grams(t):
@@ -264,8 +301,10 @@ def ngram_overlap(original: str, rewritten: str, n: int = 4) -> float:
     return 0.0 if not a else round(100 * len(a & b) / len(a), 1)
 
 def pure_python_humanizer(text: str, strength: float = 0.8,
-                          shuffle_sentences: bool = False, seed=None) -> str:
+                          shuffle_sentences: bool = False, seed=None,
+                          include_nouns: bool = False, neural=None) -> str:
     rng = random.Random(seed)
+    pos_map = _POS_MAP_NOUNS if include_nouns else _POS_MAP
     text = text.strip()
     for pat, rep in _PHRASES.items():
         text = re.sub(pat, rep, text, flags=re.IGNORECASE)
@@ -278,7 +317,8 @@ def pure_python_humanizer(text: str, strength: float = 0.8,
         new_sents = []
         for s in sentences:
             for piece in _split_long(s, rng):
-                new_sents.append(_swap_words(piece, rng, strength))
+                piece = neural_paraphrase(piece, neural)          # neural rewrite first (if enabled)
+                new_sents.append(_swap_words(piece, rng, strength, pos_map))
         if shuffle_sentences and len(new_sents) > 3:
             first, rest = new_sents[0], new_sents[1:]   # keep the opener in place
             rng.shuffle(rest)
@@ -928,16 +968,35 @@ elif choice == "✍️ Humanism Engine":
     st.session_state.humanizer_text_input = text_to_humanize
 
     c1, c2 = st.columns(2)
-    strength = c1.slider("Rewrite strength", 0.3, 1.0, 0.8, step=0.1)
-    shuffle = c2.checkbox("Reorder sentences (stronger, may hurt flow)", value=False)
+    strength = c1.slider("Synonym strength", 0.3, 1.0, 0.9, step=0.1)
+    tries = c2.slider("Variations to try (keeps the lowest overlap)", 1, 10, 5)
+    o1, o2, o3 = st.columns(3)
+    creative = o1.checkbox("Creative mode (also swap nouns)", value=True)
+    shuffle = o2.checkbox("Reorder sentences", value=False)
+    use_neural = o3.checkbox("Neural paraphraser (QuillBot-style)", value=False,
+                             help="Runs a T5 paraphrasing model locally (no API). Needs transformers, torch and sentencepiece, "
+                                  "a ~900 MB first-run download, and is slow on CPU. May not fit on free cloud hosting.")
 
     if st.button("🚀 Humanize Output Text", type="primary"):
         if not text_to_humanize.strip():
             st.warning("Please add some text first!")
         else:
             with st.spinner("Rewriting..."):
-                st.session_state.humanizer_output = pure_python_humanizer(
-                    text_to_humanize, strength, shuffle)
+                neural = None
+                if use_neural:
+                    try:
+                        neural = load_neural_paraphraser()
+                    except Exception as e:
+                        st.error(f"Neural model could not be loaded, using the rule-based engine only. ({e})")
+                best, best_ov = "", 101.0
+                for _ in range(tries):
+                    cand = pure_python_humanizer(text_to_humanize, strength, shuffle,
+                                                 seed=random.randint(0, 10**6),
+                                                 include_nouns=creative, neural=neural)
+                    ov = ngram_overlap(text_to_humanize, cand)
+                    if ov < best_ov:
+                        best, best_ov = cand, ov
+                st.session_state.humanizer_output = best
 
     if st.session_state.humanizer_output:
         st.subheader("📝 Processed Paraphrase Output")
@@ -946,7 +1005,8 @@ elif choice == "✍️ Humanism Engine":
                                 st.session_state.humanizer_output)
         st.metric("Remaining 4-word overlap with original", f"{overlap}%")
         st.caption("This measures overlap with your input only. It is not a real "
-                   "plagiarism-checker score. Re-run for a different variation.")
+                   "plagiarism-checker score. Always read the output: the lowest-overlap "
+                   "variation is not always the most readable one.")
 
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "🌐 Verso Translate":
