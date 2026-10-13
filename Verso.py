@@ -167,10 +167,10 @@ own same just also into over under again further once about above below up down 
 
 _PHRASES = {
     r"\bin order to\b": "to", r"\bdue to the fact that\b": "because",
-    r"\bin addition,?\b": "plus,", r"\bfurthermore,?\b": "also,", r"\bmoreover,?\b": "what's more,",
-    r"\bconsequently,?\b": "so", r"\btherefore,?\b": "so", r"\bhowever,?\b": "still,",
-    r"\bnevertheless,?\b": "even so,", r"\bin conclusion,?\b": "all in all,",
-    r"\bultimately,?\b": "in the end,", r"\bsignificant(ly)?\b": "major",
+    r"\bin addition\b,?": "plus,", r"\bfurthermore\b,?": "also,", r"\bmoreover\b,?": "what's more,",
+    r"\bconsequently\b,?": "so", r"\btherefore\b,?": "so", r"\bhowever\b,?": "still,",
+    r"\bnevertheless\b,?": "even so,", r"\bin conclusion\b,?": "all in all,",
+    r"\bultimately\b,?": "in the end,", r"\bsignificant(ly)?\b": "major",
     r"\ba large number of\b": "many", r"\bas a result of\b": "because of",
     r"\bwith regard to\b": "about", r"\bin the event that\b": "if",
     r"\bit is important to note that\b": "keep in mind that",
@@ -186,7 +186,7 @@ _CONTRACTIONS = {
     r"\bwill not\b": "won't", r"\bhas not\b": "hasn't", r"\bhave not\b": "haven't",
 }
 
-_POS_MAP = {'NN': wn.NOUN, 'NNS': wn.NOUN, 'JJ': wn.ADJ, 'RB': wn.ADV,
+_POS_MAP = {'JJ': wn.ADJ,
             'VB': wn.VERB, 'VBP': wn.VERB, 'VBZ': wn.VERB, 'VBG': wn.VERB,
             'VBD': wn.VERB, 'VBN': wn.VERB}
 
@@ -215,7 +215,7 @@ def _synonym(word: str, tag: str, rng: random.Random):
     for syn in wn.synsets(lemma, pos=pos)[:2]:          # top senses only = safer meaning
         for l in syn.lemmas():
             name = l.name()
-            if name.isalpha() and name.lower() != lemma and len(name) > 2:
+            if name.isalpha() and name.lower() != lemma and len(name) > 2 and l.count() > 0:
                 cands.append(name.lower())
     cands = list(dict.fromkeys(cands))
     if not cands: return None
@@ -223,7 +223,7 @@ def _synonym(word: str, tag: str, rng: random.Random):
     return new
 
 def _swap_words(sentence: str, rng: random.Random, strength: float) -> str:
-    tokens = re.findall(r"\w+(?:'\w+)?|[^\w\s]", sentence)
+    tokens = re.findall(r"\w+(?:[-']\w+)*|[^\w\s]", sentence)
     try:
         tagged = nltk.pos_tag(tokens)
     except Exception:
@@ -269,6 +269,7 @@ def pure_python_humanizer(text: str, strength: float = 0.8,
     text = text.strip()
     for pat, rep in _PHRASES.items():
         text = re.sub(pat, rep, text, flags=re.IGNORECASE)
+    text = re.sub(r",\s*,", ",", text)
 
     paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
     final_pars = []
