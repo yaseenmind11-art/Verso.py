@@ -156,6 +156,45 @@ def extract_text(uploaded_file):
             return str(uploaded_file.read(), "utf-8")
     except Exception: return ""
 
+def extract_youtube_transcript(url):
+    """Fetch available YouTube captions/transcript; never treat the watch-page boilerplate as video content."""
+    match = re.search(r"(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{11})", url)
+    if not match:
+        return ""
+    video_id = match.group(1)
+    try:
+        # Supports current and older youtube-transcript-api versions.
+        from youtube_transcript_api import YouTubeTranscriptApi
+        try:
+            fetched = YouTubeTranscriptApi().fetch(video_id)
+            snippets = getattr(fetched, "snippets", fetched)
+            lines = []
+            for item in snippets:
+                if isinstance(item, dict):
+                    line = item.get("text", "")
+                else:
+                    line = getattr(item, "text", "")
+                if line:
+                    lines.append(str(line))
+            transcript = " ".join(lines).strip()
+            if transcript:
+                return f"YouTube video captions/transcript (video ID {video_id}):\n{transcript}"
+        except Exception:
+            # Older package versions expose a static get_transcript method.
+            try:
+                entries = YouTubeTranscriptApi.get_transcript(video_id)
+                transcript = " ".join(str(row.get("text", "")) for row in entries if row.get("text")).strip()
+                if transcript:
+                    return f"YouTube video captions/transcript (video ID {video_id}):\n{transcript}"
+            except Exception:
+                pass
+    except ImportError:
+        return ""
+    except Exception:
+        return ""
+    return ""
+
+
 def extract_from_url(url):
     if not url: return ""
     try:
@@ -683,7 +722,7 @@ with st.sidebar:
     
 # --- HOME ---
 
-def generate_study_assets(source_text: str, quiz_count: int = 10, flashcard_count: int = 25):
+def generate_study_assets(source_text: str, quiz_count: int = 15, flashcard_count: int = 25):
     """Generate source-grounded study materials as strict JSON; never invent filler questions."""
     if client is None:
         raise RuntimeError("The AI service is not configured. Add GEMINI_API_KEY to Streamlit secrets.")
@@ -695,7 +734,7 @@ def generate_study_assets(source_text: str, quiz_count: int = 10, flashcard_coun
         "Return valid JSON only with this schema: "
         '{"keywords":["..."],"quiz":[{"question":"clear specific question","options":["A","B","C","D"],"answer":"exact option text","explanation":"source-grounded explanation"}],'
         '"flashcards":[{"question":"direct study question","answer":"accurate concise answer from source"}]}. '
-        f"Create up to {quiz_count} distinct quiz questions and {flashcard_count} distinct flashcards, but return fewer rather than inventing content. "
+        f"Create exactly {quiz_count} distinct quiz questions whenever the source contains enough information, plus up to {flashcard_count} distinct flashcards. Aim for 15 quiz questions by testing different facts, concepts, causes, examples, and relationships from the source. Never pad with generic, repeated, or invented questions; if the source genuinely cannot support 15, return only the supported questions. "
         "Questions must be natural, specific, and answerable from the source, not generic templates. Quiz choices must be plausible and have exactly one correct answer. "
         "Explanations must explain why the answer is right. Flashcard answers must directly answer the question. Avoid duplicates, vague wording, and filler. "
         "Keywords must be important terms actually present in the source."
@@ -911,7 +950,7 @@ elif choice == "Citation Generator":
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "Study Assistant":
     st.title("Verso Study Assistant")
-    st.caption("Source-grounded explanations, practice questions, and flashcards.")
+    st.caption("Questions, explanations, and flashcards based on the actual source material. Quizzes aim for 15 distinct questions.")
     col_a, col_b = st.columns([2, 1])
     with col_a:
         up_files = st.file_uploader("Upload study files", type=["pdf", "docx", "csv", "txt"], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
@@ -922,10 +961,16 @@ elif choice == "Study Assistant":
     st.session_state.study_text_input = raw_content
     source_parts = [raw_content.strip()] if raw_content.strip() else []
     if url_hub.strip():
-        with st.spinner("Reading source link..."):
-            linked_text = extract_from_url(url_hub.strip())
+        is_youtube = bool(re.search(r"(?:youtube\.com|youtu\.be)", url_hub.strip(), re.I))
+        with st.spinner("Reading the video captions..." if is_youtube else "Reading source link..."):
+            if is_youtube:
+                linked_text = extract_youtube_transcript(url_hub.strip())
+            else:
+                linked_text = extract_from_url(url_hub.strip())
         if linked_text.strip():
             source_parts.append(linked_text.strip())
+        elif is_youtube:
+            st.warning("I couldn't access captions for this YouTube video, so I won't make up questions from the video title or YouTube page boilerplate. Install `youtube-transcript-api` in your app's dependencies, make sure the video has captions available, or paste the video's transcript/captions into the notes box.")
         else:
             st.warning("The link could not be read. Upload the page or paste its text instead.")
     if up_files:
