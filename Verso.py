@@ -623,7 +623,13 @@ html, body, .stApp, [data-testid="stMarkdownContainer"], .stApp label, .stApp in
 @media (max-width: 768px) { .block-container { padding: 2rem 1rem 4rem; } }
 
 /* Type scale */
-h1 { font-weight: 600 !important; font-size: 2rem !important; letter-spacing: -0.02em; color: var(--ink); padding-bottom: 0.25rem; }
+h1 {
+  font-weight: 600 !important;
+  font-size: 2rem !important;
+  letter-spacing: -0.02em;
+  color: #1F1F1F !important;
+  padding-bottom: 0.25rem;
+}
 h2 { font-weight: 600 !important; font-size: 1.5rem !important; letter-spacing: -0.015em; }
 h3 { font-weight: 600 !important; font-size: 1.1rem !important; letter-spacing: -0.01em; }
 p, li { line-height: 1.6; }
