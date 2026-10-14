@@ -583,7 +583,7 @@ f_scale = st.session_state.set_font
 selected_tone_name = st.session_state.selected_alarm_tone
 selected_tone_url = ALARM_TONES.get(selected_tone_name)
 
-st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
+st.set_page_config(page_title="Verso Pro | AI Study Assistant", page_icon="z.png", layout="wide")
 inject_ga()
 
 def _contrast_text(hex_color: str) -> str:
