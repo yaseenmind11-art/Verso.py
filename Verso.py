@@ -157,42 +157,55 @@ def extract_text(uploaded_file):
     except Exception: return ""
 
 def extract_youtube_transcript(url):
-    """Fetch available YouTube captions/transcript; never treat the watch-page boilerplate as video content."""
-    match = re.search(r"(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{11})", url)
+    """Retrieve actual YouTube captions using current and legacy library APIs.
+
+    Returns transcript text only. It deliberately never uses YouTube page metadata as
+    a substitute for what was spoken in the video.
+    """
+    match = re.search(
+        r"(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})",
+        url.strip(),
+    )
     if not match:
         return ""
     video_id = match.group(1)
+
     try:
-        # Supports current and older youtube-transcript-api versions.
         from youtube_transcript_api import YouTubeTranscriptApi
-        try:
-            fetched = YouTubeTranscriptApi().fetch(video_id)
-            snippets = getattr(fetched, "snippets", fetched)
-            lines = []
-            for item in snippets:
-                if isinstance(item, dict):
-                    line = item.get("text", "")
-                else:
-                    line = getattr(item, "text", "")
-                if line:
-                    lines.append(str(line))
-            transcript = " ".join(lines).strip()
-            if transcript:
-                return f"YouTube video captions/transcript (video ID {video_id}):\n{transcript}"
-        except Exception:
-            # Older package versions expose a static get_transcript method.
-            try:
-                entries = YouTubeTranscriptApi.get_transcript(video_id)
-                transcript = " ".join(str(row.get("text", "")) for row in entries if row.get("text")).strip()
-                if transcript:
-                    return f"YouTube video captions/transcript (video ID {video_id}):\n{transcript}"
-            except Exception:
-                pass
     except ImportError:
-        return ""
-    except Exception:
-        return ""
-    return ""
+        return "__TRANSCRIPT_ERROR__:Missing dependency: add youtube-transcript-api to requirements.txt and redeploy."
+
+    # API v1+: instance.fetch(); older releases: static get_transcript().
+    try:
+        api = YouTubeTranscriptApi()
+        fetched = api.fetch(video_id)
+        snippets = getattr(fetched, "snippets", fetched)
+        lines = []
+        for item in snippets:
+            if isinstance(item, dict):
+                line = item.get("text", "")
+            else:
+                line = getattr(item, "text", "")
+            if line:
+                lines.append(str(line))
+        transcript = " ".join(lines).strip()
+        if transcript:
+            return f"YouTube video transcript (video ID {video_id}):\n{transcript}"
+    except Exception as current_error:
+        current_error_text = str(current_error)
+
+    try:
+        entries = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = " ".join(str(row.get("text", "")) for row in entries if row.get("text")).strip()
+        if transcript:
+            return f"YouTube video transcript (video ID {video_id}):\n{transcript}"
+    except Exception as legacy_error:
+        legacy_error_text = str(legacy_error)
+    else:
+        legacy_error_text = "The captions response was empty."
+
+    detail = (locals().get("legacy_error_text") or locals().get("current_error_text") or "No captions were returned.")
+    return "__TRANSCRIPT_ERROR__:Could not retrieve captions. The video may not have captions, or YouTube may be blocking transcript requests from this hosting environment. Details: " + detail[:350]
 
 
 def extract_from_url(url):
@@ -967,10 +980,11 @@ elif choice == "Study Assistant":
                 linked_text = extract_youtube_transcript(url_hub.strip())
             else:
                 linked_text = extract_from_url(url_hub.strip())
-        if linked_text.strip():
+        if linked_text.strip() and not linked_text.startswith("__TRANSCRIPT_ERROR__:"):
             source_parts.append(linked_text.strip())
         elif is_youtube:
-            st.warning("I couldn't access captions for this YouTube video, so I won't make up questions from the video title or YouTube page boilerplate. Install `youtube-transcript-api` in your app's dependencies, make sure the video has captions available, or paste the video's transcript/captions into the notes box.")
+            error_detail = linked_text.split(":", 1)[1].strip() if linked_text.startswith("__TRANSCRIPT_ERROR__:") else "No transcript was returned."
+            st.warning(f"I couldn't read this video's actual captions, so I won't invent questions from its title or page text. {error_detail} If this keeps happening after adding the dependency, paste the video's transcript/captions into the notes box.")
         else:
             st.warning("The link could not be read. Upload the page or paste its text instead.")
     if up_files:
