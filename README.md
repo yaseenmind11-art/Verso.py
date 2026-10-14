@@ -1,10 +1,10 @@
 ![Verso Logo](full_logo.png)
-# Verso.py 🔍
+# Verso pro 🔍
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://verso-ai.streamlit.app)
 Verso AI is a professional-grade research assistant designed to streamline the academic workflow...
-# Verso.py
+# Verso pro
 🔍 Verso AI: Intelligent Research & Citation Engine
-Verso AI is a professional-grade research assistant designed to streamline the academic workflow for students and researchers. It combines intelligent source discovery with a high-precision APA 7th Edition citation generator to ensure academic integrity and efficiency.
+Verso pro is a professional-grade research assistant designed to streamline the academic workflow for students and researchers. It combines intelligent source discovery with a high-precision APA 7th Edition citation generator to ensure academic integrity and efficiency.
 🚀 Features
 Intelligent Search: Provides a multi-perspective analysis of research queries, categorizing results into "Verified Trusted" (e.g., IAEA, Nature) and "Broad Perspectives" (e.g., Reuters, Wikipedia).
 
