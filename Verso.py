@@ -1,3 +1,4 @@
+
 import streamlit as st
 from textblob import TextBlob
 import nltk
@@ -55,8 +56,8 @@ setup_system()
 # --- ⚙️ STATE MANAGEMENT ---
 def initialize_states(force=False):
     defaults = {
-        'set_color': "#0B57D0",
-        'set_bg': "#FFFFFF",
+        'set_color': "#FFFFFF",
+        'set_bg': "#5465C9",
         'set_font': 1.10,
         'reset_counter': random.randint(1, 1000),
         'timer_end_time': None,
@@ -491,148 +492,94 @@ selected_tone_url = ALARM_TONES.get(selected_tone_name)
 st.set_page_config(page_title="Verso Research Pro", page_icon="z.png", layout="wide")
 inject_ga()
 
-def _contrast_text(hex_color: str) -> str:
-    """Pick dark or light text so a user-chosen colour always stays readable."""
-    try:
-        h = hex_color.lstrip('#')
-        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-        return "#1F1F1F" if (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6 else "#FFFFFF"
-    except Exception:
-        return "#1F1F1F"
-
-_UI_CSS = """
+st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-:root {
-  --accent: __ACCENT__;
-  --accent-fg: __ACCENT_FG__;
-  --card-bg: __CARD_BG__;
-  --card-fg: __CARD_FG__;
-  --ink: #1F1F1F;
-  --muted: #5F6368;
-  --line: #E1E3E1;
-  --canvas: #F8FAFD;
-  --rail: #F0F4F9;
-  --tonal: #E9EEF6;
-  --accent-soft: #D3E3FD;
-  --danger: #B3261E;
-}
-html, body, .stApp, [data-testid="stMarkdownContainer"], .stApp label, .stApp input,
-.stApp textarea, .stApp button, .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif !important;
-}
-.stApp { background: var(--canvas); color: var(--ink); }
-[data-testid="stHeader"] { background: transparent; }
-[data-testid="stToolbar"], [data-testid="stDecoration"], footer, #MainMenu { display: none !important; }
-.block-container { padding: 3rem 3rem 5rem; max-width: 1100px; }
-@media (max-width: 768px) { .block-container { padding: 2rem 1rem 4rem; } }
+.stApp {{ color: inherit; }}
+.notebook-card {{
+background-color: {bg_card};
+padding: 30px; border-radius: 12px; border-left: 6px solid {accent};
+margin-bottom: 15px; color: #FFFFFF !important; box-shadow: 0 4px 10px -1px rgb(0 0 0 / 0.2);
+}}
+.teacher-board {{
+background-color: #0f172a; border: 1px solid #334155; padding: 45px;
+border-radius: 12px; font-family: 'Inter', sans-serif;
+color: #f1f5f9; line-height: 1.9; font-size: {f_scale}rem; white-space: pre-wrap;
+}}
+.teacher-board h2 {{ color: {accent}; border-bottom: 2px solid {accent}; padding-bottom: 10px; }}
+.teacher-board h3 {{ color: #94a3b8; margin-top: 30px; text-transform: uppercase; letter-spacing: 1px; font-size: 1.1rem; }}
+.teacher-board b {{ color: {accent}; }}
 
-/* Type scale */
-h1 { font-weight: 600 !important; font-size: 2rem !important; letter-spacing: -0.02em; color: var(--ink); padding-bottom: 0.25rem; }
-h2 { font-weight: 600 !important; font-size: 1.5rem !important; letter-spacing: -0.015em; }
-h3 { font-weight: 600 !important; font-size: 1.1rem !important; letter-spacing: -0.01em; }
-p, li { line-height: 1.6; }
-[data-testid="stCaptionContainer"], .stCaption { color: var(--muted); }
-hr { border: none; border-top: 1px solid var(--line); margin: 1rem 0; }
+.google-container {{
+width: 100%;
+height: 800px;
+overflow: hidden;
+position: relative;
+border-radius: 12px;
+border: 1px solid #334155;
+background-color: white;
+}}
+.google-iframe {{
+position: absolute;
+top: -125px;
+left: 0;
+width: 100%;
+height: 1025px;
+}}
 
-/* Sidebar rail */
-[data-testid="stSidebar"] { background: var(--rail); border-right: none; }
-[data-testid="stSidebar"] h1 { font-size: 1.25rem !important; margin: 0.25rem 0 1rem; padding: 0; }
-[data-testid="stSidebar"] img { border-radius: 14px; }
-[data-testid="stSidebar"] [data-testid="stRadio"] [role="radiogroup"] { gap: 2px; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label {
-  padding: 10px 16px !important; border-radius: 999px; margin: 0 !important; width: 100%;
-  background: transparent !important; border: none !important; box-shadow: none !important;
-  cursor: pointer; transition: background-color .15s ease;
-}
-[data-testid="stSidebar"] [data-testid="stRadio"] label > div:first-child { display: none; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label:hover { background: rgba(11, 87, 208, .07) !important; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) { background: var(--accent-soft) !important; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label p { font-size: .95rem; font-weight: 500; color: #3C4043; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) p { color: #041E49; font-weight: 600; }
+.time-up-banner {{ background-color: #ef4444; color: white; padding: 25px; text-align: center; font-weight: 800; border-radius: 12px; font-size: 28px;
+animation: blinker 0.8s linear infinite; }}
+@keyframes blinker {{ 50% {{ opacity: 0; }} }}
+.diff-add {{ background-color: #065f46; color: #34d399; padding: 2px 4px; border-radius: 4px; }}
+.diff-remove {{ background-color: #7f1d1d; color: #f87171; text-decoration: line-through; padding: 2px 4px; }}
+.pro-badge {{ background-color: {accent}; color: white; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-left: 10px; }}
 
-/* Buttons */
-.stButton > button, [data-testid="stBaseButton-secondary"], [data-testid="stBaseButton-primary"] {
-  border-radius: 999px; padding: .5rem 1.4rem; font-weight: 500; box-shadow: none;
-  border: 1px solid #C4C7C5; background: #FFFFFF; color: var(--ink);
-  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-.stButton > button p, [data-testid^="stBaseButton"] p { color: inherit !important; font-weight: 500; }
-.stButton > button:hover, [data-testid="stBaseButton-secondary"]:hover { background: var(--rail); border-color: var(--accent); color: var(--ink); }
-[data-testid="stBaseButton-primary"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
-[data-testid="stBaseButton-primary"]:hover { background: var(--accent); color: var(--accent-fg); filter: brightness(1.08); box-shadow: 0 1px 3px rgba(60, 64, 67, .3); }
-.stButton > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.audio-panel {{
+background: linear-gradient(135deg, #1e293b, #0f172a);
+border: 1px solid #475569;
+border-radius: 8px;
+padding: 15px;
+margin-bottom: 20px;
+}}
 
-/* Inputs */
-[data-baseweb="textarea"], [data-baseweb="input"], [data-baseweb="select"] > div {
-  background: #FFFFFF !important; border: 1px solid #C4C7C5 !important; border-radius: 14px !important;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-[data-baseweb="base-input"] { background: transparent !important; border: none !important; }
-[data-baseweb="textarea"]:focus-within, [data-baseweb="input"]:focus-within, [data-baseweb="select"]:focus-within > div {
-  border-color: var(--accent) !important; box-shadow: 0 0 0 1px var(--accent) !important;
-}
-.stTextArea textarea, .stTextInput input, .stNumberInput input { background: transparent !important; color: var(--ink); font-size: .97rem; line-height: 1.6; }
-.stTextArea textarea:disabled { color: var(--ink) !important; -webkit-text-fill-color: var(--ink) !important; opacity: 1; background: var(--rail) !important; }
-.stTextArea label p, .stTextInput label p, .stSelectbox label p, .stMultiSelect label p, .stNumberInput label p { font-weight: 500; color: #3C4043; }
-[data-baseweb="tag"] { background: var(--accent-soft) !important; border-radius: 999px !important; }
-[data-baseweb="tag"] span, [data-baseweb="tag"] svg { color: #041E49 !important; fill: #041E49 !important; }
-[data-testid="stFileUploaderDropzone"] { background: #FFFFFF; border: 1.5px dashed #C4C7C5; border-radius: 20px; }
+.audio-btn {{
+background-color: {bg_card} !important;
+color: white !important;
+border: 1px solid {accent} !important;
+padding: 10px 24px;
+font-size: 15px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+margin-right: 10px;
+transition: opacity 0.2s;
+display: inline-block;
+}}
+.audio-btn:hover {{ opacity: 0.85; }}
+.audio-btn-pause {{
+background-color: #eab308 !important;
+border: 1px solid #facc15 !important;
+}}
+.audio-btn-stop {{
+background-color: #ef4444 !important;
+border: 1px solid #f87171 !important;
+}}
 
-/* Tabs */
-[data-baseweb="tab-list"] { gap: 6px; border-bottom: 1px solid var(--line); }
-button[data-baseweb="tab"] { font-weight: 500; color: var(--muted); padding: .6rem 1rem; }
-button[data-baseweb="tab"][aria-selected="true"] { color: var(--accent); }
-[data-baseweb="tab-highlight"] { background: var(--accent) !important; height: 3px !important; border-radius: 3px 3px 0 0; }
-[data-baseweb="tab-border"] { display: none; }
-
-/* Metrics, alerts, expanders */
-[data-testid="stMetric"] { background: #FFFFFF; border: 1px solid var(--line); border-radius: 20px; padding: 18px 22px; }
-[data-testid="stMetricLabel"] p { color: var(--muted); font-weight: 500; }
-[data-testid="stMetricValue"] { font-weight: 600; letter-spacing: -0.02em; }
-[data-testid="stAlert"] { border-radius: 16px; border: none; }
-[data-testid="stExpander"] { background: #FFFFFF; border: 1px solid var(--line); border-radius: 16px; }
-[data-testid="stExpander"] details { border: none; }
-
-/* Content surfaces */
-.notebook-card {
-  background-color: var(--card-bg); color: var(--card-fg) !important;
-  border: 1px solid var(--line); border-radius: 20px; padding: 24px 28px; margin-bottom: 14px;
-  box-shadow: 0 1px 2px rgba(60, 64, 67, .08), 0 1px 3px 1px rgba(60, 64, 67, .05); line-height: 1.7;
-}
-.notebook-card b { color: inherit; font-weight: 600; }
-.teacher-board {
-  background-color: #FFFFFF; border: 1px solid var(--line); padding: 40px 44px;
-  border-radius: 24px; color: var(--ink); line-height: 1.85; font-size: __FSCALE__rem; white-space: pre-wrap;
-  box-shadow: 0 1px 2px rgba(60, 64, 67, .08), 0 1px 3px 1px rgba(60, 64, 67, .05);
-}
-.teacher-board h2 { color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 10px; }
-.teacher-board h3 { color: var(--muted); margin-top: 28px; font-size: 1.05rem; }
-.teacher-board b { color: var(--ink); font-weight: 600; }
-
-.google-container {
-  width: 100%; height: 800px; overflow: hidden; position: relative;
-  border-radius: 20px; border: 1px solid var(--line); background-color: white;
-}
-.google-iframe { position: absolute; top: -125px; left: 0; width: 100%; height: 1025px; }
-
-.time-up-banner {
-  background-color: var(--danger); color: white; padding: 25px; text-align: center; font-weight: 700;
-  border-radius: 20px; font-size: 28px; animation: blinker 0.8s linear infinite;
-}
-@keyframes blinker { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .time-up-banner { animation: none; } }
-.diff-add { background-color: #C4EED0; color: #0D652D; padding: 1px 4px; border-radius: 4px; }
-.diff-remove { background-color: #F9DEDC; color: #8C1D18; text-decoration: line-through; padding: 1px 4px; border-radius: 4px; }
-.pro-badge { background-color: var(--accent); color: var(--accent-fg); padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-left: 10px; }
+[data-testid="stSidebar"] div.stRadio > div {{
+background: transparent !important;
+padding: 0px !important;
+}}
+[data-testid="stSidebar"] div.stRadio label {{
+padding: 6px 0px !important;
+background-color: transparent !important;
+border: none !important;
+box-shadow: none !important;
+margin-bottom: 4px !important;
+}}
+[data-testid="stSidebar"] div.stRadio label:hover {{
+background-color: transparent !important;
+}}
 </style>
-"""
-_UI_CSS = (_UI_CSS.replace("__ACCENT_FG__", _contrast_text(accent))
-                  .replace("__ACCENT__", accent)
-                  .replace("__CARD_BG__", bg_card)
-                  .replace("__CARD_FG__", _contrast_text(bg_card))
-                  .replace("__FSCALE__", str(f_scale)))
-st.markdown(_UI_CSS, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 st.markdown(f"""
 <audio id="alarm-sound" key="{selected_tone_name}" preload="auto">
@@ -646,7 +593,7 @@ st.markdown(f"""
 # --- SIDEBAR ---
 with st.sidebar:
     if client is None:
-        st.error("API Key Configuration Missing")
+        st.error("🔑 API Key Configuration Missing")
         st.info("To add a new key, create a file at `.streamlit/secrets.toml` in your app project folder and add:\n\n`GEMINI_API_KEY = \"your_new_key_here\"`")
     st.caption("Made by: yaseen Amr")
     st.markdown("---")
@@ -655,16 +602,16 @@ with st.sidebar:
     st.image("z.png", width=80)
     st.title("Verso Pro")
     nav_options = [
-        "Home",
-        "Study Assistant",
-        "Grammar Checker",
-        "Plagiarism Checker",
-        "Citation Generator",
-        "Time Tracker",
-        "Word Counter",
-        "Humanism Engine",
-        "Verso Translate",
-        "Settings",
+        "🏠 Home",
+        "📒 Study Assistant",
+        "✍️ Grammar Checker",
+        "🛡️ Plagiarism Checker",
+        "📚 Citation Generator",
+        "⏱️ Time Tracker",
+        "📝 Word Counter",
+        "✍️ Humanism Engine",
+        "🌐 Verso Translate",
+        "⚙️ Settings",
         
     ]
 
@@ -672,9 +619,9 @@ with st.sidebar:
 
     
 # --- HOME ---
-if choice == "Home":
-    st.title("Verso Research")
-    st.markdown("### Verso Academic Engine ")
+if choice == "🏠 Home":
+    st.title("VERSO RESEARCH")
+    st.markdown("### 🎓 Verso Academic Engine ")
     st.caption("use it to filter unsuitable websites for studying and writing essays like .com Websites and Wikipedia")
 
     source_options = {
@@ -702,7 +649,7 @@ if choice == "Home":
         key="selected_sources"
     )
 
-    q = st.text_input("Search Database:", placeholder="Research your topic here...")
+    q = st.text_input("🔍 Search Database:", placeholder="Research your topic here...")
 
     if q:
         query_parts = [source_options[s] for s in selected_sources]
@@ -719,9 +666,9 @@ if choice == "Home":
         """, unsafe_allow_html=True)
 
 # --- MODULE: WORD COUNTER ---
-elif choice == "Word Counter":
+elif choice == "📝 Word Counter":
     st.title("Verso Word Counter")
-    st.markdown("### Analyze Content")
+    st.markdown("### 📥 Analyze Content")
     uploaded_file = st.file_uploader("Upload Files for Counting", type=['pdf', 'docx', 'csv', 'txt'], key="word_upload")
     file_text = extract_text(uploaded_file)
     new_text = st.text_area("Input specific text to count:", value=st.session_state.word_counter_input, height=250, placeholder="Paste or type here...")
@@ -734,11 +681,11 @@ elif choice == "Word Counter":
     st.metric("Combined Total", box_count + file_count)
 
 # --- MODULE: GRAMMAR CHECKER ---
-elif choice == "Grammar Checker":
+elif choice == "✍️ Grammar Checker":
     st.markdown('<h1>Smart Verso Auto Correct</h1>', unsafe_allow_html=True)
     text_to_check = st.text_area("Paste text to improve:", value=st.session_state.grammar_text_input, height=250, placeholder="Please input the text you want to correct...", key="g_input")
     st.session_state.grammar_text_input = text_to_check
-    if st.button("Run Smart Correction", use_container_width=True):
+    if st.button("✨ Run Smart Correction", use_container_width=True):
         if text_to_check:
             with st.spinner("Processing..."):
                 t = text_to_check.strip()
@@ -762,11 +709,11 @@ elif choice == "Grammar Checker":
                 with st.expander("Final Polished Text"): st.code(final_text)
 
 # --- MODULE: PLAGIARISM CHECKER ---
-elif choice == "Plagiarism Checker":
+elif choice == "🛡️ Plagiarism Checker":
     st.title("Plagiarism Pro Scanner")
     plag_text = st.text_area("Paste text to scan:", value=st.session_state.plag_text_input, placeholder="Paste text here...", height=250, key="p_input")
     st.session_state.plag_text_input = plag_text
-    if st.button("Deep Verso Plagiarism Scan", use_container_width=True):
+    if st.button("🔍 Deep Verso Plagiarism Scan", use_container_width=True):
         if plag_text:
             with st.spinner("Comparing databases..."):
                 time.sleep(2.5)
@@ -786,7 +733,7 @@ elif choice == "Plagiarism Checker":
                     else:
                         is_match = len(s.split()) > 15 or any(trig in s.lower() for trig in academic_triggers)
                     if is_match:
-                        marked_text += f'<span class="plag-highlight" style="background-color:#F9DEDC; color:#8C1D18; border-radius:4px; padding:1px 3px;">{s}</span> '
+                        marked_text += f'<span class="plag-highlight" style="background-color:#7f1d1d; color:#fecaca;">{s}</span> '
                         match_count += 1
                     else: marked_text += f'{s} '
                 plag_percent = min(98, int((match_count / len(sentences)) * 100)) if sentences else 0
@@ -794,15 +741,15 @@ elif choice == "Plagiarism Checker":
                     plag_percent = int(ngram_overlap(reference, plag_text))
                     st.caption("Mode: comparing against the original text you gave the Humanizer (4-word sequences).")
                 if plag_percent > 20:
-                    st.error(f"Similarity Found: {plag_percent}%")
+                    st.error(f"⚠️ Similarity Found: {plag_percent}%")
                     st.progress(plag_percent / 100)
                     st.markdown(f'<div class="notebook-card" style="line-height: 1.8;">{marked_text}</div>', unsafe_allow_html=True)
-                else: st.success(f"Content Unique: {plag_percent}% Similarity"); st.balloons()
+                else: st.success(f"✅ Content Unique: {plag_percent}% Similarity"); st.balloons()
 
 # --- MODULE: CITATION GENERATOR ---
-elif choice == "Citation Generator":
-    st.title("Citation Generator Workspace")
-    st.markdown("### Generate Reference Citations")
+elif choice == "📚 Citation Generator":
+    st.title("📚 Citation Generator Workspace")
+    st.markdown("### 📥 Generate Reference Citations")
 
     cite_url = st.text_input("Enter Source URL, DOI, or Document Link:", value=st.session_state.citation_text_input, placeholder="https://example.com/article...", key="c_input")
     st.session_state.citation_text_input = cite_url
@@ -810,7 +757,7 @@ elif choice == "Citation Generator":
     active_style = st.session_state.get("selected_citation_format", "APA 7th Generation")
     st.caption(f"Active Output Style: **{active_style}** (Change this inside control center settings)")
 
-    if st.button("Generate Reference", use_container_width=True):
+    if st.button("📋 Generate Reference", use_container_width=True):
         if cite_url:
             with st.spinner("Processing source data attributes..."):
                 time.sleep(0.8)
@@ -823,9 +770,9 @@ elif choice == "Citation Generator":
             st.warning("Please provide a valid source link or title inside the input workspace.")
 
 # --- MODULE: STUDY ASSISTANT ---
-elif choice == "Study Assistant":
+elif choice == "📒 Study Assistant":
     st.title("Verso Deep Learning Teacher")
-    st.markdown("### Resource Input")
+    st.markdown("### 📥 Resource Input")
     col_a, col_b = st.columns([2, 1])
     with col_a: up_files = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
     with col_b: url_hub = st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
@@ -838,7 +785,7 @@ elif choice == "Study Assistant":
         for f in up_files: final_study_data += " " + extract_text(f)
 
     if final_study_data.strip():
-        t1, t2, t3, t4 = st.tabs(["Keywords", "Quiz", "Flashcards", "AI Voice Teacher"])
+        t1, t2, t3, t4 = st.tabs(["🔑 Keywords", "❓ Quiz", "🗂️ Flashcards", "🎙️ AI Voice Teacher"])
         blob = TextBlob(final_study_data)
 
         raw_phrases = list(dict.fromkeys([w.lower().strip() for w in blob.noun_phrases if len(w) > 3]))
@@ -939,26 +886,26 @@ elif choice == "Study Assistant":
                     if st.button("Reveal Detailed Analysis", use_container_width=True):
                         st.session_state.reveal_fc = True; st.rerun()
                 else:
-                    st.markdown(f'<div style="background-color:#E8F0FE; padding:24px 28px; border-radius:20px; border:1px solid #D3E3FD; margin-bottom:15px; color:#041E49; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="background-color:#5465C9; padding:25px; border-radius:10px; border:1px solid {accent}; margin-bottom:15px; color:#FFFFFF; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
                     c1, c2 = st.columns(2)
-                    if c1.button("Mastered", use_container_width=True):
+                    if c1.button("✅ Mastered", use_container_width=True):
                         st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
                         components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
                         st.rerun()
-                    if c2.button("Review Needed", use_container_width=True):
+                    if c2.button("❌ Review Needed", use_container_width=True):
                         st.session_state.fc_wrong += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False; st.rerun()
             else:
                 st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
                 if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
 
         with t4:
-            st.markdown("### Verso AI Teacher")
+            st.markdown("### 🎙️ Verso AI Teacher")
 
             va1, va2 = st.columns(2)
             v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
             v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
 
-            if st.button("Generate/Update Lesson Content", use_container_width=True):
+            if st.button("🧠 Generate/Update Lesson Content", use_container_width=True):
                 with st.spinner("Generating structured presentation flow via Verso..."):
                     st.session_state.generated_lecture_text = teach_source_material(final_study_data)
 
@@ -969,22 +916,17 @@ elif choice == "Study Assistant":
                 clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js)
 
                 tts_component_code = f"""
-                <style>
-                .audio-btn {{ background:#0B57D0; color:#fff; border:none; padding:9px 20px; border-radius:999px; font-size:14px; font-weight:500; cursor:pointer; margin-right:8px; font-family:inherit; }}
-                .audio-btn-pause {{ background:#fff; color:#1F1F1F; border:1px solid #C4C7C5; }}
-                .audio-btn-stop {{ background:#fff; color:#B3261E; border:1px solid #C4C7C5; }}
-                </style>
-                <div class="audio-panel" style="background:#FFFFFF; border:1px solid #E1E3E1; border-radius:20px; padding:16px 20px; font-family:Inter,'Segoe UI',sans-serif; color:#1F1F1F; margin-bottom:8px;">
+                <div class="audio-panel" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #475569; border-radius: 8px; padding: 15px; font-family: sans-serif; color: #f1f5f9; margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span><b>Voice playback</b> &nbsp;Ready to read the lesson aloud</span>
+                <span><b>🔴 Live AI Voice Feed:</b> Ready to Broadcast Lesson</span>
                 <span>
-                <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">Voice</label>
-                <select id='voiceSelect' style='background:#FFFFFF; color:#1F1F1F; border:1px solid #C4C7C5; padding:6px 10px; border-radius:12px;'></select>
+                <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">🗣️ Voice:</label>
+                <select id='voiceSelect' style='background: #0f172a; color: #f1f5f9; border: 1px solid #475569; padding: 4px 8px; border-radius: 4px;'></select>
                 </span>
                 </div>
-                <button class="audio-btn" onclick="playAudio()">Play lesson</button>
-                <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">Pause</button>
-                <button class="audio-btn audio-btn-stop" onclick="stopAudio()">Stop</button>
+                <button class="audio-btn" onclick="playAudio()">▶ Broadcast Lesson</button>
+                <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">⏸ Pause</button>
+                <button class="audio-btn audio-btn-stop" onclick="stopAudio()">⏹ Stop</button>
                 </div>
 
                 <script>
@@ -1057,17 +999,17 @@ elif choice == "Study Assistant":
                 }}
                 </script>
                 """
-                components.html(tts_component_code, height=125)
+                components.html(tts_component_code, height=110)
                 st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
 
 
 
 
 # --- MODULE: TIME TRACKER ---
-elif choice == "Time Tracker":
+elif choice == "⏱️ Time Tracker":
     st.title("Focus Timer")
     if not st.session_state.get('sound_unlocked', False):
-        if st.button("ENABLE SOUNDS"):
+        if st.button("🔓 ENABLE SOUNDS"):
             components.html("<script>var a=window.parent.document.getElementById('alarm-sound');a.play().then(()=>{a.pause();a.currentTime=0;});</script>", height=0)
             st.session_state.sound_unlocked = True; st.rerun()
     mins = st.number_input("Minutes:", 1, 120, 25)
@@ -1081,15 +1023,15 @@ elif choice == "Time Tracker":
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
 # --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
-elif choice == "Humanism Engine":
-    st.header("Verso Humanizer")
+elif choice == "✍️ Humanism Engine":
+    st.header("✨ Verso Humanizer")
     text_to_humanize = st.text_area(
         "Paste text here:", value=st.session_state.humanizer_text_input, height=200,
         placeholder="Please input the text you want to humanize...",
         key="humanizer_interactive_input")
     st.session_state.humanizer_text_input = text_to_humanize
 
-    if st.button("Humanize Output Text", type="primary"):
+    if st.button("🚀 Humanize Output Text", type="primary"):
         if not text_to_humanize.strip():
             st.warning("Please add some text first!")
         else:
@@ -1107,7 +1049,7 @@ elif choice == "Humanism Engine":
                 st.session_state.humanizer_output = best
 
     if st.session_state.humanizer_output:
-        st.subheader("Humanized")
+        st.subheader("📝 Humanized")
         st.write(st.session_state.humanizer_output.replace("\n", "  \n"))
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
@@ -1117,8 +1059,8 @@ elif choice == "Humanism Engine":
                    "variation is not always the most readable one.")
 
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
-elif choice == "Verso Translate":
-    st.header("Google Translate Engine")
+elif choice == "🌐 Verso Translate":
+    st.header("🌐 Google Translate Engine")
     st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
 
     # Core language mapping framework configurations
@@ -1148,7 +1090,7 @@ elif choice == "Verso Translate":
         
     with col_swap:
         st.write("<br>", unsafe_allow_html=True)
-        if st.button("Swap", use_container_width=True, on_click=safe_language_swap):
+        if st.button("🔄 Swap", use_container_width=True, on_click=safe_language_swap):
             st.rerun()
             
     with col2:
@@ -1170,7 +1112,7 @@ elif choice == "Verso Translate":
         )
 
     # Execution controls using Gemini infrastructure to completely bypass IP bans
-    if st.button("Translate Content", type="primary", use_container_width=True):
+    if st.button("✨ Translate Content", type="primary", use_container_width=True):
         if not st.session_state.translator_input.strip():
             st.warning("Please type some characters to process translation.")
         else:
@@ -1209,12 +1151,12 @@ elif choice == "Verso Translate":
         )
         
 # --- MODULE: SETTINGS ---
-elif choice == "Settings":
+elif choice == "⚙️ Settings":
     st.markdown('<h1 style="font-size: 3rem;">Verso Control Center</h1>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown('### Academic & Audio')
+        st.markdown('### 📚 Academic & Audio')
         st.selectbox("Alarm Tone", list(ALARM_TONES.keys()), key="selected_alarm_tone")
         if st.button("Test Tone"): components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
 
@@ -1233,7 +1175,7 @@ elif choice == "Settings":
         st.radio("Complexity", ["Brief", "Standard", "Deep"], index=1)
         st.checkbox("Auto-Bibliography", value=True); st.checkbox("Logic Validation", value=True)
     with col2:
-        st.markdown('### UI Appearance')
+        st.markdown('### 🎨 UI Appearance')
         def update_accent(): st.session_state.set_color = st.session_state.accent_pick
         def update_bg(): st.session_state.set_bg = st.session_state.bg_pick
         st.color_picker("Accent Color", value=st.session_state.set_color, key="accent_pick", on_change=update_accent)
@@ -1241,12 +1183,13 @@ elif choice == "Settings":
         st.slider("Font Scale", 0.8, 2.0, value=st.session_state.set_font, key="set_font")
         st.checkbox("Force Dark", value=True); st.checkbox("Glassmorphism")
     with col3:
-        st.markdown('### System Info')
+        st.markdown('### 🔐 System Info')
         st.button("Purge History"); st.button("Export CSV"); st.button("Cloud Backup")
         st.info(f"Build: 14.5.6 (vID: {st.session_state.reset_counter})")
         st.success("System Optimized")
 
 if st.session_state.get('timer_finished_trigger'):
-    st.markdown('<div class="time-up-banner">Time is up</div>', unsafe_allow_html=True); st.balloons()
+    st.markdown('<div class="time-up-banner">⏰ TIME IS UP! ⏰</div>', unsafe_allow_html=True); st.balloons()
     components.html("<script>var a=window.parent.document.getElementById('alarm-sound');if(a){a.load();a.play();}</script>", height=0)
     if st.button("Dismiss Alarm"): st.session_state.timer_finished_trigger = False; st.rerun()
+
