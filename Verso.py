@@ -1,8 +1,3 @@
-Verso more professional:
-
-
-
-
 import streamlit as st
 from textblob import TextBlob
 import nltk
