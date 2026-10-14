@@ -23,4 +23,4 @@ Logic: Python 3.x
 
 Deployment: Optimized for local hosting or Streamlit Cloud
 
-Link: https://yaseenmind11-art.github.io/Verso.py/
+Link: [https://yaseenmind11-art.github.io/Verso.py/](https://versopro.streamlit.app/)
