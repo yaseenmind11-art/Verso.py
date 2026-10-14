@@ -1252,10 +1252,10 @@ elif choice == "Humanism Engine":
                    "plagiarism-checker score. Always read the output: the lowest-overlap "
                    "variation is not always the most readable one.")
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
+# --- 🌐 TRANSLATOR MODULE ENGINE ---
 elif choice == "Verso Translate":
-    st.header("Google Translate Engine")
-    st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
+    st.header("Verso Translate Engine")
+    st.write("Translates languages")
 
     # Core language mapping framework configurations
     lang_map = {
