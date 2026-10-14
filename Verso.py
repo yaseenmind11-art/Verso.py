@@ -523,7 +523,17 @@ html, body, .stApp, [data-testid="stMarkdownContainer"], .stApp label, .stApp in
 }
 .stApp { background: var(--canvas); color: var(--ink); }
 [data-testid="stHeader"] { background: transparent; }
-[data-testid="stToolbar"], [data-testid="stDecoration"], footer, #MainMenu { display: none !important; }
+[data-testid="stDecoration"], footer, #MainMenu {
+    display: none !important;
+}
+
+[data-testid="stSidebarCollapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 999999 !important;
+}
 .block-container { padding: 3rem 3rem 5rem; max-width: 1100px; }
 @media (max-width: 768px) { .block-container { padding: 2rem 1rem 4rem; } }
 
