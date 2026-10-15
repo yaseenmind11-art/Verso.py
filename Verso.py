@@ -906,7 +906,6 @@ if choice == "Home":
         </div>
         """, unsafe_allow_html=True)
 
-
 # --- MODULE: WORD COUNTER ---
 elif choice == "Word Counter":
     st.title("Verso Word Counter")
