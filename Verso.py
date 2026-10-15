@@ -1254,8 +1254,7 @@ elif choice == "Humanism Engine":
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
         st.metric("Remaining 4-word overlap with original", f"{overlap}%")
-        st.caption("This measures overlap with your input only. It is not a real "
-                   "plagiarism checker score. Always read the output: the lowest score "
+        st.caption("plagiarism checker score. Always read the output: the lowest score "
                    "Lowest score is not always the most readable one.")
 
 # --- 🌐 TRANSLATOR MODULE ENGINE ---
