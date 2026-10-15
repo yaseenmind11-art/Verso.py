@@ -865,6 +865,8 @@ if choice == "Home":
     st.write(
     "Verso Pro is an academic study platform for learning, "
     "writing assistance, grammar checking, quizzes, flashcards, Citing, Humanizer, and more."
+        # Full-width Verso Pro logo
+    st.image("z.png", use_container_width=True)
 )
     st.markdown("### Verso Academic Engine ")
     st.caption("use it to filter unsuitable websites for studying and writing essays like .com Websites and Wikipedia")
