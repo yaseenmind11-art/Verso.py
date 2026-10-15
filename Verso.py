@@ -1357,7 +1357,6 @@ elif choice == "Humanism Engine":
             "plagiarism checker score. Always read the output. "
             "Lowest score is not always the most readable one."
         )
-```
 
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "Verso Translate":
