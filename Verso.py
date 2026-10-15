@@ -1308,7 +1308,7 @@ elif choice == "Humanism Engine":
                         font-weight: 500;
                         cursor: pointer;
                     "
-                >📋 Copy</button>
+                > Copy</button>
                 <span id="verso-copy-status"
                     style="margin-left: 10px; font-size: 13px;">
                 </span>
