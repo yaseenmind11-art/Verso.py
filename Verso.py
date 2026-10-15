@@ -1267,8 +1267,6 @@ elif choice == "Humanism Engine":
         st.write(st.session_state.humanizer_output.replace("\n", "  \n"))
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
-        # Display Humanism output
-st.markdown(humanism_output)
 
 )
         st.metric("Remaining 4-word overlap with original", f"{overlap}%")
