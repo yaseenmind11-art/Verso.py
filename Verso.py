@@ -79,6 +79,16 @@ def initialize_states(force=False):
         'fc_wrong': 0,
         'reveal_fc': False,
         'generated_lecture_text': "",
+        'study_assets': None,
+        'study_assets_source_key': None,
+        'study_quiz_step': 0,
+        'study_quiz_score': 0,
+        'study_quiz_feedback': None,
+        'study_fc_step': 0,
+        'study_fc_revealed': False,
+        'study_assistant_answer': "",
+        'study_assistant_last_question': "",
+        'study_assistant_source_key': None,
          'humanizer_text_input': "",
         'humanizer_output': "",
         'education_system': "IB System",
@@ -145,6 +155,91 @@ def extract_text(uploaded_file):
         else:
             return str(uploaded_file.read(), "utf-8")
     except Exception: return ""
+
+def extract_youtube_transcript(url):
+    """Retrieve actual YouTube captions using current and legacy library APIs.
+
+    Returns transcript text only. It never substitutes video titles or page metadata
+    for the spoken content.
+    """
+    match = re.search(
+        r"(?:youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})",
+        url.strip(),
+        re.IGNORECASE,
+    )
+    if not match:
+        return "__TRANSCRIPT_ERROR__:That doesn't look like a supported YouTube video URL. Paste the full youtube.com/watch?v=... or youtu.be/... link."
+    video_id = match.group(1)
+
+    try:
+        from youtube_transcript_api import YouTubeTranscriptApi
+    except ImportError:
+        return "__TRANSCRIPT_ERROR__:Missing dependency: add youtube-transcript-api to requirements.txt and redeploy."
+
+    errors = []
+
+    def transcript_text(fetched):
+        snippets = getattr(fetched, "snippets", fetched)
+        lines = []
+        for item in snippets:
+            if isinstance(item, dict):
+                line = item.get("text", "")
+            else:
+                line = getattr(item, "text", "")
+            if line:
+                lines.append(str(line))
+        return " ".join(lines).strip()
+
+    # Current youtube-transcript-api versions use an instance API.
+    try:
+        api = YouTubeTranscriptApi()
+        try:
+            fetched = api.fetch(video_id)
+            transcript = transcript_text(fetched)
+            if transcript:
+                return f"YouTube video transcript (video ID {video_id}):\n{transcript}"
+            errors.append("The direct captions response was empty.")
+        except Exception as exc:
+            errors.append(f"fetch(): {type(exc).__name__}: {exc}")
+
+        # Some videos/languages require selecting an available transcript first.
+        try:
+            transcript_list = api.list(video_id)
+            try:
+                selected = transcript_list.find_transcript(["en", "en-US", "en-GB"])
+            except Exception:
+                selected = next(iter(transcript_list))
+            fetched = selected.fetch()
+            transcript = transcript_text(fetched)
+            if transcript:
+                return f"YouTube video transcript (video ID {video_id}):\n{transcript}"
+            errors.append("The selected captions response was empty.")
+        except Exception as exc:
+            errors.append(f"list()/fetch(): {type(exc).__name__}: {exc}")
+    except Exception as exc:
+        errors.append(f"API initialization: {type(exc).__name__}: {exc}")
+
+    # Compatibility fallback for older releases only; newer releases removed this method.
+    try:
+        legacy_method = getattr(YouTubeTranscriptApi, "get_transcript", None)
+        if callable(legacy_method):
+            entries = legacy_method(video_id)
+            transcript = transcript_text(entries)
+            if transcript:
+                return f"YouTube video transcript (video ID {video_id}):\n{transcript}"
+            errors.append("The legacy captions response was empty.")
+    except Exception as exc:
+        errors.append(f"legacy get_transcript(): {type(exc).__name__}: {exc}")
+
+    # Do not expose long library/network tracebacks in the learner-facing UI.
+    # A cloud-hosted app cannot guarantee direct YouTube caption access when YouTube
+    # blocks requests from the hosting IP. Offer a dependable transcript-paste fallback.
+    return (
+        "__TRANSCRIPT_ERROR__:Automatic caption retrieval was blocked or unavailable. "
+        "This can happen when YouTube blocks requests from the app's hosting server, "
+        "or when the video has no captions accessible to this app."
+    )
+
 
 def extract_from_url(url):
     if not url: return ""
@@ -672,6 +767,79 @@ with st.sidebar:
 
     
 # --- HOME ---
+
+def generate_study_assets(source_text: str, quiz_count: int = 15, flashcard_count: int = 25):
+    """Generate source-grounded study materials as strict JSON; never invent filler questions."""
+    if client is None:
+        raise RuntimeError("The AI service is not configured. Add GEMINI_API_KEY to Streamlit secrets.")
+    source = source_text.strip()
+    if len(source) < 80:
+        raise ValueError("Please provide a little more study material (at least a few sentences).")
+    instruction = (
+        "You are a careful academic tutor. Use ONLY the supplied source; do not invent facts, definitions, evidence, or claims. "
+        "Return valid JSON only with this schema: "
+        '{"keywords":["..."],"quiz":[{"question":"clear specific question","options":["A","B","C","D"],"answer":"exact option text","explanation":"source-grounded explanation"}],'
+        '"flashcards":[{"question":"direct study question","answer":"accurate concise answer from source"}]}. '
+        f"Create exactly {quiz_count} distinct quiz questions whenever the source contains enough information, plus up to {flashcard_count} distinct flashcards. Aim for 15 quiz questions by testing different facts, concepts, causes, examples, and relationships from the source. Never pad with generic, repeated, or invented questions; if the source genuinely cannot support 15, return only the supported questions. "
+        "Questions must be natural, specific, and answerable from the source, not generic templates. Quiz choices must be plausible and have exactly one correct answer. "
+        "Explanations must explain why the answer is right. Flashcard answers must directly answer the question. Avoid duplicates, vague wording, and filler. "
+        "Keywords must be important terms actually present in the source."
+    )
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents="STUDY SOURCE:\n\n" + source[:24000],
+        config=types.GenerateContentConfig(system_instruction=instruction, response_mime_type="application/json", temperature=0.25),
+    )
+    raw = (response.text or "").strip()
+    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.I)
+    import json
+    data = json.loads(raw)
+    quiz, seen_q = [], set()
+    for item in data.get("quiz", []):
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("question", "")).strip()
+        options = item.get("options", [])
+        answer = str(item.get("answer", "")).strip()
+        if not question or not isinstance(options, list):
+            continue
+        options = list(dict.fromkeys(str(x).strip() for x in options if str(x).strip()))
+        if len(options) != 4 or answer not in options or question.casefold() in seen_q:
+            continue
+        seen_q.add(question.casefold())
+        quiz.append({"question": question, "options": options, "answer": answer,
+                     "explanation": str(item.get("explanation", "The source supports this answer.")).strip()})
+    cards, seen_cards = [], set()
+    for item in data.get("flashcards", []):
+        if not isinstance(item, dict):
+            continue
+        question, answer = str(item.get("question", "")).strip(), str(item.get("answer", "")).strip()
+        if question and answer and question.casefold() not in seen_cards:
+            seen_cards.add(question.casefold())
+            cards.append({"question": question, "answer": answer})
+    keywords = list(dict.fromkeys(str(x).strip() for x in data.get("keywords", []) if str(x).strip()))
+    if not quiz and not cards:
+        raise ValueError("The AI could not produce valid study questions. Add clearer or more detailed notes and try again.")
+    return {"quiz": quiz, "flashcards": cards, "keywords": keywords}
+
+
+def answer_from_study_source(source_text: str, question: str) -> str:
+    """Answer a student's question using only the supplied study source."""
+    if client is None:
+        raise RuntimeError("The AI service is not configured. Add GEMINI_API_KEY to Streamlit secrets.")
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=f"STUDY SOURCE:\n{source_text[:24000]}\n\nSTUDENT QUESTION:\n{question}",
+        config=types.GenerateContentConfig(
+            system_instruction=("You are a clear, supportive study assistant. Answer the exact question using only the supplied source. "
+                "Explain reasoning in plain language. If the source lacks enough information, say so plainly; never pretend the source says something it does not."),
+            temperature=0.25,
+        ),
+    )
+    return (response.text or "I couldn't produce an answer. Please try rephrasing the question.").strip()
+
+
+
 if choice == "Home":
     st.title("Verso Research")
     st.markdown("### Verso Academic Engine ")
@@ -822,245 +990,213 @@ elif choice == "Citation Generator":
         else:
             st.warning("Please provide a valid source link or title inside the input workspace.")
 
+
+
+
 # --- MODULE: STUDY ASSISTANT ---
 elif choice == "Study Assistant":
-    st.title("Verso Deep Learning Teacher")
-    st.markdown("### Resource Input")
+    st.title("Verso Study Assistant")
+    st.caption("Questions, explanations, and flashcards based on the actual source material. Quizzes aim for 15 distinct questions.")
     col_a, col_b = st.columns([2, 1])
-    with col_a: up_files = st.file_uploader("Upload Files", type=['pdf', 'docx', 'csv', 'txt'], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
-    with col_b: url_hub = st.text_input("Link Hub", placeholder="Paste URL...", key=f"l_{st.session_state.reset_counter}")
+    with col_a:
+        up_files = st.file_uploader("Upload study files", type=["pdf", "docx", "csv", "txt"], accept_multiple_files=True, key=f"f_{st.session_state.reset_counter}")
+    with col_b:
+        url_hub = st.text_input("Study source URL", placeholder="https://...", key=f"l_{st.session_state.reset_counter}")
 
-    raw_content = st.text_area("Input Content:", value=st.session_state.study_text_input, height=200, placeholder="Paste content here...", key="s_input")
+    raw_content = st.text_area("Paste your notes or textbook extract", value=st.session_state.study_text_input, height=180, placeholder="Paste the material you want to study...", key="s_input")
     st.session_state.study_text_input = raw_content
-    final_study_data = raw_content
-    if url_hub: final_study_data += " " + extract_from_url(url_hub)
+    source_parts = [raw_content.strip()] if raw_content.strip() else []
+    if url_hub.strip():
+        is_youtube = bool(re.search(r"(?:youtube\.com|youtu\.be)", url_hub.strip(), re.I))
+        with st.spinner("Reading the video captions..." if is_youtube else "Reading source link..."):
+            if is_youtube:
+                linked_text = extract_youtube_transcript(url_hub.strip())
+            else:
+                linked_text = extract_from_url(url_hub.strip())
+        if linked_text.strip() and not linked_text.startswith("__TRANSCRIPT_ERROR__:"):
+            source_parts.append(linked_text.strip())
+        elif is_youtube:
+            error_detail = linked_text.split(":", 1)[1].strip() if linked_text.startswith("__TRANSCRIPT_ERROR__:") else "Automatic caption retrieval failed."
+            st.warning(
+                "I couldn't access this video's actual captions, so I won't invent questions from its title or page text. "
+                f"{error_detail}"
+            )
+            st.markdown(
+                "**Quick workaround:** Open the video on YouTube, expand its description or click the video menu (⋯), "
+                "choose **Show transcript** if available, copy the transcript, and paste it into the notes box above. "
+                "Then Verso can build the 15-question quiz and flashcards from the video's real content."
+            )
+        else:
+            st.warning("The link could not be read. Upload the page or paste its text instead.")
     if up_files:
-        for f in up_files: final_study_data += " " + extract_text(f)
+        for uploaded in up_files:
+            extracted = extract_text(uploaded)
+            if extracted.strip():
+                source_parts.append(f"\n\n--- {uploaded.name} ---\n{extracted.strip()}")
+            else:
+                st.warning(f"Could not extract text from {uploaded.name}. Try a text-based PDF or TXT/DOCX file.")
+    final_study_data = "\n\n".join(source_parts).strip()
 
-    if final_study_data.strip():
-        t1, t2, t3, t4 = st.tabs(["Keywords", "Quiz", "Flashcards", "AI Voice Teacher"])
-        blob = TextBlob(final_study_data)
+    if not final_study_data:
+        st.info("Add notes, a readable link, or a study file to get started. Questions and answers will be based on the material you provide.")
+    else:
+        source_key = str(hash(final_study_data))
+        if st.session_state.get("study_assets_source_key") != source_key:
+            st.session_state.study_assets = None
+            st.session_state.study_assets_source_key = source_key
+            st.session_state.study_quiz_step = 0
+            st.session_state.study_quiz_score = 0
+            st.session_state.study_quiz_feedback = None
+            st.session_state.study_fc_step = 0
+            st.session_state.study_fc_revealed = False
+            st.session_state.study_assistant_answer = ""
+            st.session_state.study_assistant_source_key = None
 
-        raw_phrases = list(dict.fromkeys([w.lower().strip() for w in blob.noun_phrases if len(w) > 3]))
-        words = []
-        for phrase in raw_phrases:
-            cleaned = re.sub(r'[^a-zA-Z0-9\s-]', '', phrase)
-            cleaned = cleaned.strip()
-            if cleaned and len(cleaned) > 3 and not cleaned.isdigit():
-                words.append(cleaned)
+        if st.button("Generate questions and flashcards", type="primary", use_container_width=True):
+            try:
+                with st.spinner("Reading your material and building a source-grounded study set..."):
+                    st.session_state.study_assets = generate_study_assets(final_study_data)
+                st.session_state.study_quiz_step = 0
+                st.session_state.study_quiz_score = 0
+                st.session_state.study_quiz_feedback = None
+                st.session_state.study_fc_step = 0
+                st.session_state.study_fc_revealed = False
+                st.success("Your study set is ready.")
+            except Exception as exc:
+                st.error(f"Could not generate the study set: {exc}")
 
-        while len(words) < 25:
-            words += ["structural analysis", "conceptual overview", "logical progression", "critical evaluation", "systematic framework"]
+        t1, t2, t3, t4, t5 = st.tabs(["Key concepts", "Quiz", "Flashcards", "Ask Assistant", "AI Voice Teacher"])
+        assets = st.session_state.get("study_assets")
 
         with t1:
-            cols = st.columns(2)
-            for i, phrase in enumerate(words[:20]):
-                cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase.title()}</div>', unsafe_allow_html=True)
+            st.subheader("Key concepts")
+            if assets and assets.get("keywords"):
+                cols = st.columns(2)
+                for i, phrase in enumerate(assets["keywords"][:30]):
+                    cols[i % 2].markdown(f'<div class="notebook-card"><b>{i+1}.</b> {phrase}</div>', unsafe_allow_html=True)
+            else:
+                st.caption("Generate a study set to extract important terms from your material.")
 
         with t2:
-            st.markdown("### Interactive Content Quiz (10 Questions)")
-            total_q = 10
-            if st.session_state.quiz_step < total_q:
-                curr_q = st.session_state.quiz_step
-                st.write(f"Question **{curr_q + 1}** of **{total_q}**")
-
-                if st.session_state.current_quiz_options is None:
-                    target_word = words[curr_q % len(words)].title()
-                    q_type = curr_q % 3
-
-                    if q_type == 0:
-                        q_text = f"Which term from the source content matches this foundational theme: **\"{target_word}\"**?"
-                        alt_pool = [x.title() for x in words if x.title() != target_word]
-                        opts = [target_word] + random.sample(alt_pool, min(2, len(alt_pool)))
-                        random.shuffle(opts)
-                    elif q_type == 1:
-                        fake_target = random.choice([x.title() for x in words if x.title() != target_word])
-                        q_text = f"True or False: Is **\"{target_word}\"** structurally identical to **\"{fake_target}\"** within this context?"
-                        opts = ["False, they represent separate ideas", "True, they are identical statements"]
-                        target_word = "False, they represent separate ideas"
+            st.subheader("Practice quiz")
+            quiz_items = assets.get("quiz", []) if assets else []
+            if not assets:
+                st.info("Click **Generate questions and flashcards** above first.")
+            elif not quiz_items:
+                st.warning("No reliable quiz questions could be created. Add more detailed notes and regenerate.")
+            elif st.session_state.study_quiz_step < len(quiz_items):
+                idx = st.session_state.study_quiz_step
+                item = quiz_items[idx]
+                st.progress(idx / len(quiz_items), text=f"Question {idx + 1} of {len(quiz_items)}")
+                st.markdown(f'<div class="notebook-card" style="font-size:1.08rem; line-height:1.7;">{item["question"]}</div>', unsafe_allow_html=True)
+                selected = st.radio("Choose the best answer", item["options"], key=f"study_quiz_answer_{source_key}_{idx}", index=None)
+                if st.button("Check answer", key=f"study_quiz_submit_{source_key}_{idx}", use_container_width=True):
+                    if selected is None:
+                        st.warning("Choose an answer before checking.")
                     else:
-                        q_text = f"Fill in the blank: The logical progression of this text highlights that ___________ is a core component."
-                        alt_pool = [x.title() for x in words if x.title() != target_word]
-                        opts = [target_word] + random.sample(alt_pool, min(2, len(alt_pool)))
-                        random.shuffle(opts)
-
-                    st.session_state.current_quiz_options = [re.sub(r'[\[\]\(\)\{\}\\]', '', str(o)) for o in opts]
-                    st.session_state.current_quiz_target = re.sub(r'[\[\]\(\)\{\}\\]', '', str(target_word))
-                    st.session_state.current_quiz_text = q_text
-
-                st.markdown(f'<div class="notebook-card">{st.session_state.current_quiz_text}</div>', unsafe_allow_html=True)
-                choice_q = st.radio("Select your verified solution text:", st.session_state.current_quiz_options, key=f"q_step_radio_{curr_q}", index=None)
-
-                if st.button("Submit & Continue", use_container_width=True):
-                    if choice_q == st.session_state.current_quiz_target:
-                        st.session_state.quiz_score += 1
-                        components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
-                        st.balloons(); st.success("Excellent! Correct evaluation.")
+                        correct = selected == item["answer"]
+                        if correct:
+                            st.session_state.study_quiz_score += 1
+                        st.session_state.study_quiz_feedback = {"idx": idx, "correct": correct, "answer": item["answer"], "explanation": item["explanation"]}
+                        st.rerun()
+                feedback = st.session_state.get("study_quiz_feedback")
+                if feedback and feedback.get("idx") == idx:
+                    if feedback["correct"]:
+                        st.success("Correct!")
                     else:
-                        st.info(f"Analysis update: The correct choice was: **{st.session_state.current_quiz_target}**")
-                        time.sleep(1)
-
-                    st.session_state.current_quiz_options = None
-                    st.session_state.current_quiz_target = None
-                    st.session_state.quiz_step += 1
-                    st.rerun()
+                        st.error(f'Not quite. Correct answer: {feedback["answer"]}')
+                    st.markdown(f'**Why:** {feedback["explanation"]}')
+                    if st.button("Next question", key=f"study_quiz_next_{source_key}_{idx}", use_container_width=True):
+                        st.session_state.study_quiz_step += 1
+                        st.session_state.study_quiz_feedback = None
+                        st.rerun()
             else:
-                st.metric("Final Score Metric", f"{st.session_state.quiz_score} / {total_q}")
-                if st.button("Restart Clean Quiz Loop"):
-                    st.session_state.quiz_step = 0
-                    st.session_state.quiz_score = 0
-                    st.session_state.current_quiz_options = None
-                    st.session_state.current_quiz_target = None
+                st.subheader("Quiz complete")
+                st.metric("Score", f'{st.session_state.study_quiz_score} / {len(quiz_items)}')
+                if st.button("Try the quiz again", key=f"study_quiz_restart_{source_key}"):
+                    st.session_state.study_quiz_step = 0
+                    st.session_state.study_quiz_score = 0
+                    st.session_state.study_quiz_feedback = None
                     st.rerun()
 
         with t3:
-            st.markdown("### Verso Flashcards (25 Cards)")
-            total_fc = 25
-            if st.session_state.fc_step < total_fc:
-                curr_idx = st.session_state.fc_step
-                curr_word = words[curr_idx % len(words)].title()
-                st.write(f"Card **{curr_idx + 1}** / **{total_fc}**")
-                fc_type = curr_idx % 4
-                if fc_type == 0:
-                    q_text = f"In reference to the core academic principles outlined in your study material, how would you best describe the significance or technical definition of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Source Analysis:</b> The inputted source material utilizes '{curr_word}' as a core technical anchor."
-                elif fc_type == 1:
-                    q_text = f"If you had to apply <b>'{curr_word}'</b> to a practical scenario following the logic of the source, what would be the intended outcome?"
-                    a_text = f"<b>Practical Application:</b> The inputted source material implies that successful implementation leads to a more robust result."
-                elif fc_type == 2:
-                    other_word = words[(curr_idx + 1) % len(words)].title()
-                    q_text = f"Analyze the connection between <b>'{curr_word}'</b> and <b>'{other_word}'</b>. How do they interact within your content?"
-                    a_text = f"<b>Inter-Term Relationship:</b> Within the context of the inputted source material, '{curr_word}' acts as a prerequisite or supporting pillar for '{other_word}'."
-                else:
-                    q_text = f"What specific evidence or context does the inputed source provide to highlight the importance of <b>'{curr_word}'</b>?"
-                    a_text = f"<b>Contextual Importance:</b> The inputted source material identifies '{curr_word}' as a high-value variable."
-                st.markdown(f'<div class="notebook-card" style="min-height:220px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.3rem; line-height:1.6;">{q_text}</div>', unsafe_allow_html=True)
-                if not st.session_state.reveal_fc:
-                    if st.button("Reveal Detailed Analysis", use_container_width=True):
-                        st.session_state.reveal_fc = True; st.rerun()
-                else:
-                    st.markdown(f'<div style="background-color:#E8F0FE; padding:24px 28px; border-radius:20px; border:1px solid #D3E3FD; margin-bottom:15px; color:#041E49; line-height:1.7;">{a_text}</div>', unsafe_allow_html=True)
-                    c1, c2 = st.columns(2)
-                    if c1.button("Mastered", use_container_width=True):
-                        st.session_state.fc_correct += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False
-                        components.html("<script>var s=window.parent.document.getElementById('success-sound');if(s){s.play();}</script>", height=0)
+            st.subheader("Flashcards")
+            cards = assets.get("flashcards", []) if assets else []
+            if not assets:
+                st.info("Click **Generate questions and flashcards** above first.")
+            elif not cards:
+                st.warning("No reliable flashcards could be created. Add more detailed notes and regenerate.")
+            elif st.session_state.study_fc_step < len(cards):
+                idx = st.session_state.study_fc_step
+                card = cards[idx]
+                st.progress((idx + 1) / len(cards), text=f"Card {idx + 1} of {len(cards)}")
+                st.markdown(f'<div class="notebook-card" style="min-height:190px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:1.2rem; line-height:1.7;">{card["question"]}</div>', unsafe_allow_html=True)
+                if not st.session_state.study_fc_revealed:
+                    if st.button("Reveal answer", key=f"study_fc_reveal_{source_key}_{idx}", use_container_width=True):
+                        st.session_state.study_fc_revealed = True
                         st.rerun()
-                    if c2.button("Review Needed", use_container_width=True):
-                        st.session_state.fc_wrong += 1; st.session_state.fc_step += 1; st.session_state.reveal_fc = False; st.rerun()
+                else:
+                    st.markdown(f'<div style="background:#E8F0FE; padding:22px; border-radius:16px; border:1px solid #D3E3FD; color:#041E49; line-height:1.7;">{card["answer"]}</div>', unsafe_allow_html=True)
+                    fc1, fc2 = st.columns(2)
+                    if fc1.button("I knew this", key=f"study_fc_known_{source_key}_{idx}", use_container_width=True):
+                        st.session_state.study_fc_step += 1
+                        st.session_state.study_fc_revealed = False
+                        st.rerun()
+                    if fc2.button("Review again", key=f"study_fc_review_{source_key}_{idx}", use_container_width=True):
+                        st.session_state.study_fc_step += 1
+                        st.session_state.study_fc_revealed = False
+                        st.rerun()
             else:
-                st.subheader("Deck Completed"); st.write(f"Mastery: {st.session_state.fc_correct}/{total_fc}")
-                if st.button("Reset Cards"): st.session_state.fc_step = 0; st.session_state.fc_correct = 0; st.session_state.fc_wrong = 0; st.rerun()
+                st.success("You've reached the end of this flashcard deck.")
+                if st.button("Restart flashcards", key=f"study_fc_restart_{source_key}"):
+                    st.session_state.study_fc_step = 0
+                    st.session_state.study_fc_revealed = False
+                    st.rerun()
 
         with t4:
-            st.markdown("### Verso AI Teacher")
+            st.subheader("Ask your study assistant")
+            st.caption("Answers are grounded in the provided material. The assistant will say when the source doesn't contain enough information.")
+            question = st.text_area("Your question", placeholder="For example: What are the main causes, and how are they connected?", key=f"study_assistant_question_{source_key}", height=100)
+            if st.button("Answer from my material", key=f"study_assistant_submit_{source_key}", use_container_width=True):
+                if not question.strip():
+                    st.warning("Type a question first.")
+                else:
+                    try:
+                        with st.spinner("Finding an answer in your material..."):
+                            st.session_state.study_assistant_answer = answer_from_study_source(final_study_data, question.strip())
+                            st.session_state.study_assistant_last_question = question.strip()
+                            st.session_state.study_assistant_source_key = source_key
+                    except Exception as exc:
+                        st.error(f"The assistant couldn't answer this yet: {exc}")
+            if st.session_state.get("study_assistant_answer") and st.session_state.get("study_assistant_source_key") == source_key:
+                st.markdown(f'<div class="notebook-card" style="line-height:1.8;">{st.session_state.study_assistant_answer}</div>', unsafe_allow_html=True)
 
+        with t5:
+            st.subheader("AI voice teacher")
+            st.caption("Generate a lesson explanation from your source, then play it aloud using your browser's available voices.")
             va1, va2 = st.columns(2)
-            v_pitch = va1.slider("Teacher Vocal Pitch", 0.5, 2.0, 1.0, step=0.1, help="Adjust voice tone pitch.")
-            v_speed = va2.slider("Pacing / Speech Speed", 0.5, 2.0, 1.0, step=0.1, help="Speed up or slow down speech.")
-
-            if st.button("Generate/Update Lesson Content", use_container_width=True):
-                with st.spinner("Generating structured presentation flow via Verso..."):
+            v_pitch = va1.slider("Voice pitch", 0.5, 2.0, 1.0, step=0.1, key=f"teacher_pitch_{source_key}")
+            v_speed = va2.slider("Speaking speed", 0.5, 2.0, 1.0, step=0.1, key=f"teacher_speed_{source_key}")
+            if st.button("Generate lesson", key=f"teacher_generate_{source_key}", use_container_width=True):
+                with st.spinner("Preparing your lesson..."):
                     st.session_state.generated_lecture_text = teach_source_material(final_study_data)
-
-            if st.session_state.generated_lecture_text:
-                raw_generated_lesson = st.session_state.generated_lecture_text
-
-                clean_speech_js = raw_generated_lesson.replace('"', '\\"').replace("'", "\\'").replace('\n', ' ').replace('\r', ' ')
-                clean_speech_js = re.sub(r'[^\x00-\x7F]+', '', clean_speech_js)
-
-                tts_component_code = f"""
-                <style>
-                .audio-btn {{ background:#0B57D0; color:#fff; border:none; padding:9px 20px; border-radius:999px; font-size:14px; font-weight:500; cursor:pointer; margin-right:8px; font-family:inherit; }}
-                .audio-btn-pause {{ background:#fff; color:#1F1F1F; border:1px solid #C4C7C5; }}
-                .audio-btn-stop {{ background:#fff; color:#B3261E; border:1px solid #C4C7C5; }}
-                </style>
-                <div class="audio-panel" style="background:#FFFFFF; border:1px solid #E1E3E1; border-radius:20px; padding:16px 20px; font-family:Inter,'Segoe UI',sans-serif; color:#1F1F1F; margin-bottom:8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span><b>Voice playback</b> &nbsp;Ready to read the lesson aloud</span>
-                <span>
-                <label for="voiceSelect" style="margin-right: 5px; font-weight: bold;">Voice</label>
-                <select id='voiceSelect' style='background:#FFFFFF; color:#1F1F1F; border:1px solid #C4C7C5; padding:6px 10px; border-radius:12px;'></select>
-                </span>
-                </div>
-                <button class="audio-btn" onclick="playAudio()">Play lesson</button>
-                <button class="audio-btn audio-btn-pause" onclick="pauseAudio()">Pause</button>
-                <button class="audio-btn audio-btn-stop" onclick="stopAudio()">Stop</button>
-                </div>
-
-                <script>
-                const synth = window.speechSynthesis;
-                let utterance = null;
-                let voices = [];
-                const voiceSelect = document.getElementById('voiceSelect');
-
-                function populateVoices() {{
-                voices = synth.getVoices();
-                voiceSelect.innerHTML = '';
-
-                let defaultIndex = 0;
-                voices.forEach((voice, index) => {{
-                const option = document.createElement('option');
-                option.textContent = `${{voice.name}} (${{voice.lang}})`;
-                option.value = index;
-
-                if (voice.name.includes('Google') && voice.lang === 'en-US') {{
-                defaultIndex = index;
-                }}
-                voiceSelect.appendChild(option);
-                }});
-
-                if(voices.length > 0) {{
-                voiceSelect.selectedIndex = defaultIndex;
-                }}
-                }}
-
-                populateVoices();
-                if (speechSynthesis.onvoiceschanged !== undefined) {{
-                speechSynthesis.onvoiceschanged = populateVoices;
-                }}
-
-                function playAudio() {{
-                if (synth.speaking) {{
-                if (synth.paused) {{
-                synth.resume();
-                return;
-                }}
-                synth.cancel();
-                }}
-
-                const textToSpeak = "{clean_speech_js}";
-                if (!textToSpeak) return;
-
-                utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-                if (voices.length > 0) {{
-                const selectedVoiceIndex = voiceSelect.value || 0;
-                utterance.voice = voices[selectedVoiceIndex];
-                }}
-
-                utterance.pitch = {v_pitch};
-                utterance.rate = {v_speed};
-
-                synth.speak(utterance);
-                }}
-
-                function pauseAudio() {{
-                if (synth.speaking && !synth.paused) {{
-                synth.pause();
-                }}
-                }}
-
-                function stopAudio() {{
-                if (synth.speaking) {{
-                synth.cancel();
-                }}
-                }}
-                </script>
-                """
-                components.html(tts_component_code, height=125)
-                st.markdown(f'<div class="teacher-board">{raw_generated_lesson}</div>', unsafe_allow_html=True)
-
-
+            lesson = st.session_state.get("generated_lecture_text", "")
+            if lesson:
+                # Put the lesson controls ABOVE the lesson text so they are easy to reach.
+                import json as _json
+                lesson_json = _json.dumps(lesson)
+                components.html(
+                    "<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:Arial,sans-serif;padding:4px 0 12px'>"
+                    "<button id='playLesson' style='padding:10px 18px;border-radius:999px;border:0;background:#0B57D0;color:white;cursor:pointer;font-size:15px'>Play lesson</button>"
+                    "<button id='pauseLesson' style='padding:10px 18px;border-radius:999px;border:1px solid #ccc;background:white;cursor:pointer;font-size:15px'>Pause / resume</button>"
+                    "<button id='stopLesson' style='padding:10px 18px;border-radius:999px;border:1px solid #ccc;background:white;cursor:pointer;font-size:15px'>Stop</button></div>"
+                    f"<script>const lessonText={lesson_json};const pitch={v_pitch};const speed={v_speed};"
+                    "document.getElementById('playLesson').onclick=()=>{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(lessonText);u.pitch=pitch;u.rate=speed;speechSynthesis.speak(u);};"
+                    "document.getElementById('pauseLesson').onclick=()=>{if(speechSynthesis.speaking&&!speechSynthesis.paused)speechSynthesis.pause();else if(speechSynthesis.paused)speechSynthesis.resume();};"
+                    "document.getElementById('stopLesson').onclick=()=>speechSynthesis.cancel();</script>",
+                    height=70,
+                )
+                st.markdown(f'<div class="teacher-board" style="white-space:pre-wrap; line-height:1.8;">{lesson}</div>', unsafe_allow_html=True)
 
 
 # --- MODULE: TIME TRACKER ---
