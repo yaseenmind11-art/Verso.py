@@ -861,42 +861,9 @@ def answer_from_study_source(source_text: str, question: str) -> str:
 
 
 if choice == "Home":
-    st.title("Verso Pro — AI Study Assistant")
-
-    st.write(
-        "Verso Pro is an academic study platform for learning, "
-        "writing assistance, grammar checking, quizzes, flashcards, "
-        "citations, humanizing, and more."
-    )
-
-    # Full-width logo directly below the description
-    st.markdown(
-    """
-    <div style="
-        width: 100%;
-        height: 65px;
-        overflow: hidden;
-        margin: 8px 0 16px 0;
-    ">
-        <img src="https://versopro.streamlit.app/~/+/media/31206b533492a43fc5cd0553110f9e13.png"
-             style="
-                 width: 100%;
-                 height: 65px;
-                 object-fit: fill;
-                 display: block;
-             ">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-    st.markdown("### Verso Academic Engine")
-    st.caption(
-        "Use it to filter unsuitable websites for studying "
-        "and writing essays, such as general .com websites "
-        "and Wikipedia."
-    )
-
+    st.title("Verso Research")
+    st.markdown("### Verso Academic Engine ")
+    st.caption("use it to filter unsuitable websites for studying and writing essays like .com Websites and Wikipedia")
 
     source_options = {
         "Educational (.edu)": "site:.edu",
@@ -938,6 +905,7 @@ if choice == "Home":
         <iframe src="{search_url}" class="google-iframe" frameborder="0"></iframe>
         </div>
         """, unsafe_allow_html=True)
+
 
 # --- MODULE: WORD COUNTER ---
 elif choice == "Word Counter":
