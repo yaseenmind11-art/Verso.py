@@ -1267,6 +1267,17 @@ elif choice == "Humanism Engine":
         st.write(st.session_state.humanizer_output.replace("\n", "  \n"))
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
+        # Display Humanism output
+st.markdown(humanism_output)
+
+# Copy button
+st.button(
+    "📋 Copy",
+    key="copy_humanism_output",
+    on_click=lambda: st.session_state.update(
+        copied_humanism_output=humanism_output
+    )
+)
         st.metric("Remaining 4-word overlap with original", f"{overlap}%")
         st.caption("This measures overlap with your input only. It is not a real "
                    "plagiarism checker score. Always read the output. "
