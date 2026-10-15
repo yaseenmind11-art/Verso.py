@@ -880,9 +880,10 @@ if choice == "Home":
 
     c1, c2 = st.columns([4, 1])
     with c2:
-        if st.button("Select All", use_container_width=True):
-            st.session_state.selected_sources = list(source_options.keys())
-            st.rerun()
+        with st.container(key="verso_select_all_button"):
+            if st.button("Select All", use_container_width=True):
+                st.session_state.selected_sources = list(source_options.keys())
+                st.rerun()
 
     selected_sources = st.multiselect(
         "Active Reliable Databases:",
