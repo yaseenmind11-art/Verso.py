@@ -864,7 +864,7 @@ if choice == "Home":
     st.title("Verso Pro — AI Study Assistant")
     st.write(
     "Verso Pro is an academic study platform for learning, "
-    "writing assistance, grammar checking, quizzes, and flashcards."
+    "writing assistance, grammar checking, quizzes, flashcards, Citing, Humanizer, and more."
 )
     st.markdown("### Verso Academic Engine ")
     st.caption("use it to filter unsuitable websites for studying and writing essays like .com Websites and Wikipedia")
