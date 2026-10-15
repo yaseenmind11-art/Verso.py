@@ -740,6 +740,21 @@ button[data-baseweb="tab"][aria-selected="true"] { color: var(--accent); }
 .diff-add { background-color: #C4EED0; color: #0D652D; padding: 1px 4px; border-radius: 4px; }
 .diff-remove { background-color: #F9DEDC; color: #8C1D18; text-decoration: line-through; padding: 1px 4px; border-radius: 4px; }
 .pro-badge { background-color: var(--accent); color: var(--accent-fg); padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-left: 10px; }
+.st-key-verso_select_all_button button {
+    background: #E53935 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #C62828 !important;
+}
+
+.st-key-verso_select_all_button button:hover {
+    background: #C62828 !important;
+    color: #FFFFFF !important;
+    border-color: #B71C1C !important;
+}
+
+.st-key-verso_select_all_button button p {
+    color: #FFFFFF !important;
+}
 </style>
 """
 _UI_CSS = (_UI_CSS.replace("__ACCENT_FG__", _contrast_text(accent))
