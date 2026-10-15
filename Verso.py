@@ -1253,7 +1253,7 @@ elif choice == "Humanism Engine":
         st.write(st.session_state.humanizer_output.replace("\n", "  \n"))
         overlap = ngram_overlap(st.session_state.humanizer_text_input,
                                 st.session_state.humanizer_output)
-        st.metric(f"{overlap}%")
+        st.metric( "4-overlap" f"{overlap}%")
         st.caption("Always read the output: the lowest score "
                    " The lowest score is not always the most readable one.")
 
