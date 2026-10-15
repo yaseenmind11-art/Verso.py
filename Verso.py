@@ -861,7 +861,11 @@ def answer_from_study_source(source_text: str, question: str) -> str:
 
 
 if choice == "Home":
-    st.title("Verso Research")
+    st.title("Verso Pro — AI Study Assistant")
+st.write(
+    "Verso Pro is an academic study platform for learning, "
+    "writing assistance, grammar checking, quizzes, and flashcards."
+)
     st.markdown("### Verso Academic Engine ")
     st.caption("use it to filter unsuitable websites for studying and writing essays like .com Websites and Wikipedia")
 
