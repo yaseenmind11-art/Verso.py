@@ -864,7 +864,7 @@ if choice == "Home":
     st.title("Verso Pro AI Study Assistant")
     st.write(
     "Verso Pro is an academic study platform for learning, ",
-    "writing assistance, grammar checking, quizzes, flashcards, Citing, Humanizer, and more."
+    "writing assistance, grammar checking, quizzes, flashcards, Citing, Humanizer, and more.",
         # Full-width Verso Pro logo
     st.image("z.png", use_container_width=True)
 )
