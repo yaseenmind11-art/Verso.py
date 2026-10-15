@@ -618,7 +618,27 @@ html, body, .stApp, [data-testid="stMarkdownContainer"], .stApp label, .stApp in
 }
 .stApp { background: var(--canvas); color: var(--ink); }
 [data-testid="stHeader"] { background: transparent; }
-[data-testid="stToolbar"], [data-testid="stDecoration"], footer, #MainMenu { display: none !important; }
+
+[data-testid="stDecoration"], footer, #MainMenu {
+  display: none !important;
+}
+
+/* Keep the sidebar collapse/expand controls visible */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarHeader"] button,
+[data-testid="stSidebarCollapsedControl"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+  color: #1F1F1F !important;
+}
+
+/* Keep the header available for sidebar controls */
+[data-testid="stHeader"] {
+  background: transparent !important;
+  visibility: visible !important;
+}
+
 .block-container { padding: 3rem 3rem 5rem; max-width: 1100px; }
 @media (max-width: 768px) { .block-container { padding: 2rem 1rem 4rem; } }
 
