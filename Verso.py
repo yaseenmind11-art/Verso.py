@@ -1236,7 +1236,6 @@ elif choice == "Time Tracker":
     m, s = divmod(rem_time, 60); st.metric("Status", f"{int(m):02d}:{int(s):02d}")
     if st.session_state.get('timer_active'): time.sleep(1); st.rerun()
 
-```python
 # --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
 elif choice == "Humanism Engine":
     import streamlit.components.v1 as components
