@@ -870,7 +870,25 @@ if choice == "Home":
     )
 
     # Full-width logo directly below the description
-    st.image("z.png", use_container_width=True)
+    st.markdown(
+    """
+    <div style="
+        width: 100%;
+        height: 65px;
+        overflow: hidden;
+        margin: 8px 0 16px 0;
+    ">
+        <img src="https://versopro.streamlit.app/~/+/media/31206b533492a43fc5cd0553110f9e13.png"
+             style="
+                 width: 100%;
+                 height: 65px;
+                 object-fit: fill;
+                 display: block;
+             ">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
     st.markdown("### Verso Academic Engine")
     st.caption(
