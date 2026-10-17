@@ -1142,7 +1142,7 @@ elif choice == "Citation Generator":
                 st.markdown(f'<div class="notebook-card"><b>Generated Entry:</b><br><br>{output}</div>', unsafe_allow_html=True)
 
                 if st.session_state.get("auto_bibliography", True):
-                    st.success("Cited!.")
+                    st.success("Cited!")
         else:
             st.warning("Please provide a valid source link or title inside the input workspace.")
 
