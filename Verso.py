@@ -1000,130 +1000,116 @@ elif choice == "Plagiarism Checker":
                 else: st.success(f"Content Unique: {plag_percent}% Similarity"); st.balloons()
 
 
-# --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
+
+# --- MODULE: HUMANISM ENGINE (FREE LOCAL EDITOR) ---
 elif choice == "Humanism Engine":
+    import re
+    import streamlit.components.v1 as components
+
     st.header("Verso Humanism Engine")
     st.caption(
-        "Rewrite text for better readability while preserving its meaning."
+        "Improve clarity, punctuation, and repeated-word errors "
+        "with a free local text editor."
     )
 
-    def clean_humanizer_repetitions(text: str) -> str:
-        """Clean accidental repeated words and filler-word runs."""
+    def clean_humanism_text(text):
+        """Fix spacing and obvious accidental repeated words."""
         if not text:
-            return text
+            return ""
 
-        # Collapse immediate repeated words: "the the" -> "the"
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+        # Fix repeated words such as "the the" without changing meaning.
         text = re.sub(
-            r"\b([A-Za-z]+)(?:\s+\1\b)+",
+            r"\b([A-Za-z]+)(\s+\1\b)+",
             r"\1",
             text,
             flags=re.IGNORECASE
         )
 
-        # Collapse consecutive filler adverbs.
-        text = re.sub(
-            r"\b(?:(?:really|quite|actually|generally|often|clearly)"
-            r"\s+){2,}(really|quite|actually|generally|often|clearly)\b",
-            r"\1",
-            text,
-            flags=re.IGNORECASE
-        )
+        # Remove whitespace before punctuation.
+        text = re.sub(r"[ \t]+([,.;:!?])", r"\1", text)
 
-        # Remove spaces before punctuation and tidy whitespace.
-        text = re.sub(r"\s+([,.;:!?])", r"\1", text)
-        text = re.sub(r"[ \t]{2,}", " ", text)
+        # Normalize spaces while preserving paragraphs.
+        lines = [re.sub(r"[ \t]+", " ", line).strip()
+                 for line in text.split("\n")]
+        text = "\n".join(lines)
+
+        # Avoid excessive blank lines.
+        text = re.sub(r"\n{3,}", "\n\n", text)
 
         return text.strip()
 
-    text_to_humanize = st.text_area(
-        "Paste your text here:",
+    source_text = st.text_area(
+        "Original text",
         value=st.session_state.get("humanizer_text_input", ""),
         height=220,
-        placeholder="Enter the text you want to rewrite...",
-        key="humanizer_interactive_input"
+        placeholder="Paste your text here...",
+        key="humanism_source_editor"
     )
 
-    st.session_state.humanizer_text_input = text_to_humanize
+    st.session_state.humanizer_text_input = source_text
 
     if st.button(
-        "Humanize Output Text",
+        "Improve Text",
         type="primary",
         use_container_width=True
     ):
-        if not text_to_humanize.strip():
-            st.warning("Please enter some text first.")
-
+        if not source_text.strip():
+            st.warning("Please paste some text first.")
         else:
-            try:
-                with st.spinner("Improving your text..."):
-                    candidate = pure_python_humanizer(
-                        text_to_humanize,
-                        0.35,
-                        False,
-                        seed=random.randint(0, 10**6),
-                        include_nouns=True,
-                        neural=None,
-                        force_zero=False
-                    )
+            result = clean_humanism_text(source_text)
+            st.session_state.humanizer_output = result
+            st.success("Text cleanup complete.")
 
-                    if not isinstance(candidate, str) or not candidate.strip():
-                        candidate = text_to_humanize
+    result = st.session_state.get("humanizer_output", "")
 
-                    candidate = clean_humanizer_repetitions(candidate)
-
-                    st.session_state.humanizer_output = candidate
-
-            except Exception as exc:
-                st.error("The Humanism Engine could not process this text.")
-                st.exception(exc)
-
-    output = st.session_state.get("humanizer_output", "")
-
-    if output:
+    if result:
         st.divider()
-        st.subheader("Humanized Text")
+        st.subheader("Edited Text")
 
-        edited_output = st.text_area(
-            "Review and edit your result:",
-            value=output,
+        edited_text = st.text_area(
+            "Review and edit the result",
+            value=result,
             height=280,
-            key="humanizer_result_editor"
+            key="humanism_result_editor"
         )
 
         col1, col2 = st.columns(2)
 
         with col1:
             st.download_button(
-                "Download Text",
-                data=edited_output,
-                file_name="verso_humanized_text.txt",
+                "⬇️ Download Text",
+                data=edited_text,
+                file_name="verso_edited_text.txt",
                 mime="text/plain",
                 use_container_width=True
             )
 
         with col2:
-            st.button(
-                "Copy tip",
-                disabled=True,
-                help="Select the text above and press Ctrl+C."
-            )
+            # Reliable manual-copy fallback: the text remains selectable.
+            if st.button(
+                "📋 Show Text to Copy",
+                use_container_width=True
+            ):
+                st.info(
+                    "Select the edited text above and press Ctrl+C "
+                    "(or Cmd+C on Mac)."
+                )
 
-        original_words = len(text_to_humanize.split())
-        output_words = len(edited_output.split())
+        original_words = len(source_text.split())
+        edited_words = len(edited_text.split())
 
         metric1, metric2 = st.columns(2)
-
-        with metric1:
-            st.metric("Original Words", original_words)
-
-        with metric2:
-            st.metric("Rewritten Words", output_words)
+        metric1.metric("Original words", original_words)
+        metric2.metric("Edited words", edited_words)
 
         st.caption(
-            "Review the result for accuracy and readability. "
-            "The local rewriting engine uses dictionary-based substitutions "
-            "and cannot guarantee perfect grammar or meaning preservation."
+            "This local editor fixes basic repetition and formatting. "
+            "It does not automatically rewrite ideas or verify originality. "
+            "Cite sources for borrowed facts, ideas, and quotations."
         )
+
 
 # --- MODULE: CITATION GENERATOR ---
 elif choice == "Citation Generator":
