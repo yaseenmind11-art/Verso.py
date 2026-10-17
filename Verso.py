@@ -1001,113 +1001,125 @@ elif choice == "Plagiarism Checker":
 
 
 
-# --- MODULE: HUMANISM ENGINE (FREE LOCAL EDITOR) ---
+# --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
 elif choice == "Humanism Engine":
-    import re
     import streamlit.components.v1 as components
+    import json
 
-    st.header("Verso Humanism Engine")
-    st.caption(
-        "Improve clarity, punctuation, and repeated-word errors "
-        "with a free local text editor."
+    st.header("Verso Humanizer")
+
+    text_to_humanize = st.text_area(
+        "Paste text here:",
+        value=st.session_state.humanizer_text_input,
+        height=200,
+        placeholder="Please input the text you want to humanize...",
+        key="humanizer_interactive_input"
     )
+    st.session_state.humanizer_text_input = text_to_humanize
 
-    def clean_humanism_text(text):
-        """Fix spacing and obvious accidental repeated words."""
-        if not text:
-            return ""
-
-        text = text.replace("\r\n", "\n").replace("\r", "\n")
-
-        # Fix repeated words such as "the the" without changing meaning.
-        text = re.sub(
-            r"\b([A-Za-z]+)(\s+\1\b)+",
-            r"\1",
-            text,
-            flags=re.IGNORECASE
-        )
-
-        # Remove whitespace before punctuation.
-        text = re.sub(r"[ \t]+([,.;:!?])", r"\1", text)
-
-        # Normalize spaces while preserving paragraphs.
-        lines = [re.sub(r"[ \t]+", " ", line).strip()
-                 for line in text.split("\n")]
-        text = "\n".join(lines)
-
-        # Avoid excessive blank lines.
-        text = re.sub(r"\n{3,}", "\n\n", text)
-
-        return text.strip()
-
-    source_text = st.text_area(
-        "Original text",
-        value=st.session_state.get("humanizer_text_input", ""),
-        height=220,
-        placeholder="Paste your text here...",
-        key="humanism_source_editor"
-    )
-
-    st.session_state.humanizer_text_input = source_text
-
-    if st.button(
-        "Improve Text",
-        type="primary",
-        use_container_width=True
-    ):
-        if not source_text.strip():
-            st.warning("Please paste some text first.")
+    if st.button("Humanize Output Text", type="primary"):
+        if not text_to_humanize.strip():
+            st.warning("Please add some text first!")
         else:
-            result = clean_humanism_text(source_text)
-            st.session_state.humanizer_output = result
-            st.success("Text cleanup complete.")
+            with st.spinner("Rewriting..."):
+                best, best_ov = "", 101.0
 
-    result = st.session_state.get("humanizer_output", "")
+                for _ in range(5):
+                    cand = pure_python_humanizer(
+                        text_to_humanize,
+                        0.9,
+                        False,
+                        seed=random.randint(0, 10**6),
+                        include_nouns=True,
+                        neural=None,
+                        force_zero=True
+                    )
 
-    if result:
-        st.divider()
-        st.subheader("Edited Text")
+                    ov = ngram_overlap(text_to_humanize, cand)
 
-        edited_text = st.text_area(
-            "Review and edit the result",
-            value=result,
-            height=280,
-            key="humanism_result_editor"
+                    if ov < best_ov:
+                        best, best_ov = cand, ov
+
+                    if best_ov == 0:
+                        break
+
+                st.session_state.humanizer_output = best
+
+    if st.session_state.humanizer_output:
+        st.subheader("Humanized")
+
+        # Display the generated output
+        st.write(
+            st.session_state.humanizer_output.replace("\n", "  \n")
         )
 
-        col1, col2 = st.columns(2)
+        # Copy button using the browser clipboard
+        copy_text = json.dumps(
+            st.session_state.humanizer_output
+        )
 
-        with col1:
-            st.download_button(
-                "⬇️ Download Text",
-                data=edited_text,
-                file_name="verso_edited_text.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+        components.html(
+            f"""
+            <div style="font-family: sans-serif; margin: 8px 0;">
+                <button
+                    id="verso-copy-humanism"
+                    style="
+                        background: white;
+                        color: #262730;
+                        border: 1px solid #D1D5DB;
+                        border-radius: 8px;
+                        padding: 8px 16px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                    "
+                > Copy</button>
+                <span id="verso-copy-status"
+                    style="margin-left: 10px; font-size: 13px;">
+                </span>
+            </div>
 
-        with col2:
-            # Reliable manual-copy fallback: the text remains selectable.
-            if st.button(
-                "📋 Show Text to Copy",
-                use_container_width=True
-            ):
-                st.info(
-                    "Select the edited text above and press Ctrl+C "
-                    "(or Cmd+C on Mac)."
-                )
+            <script>
+                const copyButton =
+                    document.getElementById("verso-copy-humanism");
+                const status =
+                    document.getElementById("verso-copy-status");
+                const textToCopy = {copy_text};
 
-        original_words = len(source_text.split())
-        edited_words = len(edited_text.split())
+                copyButton.addEventListener("click", async () => {{
+                    try {{
+                        await navigator.clipboard.writeText(textToCopy);
+                        status.textContent = "Copied!";
+                    }} catch (error) {{
+                        const area = document.createElement("textarea");
+                        area.value = textToCopy;
+                        document.body.appendChild(area);
+                        area.select();
+                        const success =
+                            document.execCommand("copy");
+                        area.remove();
+                        status.textContent =
+                            success ? "Copied!" : "Copy failed";
+                    }}
+                }});
+            </script>
+            """,
+            height=50
+        )
 
-        metric1, metric2 = st.columns(2)
-        metric1.metric("Original words", original_words)
-        metric2.metric("Edited words", edited_words)
+        overlap = ngram_overlap(
+            st.session_state.humanizer_text_input,
+            st.session_state.humanizer_output
+        )
+
+        st.metric(
+            "Remaining 4-word overlap with original",
+            f"{overlap}%"
+        )
 
         st.caption(
-            "This local editor fixes basic repetition and formatting. "
-            "It does not automatically rewrite ideas or verify originality. "
-            "Cite sources for borrowed facts, ideas, and quotations."
+            "Always read the output. "
+            "Lowest score is not always the most readable one."
         )
 
 
