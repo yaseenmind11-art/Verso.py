@@ -1006,88 +1006,174 @@ elif choice == "Plagiarism Checker":
 
 # --- MODULE: HUMANISM ENGINE ---
 elif choice == "Humanism Engine":
-    st.header("Verso Humanizer")
-    st.caption("Rewrite text for clarity and natural flow.")
+    st.header("Verso Humanism Engine")
+    st.caption(
+        "Improve clarity, grammar, flow, and readability while preserving "
+        "your original meaning."
+    )
 
     text_to_humanize = st.text_area(
-        "Paste your text here:",
-        value=st.session_state.humanizer_text_input,
-        height=200,
-        placeholder="Enter the text you want to rewrite...",
+        "Your original text",
+        value=st.session_state.get("humanizer_text_input", ""),
+        height=240,
+        placeholder="Paste your text here...",
         key="humanizer_interactive_input"
     )
 
     st.session_state.humanizer_text_input = text_to_humanize
 
-    if st.button("Humanize Output Text", type="primary"):
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        rewrite_mode = st.selectbox(
+            "Writing style",
+            [
+                "Academic and professional",
+                "Clear and natural",
+                "Formal",
+                "Simple and easy to understand"
+            ],
+            key="humanizer_style"
+        )
+
+    with col2:
+        preserve_length = st.selectbox(
+            "Length",
+            [
+                "Keep approximately the same length",
+                "Make it more concise",
+                "Expand explanations where useful"
+            ],
+            key="humanizer_length"
+        )
+
+    if st.button(
+        "✨ Improve My Writing",
+        type="primary",
+        use_container_width=True
+    ):
         if not text_to_humanize.strip():
             st.warning("Please enter some text first.")
+
+        elif len(text_to_humanize) > 30000:
+            st.warning(
+                "Please shorten your text to 30,000 characters or fewer "
+                "for one rewrite."
+            )
+
+        elif client is None:
+            st.error(
+                "The writing service is not configured. "
+                "Check the app's server configuration and API key."
+            )
+
         else:
+            prompt = f"""
+You are a professional editor and writing improvement assistant.
+
+Rewrite the user's text to improve its quality.
+
+WRITING STYLE:
+{rewrite_mode}
+
+LENGTH PREFERENCE:
+{preserve_length}
+
+STRICT REQUIREMENTS:
+1. Preserve the original meaning, facts, claims, names, dates,
+   technical terms, and important details.
+2. Correct grammar, spelling, punctuation, capitalization, and
+   sentence fragments.
+3. Produce fluent, coherent sentences and logically connected paragraphs.
+4. Remove accidental repetition, filler words, awkward phrasing,
+   and incorrect word substitutions.
+5. Do not add unsupported facts, examples, statistics, quotations,
+   citations, or references.
+6. Do not replace technical terms with inaccurate synonyms.
+7. Keep the language appropriate for the subject and intended audience.
+8. Do not artificially change wording merely to reduce text overlap.
+9. Return only the revised text, without an introduction, commentary,
+   a list of changes, or quotation marks around the result.
+
+USER'S TEXT:
+{text_to_humanize}
+"""
+
             try:
-                with st.spinner("Rewriting your text..."):
-                    best = text_to_humanize
-                    best_ov = float("inf")
-
-                    for _ in range(5):
-                        candidate = pure_python_humanizer(
-                            text_to_humanize,
-                            0.9,
-                            False,
-                            seed=random.randint(0, 10**6),
-                            include_nouns=True,
-                            neural=None,
-                            force_zero=True
+                with st.spinner(
+                    "Improving grammar, clarity, and sentence flow..."
+                ):
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.3
                         )
+                    )
 
-                        if not isinstance(candidate, str) or not candidate.strip():
-                            continue
+                    result = getattr(response, "text", None)
 
-                        overlap = ngram_overlap(text_to_humanize, candidate)
+                    if not result or not result.strip():
+                        st.error(
+                            "The writing service returned an empty result. "
+                            "Please try again."
+                        )
+                    else:
+                        result = result.strip()
+                        st.session_state.humanizer_output = result
+                        st.success("Your revised text is ready.")
 
-                        if overlap < best_ov:
-                            best = candidate.strip()
-                            best_ov = overlap
-
-                        if best_ov == 0:
-                            break
-
-                    st.session_state.humanizer_output = best
-
-            except Exception as exc:
-                st.error("The Humanism Engine encountered an error.")
-                st.exception(exc)
+            except Exception:
+                st.error(
+                    "The rewrite could not be completed. Please check "
+                    "your server logs and API configuration, then try again."
+                )
 
     output = st.session_state.get("humanizer_output", "")
 
     if output:
-        st.subheader("Rewritten Text")
+        st.divider()
+        st.subheader("Revised Text")
+
         st.text_area(
-            "Your result:",
+            "Review and edit your result",
             value=output,
-            height=220,
-            key="humanizer_result_display"
+            height=300,
+            key="humanizer_result_editor"
         )
 
-        st.button(
-            "Copying tip",
-            help="Select the result text above and copy it with Ctrl+C.",
-            disabled=True
+        st.download_button(
+            label="Download revised text",
+            data=st.session_state.get(
+                "humanizer_result_editor",
+                output
+            ),
+            file_name="verso_revised_text.txt",
+            mime="text/plain",
+            use_container_width=True
         )
 
-        overlap = ngram_overlap(
-            st.session_state.humanizer_text_input,
-            output
+        original_words = len(
+            st.session_state.humanizer_text_input.split()
+        )
+        revised_words = len(
+            st.session_state.get(
+                "humanizer_result_editor",
+                output
+            ).split()
         )
 
-        st.metric(
-            "Remaining 4-word overlap with original",
-            f"{overlap}%"
-        )
+        m1, m2 = st.columns(2)
+
+        with m1:
+            st.metric("Original word count", original_words)
+
+        with m2:
+            st.metric("Revised word count", revised_words)
 
         st.caption(
-            "This score compares the result with your input only. "
-            "It is not a plagiarism-detection score. Review the rewritten "
-            "text for accuracy and readability."
+            "Review the revised text before using it, especially "
+            "for factual accuracy and academic work."
         )
 
 # --- MODULE: CITATION GENERATOR ---
