@@ -1511,9 +1511,13 @@ elif choice == "Verso Translate":
                     st.session_state["translation_result"] = result
                     st.rerun()
 
-                except Exception as error:
-                    st.error("Translation failed.")
-                    st.caption(str(error))
+    except Exception as error:
+        st.error("Could not prepare the translation models.")
+        st.write(str(error))
+        st.info(
+            "Check that argostranslate is in requirements.txt "
+            "and that the app can download the required models."
+        )
 
 
         
