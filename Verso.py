@@ -1504,14 +1504,13 @@ elif choice == "Verso Translate":
                 key="translator_input",
             )
 
-        with output_col:
-            st.text_area(
-                "Translation",
-                height=250,
-                value=st.session_state["translation_result"],
-                disabled=True,
-                key="translator_output_display",
-            )
+      with output_col:
+    st.text_area(
+        "Translation",
+        height=250,
+        value=st.session_state.get("translation_result", ""),
+        disabled=True,
+    )
 
         if st.button(
             "Translate",
