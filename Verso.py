@@ -1136,13 +1136,13 @@ elif choice == "Citation Generator":
 
     if st.button("Generate Reference", use_container_width=True):
         if cite_url:
-            with st.spinner("Processing source data attributes..."):
+            with st.spinner("Citing..."):
                 time.sleep(0.8)
                 output = generate_scribbr_citation(cite_url, active_style)
                 st.markdown(f'<div class="notebook-card"><b>Generated Entry:</b><br><br>{output}</div>', unsafe_allow_html=True)
 
                 if st.session_state.get("auto_bibliography", True):
-                    st.success("Reference entry systematically pushed to active Auto-Bibliography.")
+                    st.success("Cited!.")
         else:
             st.warning("Please provide a valid source link or title inside the input workspace.")
 
