@@ -1379,8 +1379,8 @@ elif choice == "Time Tracker":
 
 # --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
 elif choice == "Verso Translate":
-    st.header("Google Translate Engine")
-    st.write("Instant, context-aware translations matching Google Translate matrices for your core academic workflows.")
+    st.header("Verso Translator")
+    st.write("Instant translation for languages Arabic, English, French, German.")
 
     # Core language mapping framework configurations
     lang_map = {
