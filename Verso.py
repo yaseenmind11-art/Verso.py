@@ -1329,105 +1329,184 @@ elif choice == "Humanism Engine":
 
 
 # --- MODULE: CITATION GENERATOR ---
+
 elif choice == "Citation Generator":
-    import re
-    import html
-    import streamlit as st
-
-    st.title("Citation Generator Workspace")
-    st.markdown("### Generate Reference Citations")
-    st.caption("Rule-based citation formatting. No AI is used.")
-
-    cite_url = st.text_input(
-        "Enter Source URL or DOI:",
-        value=st.session_state.get("citation_text_input", ""),
-        placeholder="https://doi.org/10.xxxx/example",
-        key="c_input"
-    )
-    st.session_state.citation_text_input = cite_url
+    st.title("Citation Generator")
+    st.caption("Create and copy references using source metadata — no AI.")
 
     active_style = st.session_state.get(
-        "selected_citation_format",
-        "APA 7th Generation"
+        "selected_citation_format", "APA 7th Generation"
     )
-    st.caption(f"Active Output Style: **{active_style}**")
 
-    if st.button(
-        "Generate Reference",
-        type="primary",
-        use_container_width=True
-    ):
+    st.info(f"Selected citation style: {active_style}")
+
+    st.markdown("### Generate a reference")
+
+    cite_url = st.text_input(
+        "Source URL, DOI, or publication title",
+        value=st.session_state.get("citation_text_input", ""),
+        placeholder="https://doi.org/10.xxxx/example",
+        key="citation_generator_input"
+    )
+    st.session_state["citation_text_input"] = cite_url
+
+    if st.button("Generate Reference", use_container_width=True):
         if not cite_url.strip():
-            st.warning("Please enter a source URL or DOI.")
+            st.warning("Enter a URL, DOI, or publication title first.")
+        elif "APA 7" in active_style or "APA 7th" in active_style:
+            with st.spinner("Checking available source metadata..."):
+                result, error = generate_apa7_citation(cite_url)
+
+            st.session_state["citation_generator_result"] = result or ""
+            st.session_state["citation_generator_error"] = error or ""
         else:
-            with st.spinner("Retrieving source metadata..."):
-                try:
-                    if active_style in (
-                        "APA 7th Generation",
-                        "APA 7th Edition",
-                        "APA 7"
-                    ):
-                        output = generate_apa7_citation(cite_url)
-                    else:
-                        output = generate_scribbr_citation(
-                            cite_url, active_style
-                        )
+            # Use your existing citation engine for other styles.
+            try:
+                result = generate_scribbr_citation(cite_url, active_style)
+                st.session_state["citation_generator_result"] = str(result or "")
+                st.session_state["citation_generator_error"] = ""
+            except Exception:
+                st.session_state["citation_generator_result"] = ""
+                st.session_state["citation_generator_error"] = (
+                    "Could not generate this citation style. "
+                    "Try APA 7 or enter the reference manually."
+                )
 
-                    st.session_state["latest_citation_output"] = output
-                    st.session_state["latest_citation_style"] = active_style
+    generated_reference = st.session_state.get(
+        "citation_generator_result", ""
+    )
+    generation_error = st.session_state.get(
+        "citation_generator_error", ""
+    )
 
-                except Exception as exc:
-                    st.error("Could not generate the reference.")
-                    st.caption(str(exc))
-
-    output = st.session_state.get("latest_citation_output", "")
-
-    if output:
-        st.divider()
-        st.subheader("Generated Reference")
+    if generated_reference:
+        st.markdown("---")
+        st.markdown("### Generated Reference")
 
         st.markdown(
-            '<div class="notebook-card" '
-            'style="line-height:1.9; overflow-wrap:anywhere;">'
-            + output
-            + "</div>",
+            f'<div class="notebook-card">{html.escape(generated_reference)}</div>',
             unsafe_allow_html=True
         )
 
-        plain_output = re.sub(
-            r'<a href="[^"]*">([^<]*)</a>',
-            r"\1",
-            output
-        )
-        plain_output = re.sub(r"</?i>", "", plain_output)
-        plain_output = html.unescape(plain_output)
-
         st.text_area(
             "Copyable Reference",
-            value=plain_output,
+            value=generated_reference,
             height=110,
-            key="citation_copy_area"
+            key="citation_generator_copy_text"
         )
 
-        st.download_button(
-            "⬇️ Download Reference",
-            data=plain_output,
-            file_name="verso_reference.txt",
-            mime="text/plain",
-            use_container_width=True
+        # Clipboard button with visible fallback text.
+        safe_reference = json.dumps(generated_reference)
+        copy_component = f"""
+        <div style="font-family: sans-serif; margin: 8px 0;">
+          <button id="copyCitation" style="
+            width:100%; padding:12px 16px; border:1px solid #d0d5dd;
+            border-radius:28px; background:#ffffff; color:#202124;
+            font-size:16px; font-weight:600; cursor:pointer;">
+            📋 Copy Reference
+          </button>
+          <div id="copyStatus" role="status"
+               style="font-size:13px;margin-top:8px;text-align:center;"></div>
+          <script>
+            const citation = {safe_reference};
+            const btn = document.getElementById("copyCitation");
+            const status = document.getElementById("copyStatus");
+            btn.addEventListener("click", async () => {{
+              try {{
+                await navigator.clipboard.writeText(citation);
+                btn.innerText = "✓ Copied!";
+                status.innerText = "Reference copied to clipboard.";
+              }} catch (err) {{
+                status.innerText =
+                  "Clipboard access is blocked here. Select the text above and copy it.";
+              }}
+            }});
+          </script>
+        </div>
+        """
+        components.html(copy_component, height=75)
+
+        st.caption(
+            "Verify the author, date, title, and publication details before "
+            "using this reference in your bibliography."
         )
 
         if st.session_state.get("auto_bibliography", True):
             st.success(
-                "Reference generated. Verify the source details "
-                "before using it in your bibliography."
+                "Reference generated. Review it before adding it to your bibliography."
             )
 
-        st.caption(
-            "APA 7 references depend on the metadata available from the "
-            "source. Verify author names, dates, titles, and publication "
-            "details. Incomplete metadata may require manual correction."
+    elif generation_error:
+        st.error(generation_error)
+
+    st.markdown("---")
+    st.markdown("### Enter reference details manually")
+    st.caption(
+        "Use this when a website blocks metadata retrieval or does not publish it."
+    )
+
+    with st.form("manual_apa7_reference_form"):
+        manual_author = st.text_input(
+            "Author or organization",
+            placeholder="Smith, J. A. or World Health Organization"
         )
+        manual_year = st.text_input("Year", placeholder="2025 or n.d.")
+        manual_title = st.text_input("Title of the work")
+        manual_site = st.text_input(
+            "Website, journal, or publisher",
+            placeholder="Example Journal"
+        )
+        manual_volume = st.text_input("Volume (optional)")
+        manual_issue = st.text_input("Issue (optional)")
+        manual_pages = st.text_input("Page range (optional)")
+        manual_doi_url = st.text_input(
+            "DOI or URL",
+            placeholder="https://doi.org/10.xxxx/example"
+        )
+
+        manual_submit = st.form_submit_button(
+            "Build APA 7 Reference",
+            use_container_width=True
+        )
+
+    if manual_submit:
+        if not manual_title.strip():
+            st.warning("Enter the title of the work.")
+        else:
+            author = manual_author.strip() or manual_title.strip()
+            year = manual_year.strip() or "n.d."
+            title = manual_title.strip().rstrip(".")
+            site = manual_site.strip()
+            year = year if year == "n.d." or year.startswith("(") else f"({year})"
+
+            if manual_author.strip():
+                manual_reference = f"{author} {year}. {title}."
+            else:
+                manual_reference = f"{title} {year}."
+
+            if site:
+                if manual_volume.strip():
+                    volume_part = f"*{site}, {manual_volume.strip()}*"
+                    if manual_issue.strip():
+                        volume_part += f"({manual_issue.strip()})"
+                    if manual_pages.strip():
+                        volume_part += f", {manual_pages.strip()}"
+                    manual_reference = (
+                        f"{author} {year}. {title}. {volume_part}."
+                    )
+                else:
+                    manual_reference += f" *{site}*."
+
+            if manual_doi_url.strip():
+                manual_reference += f" {manual_doi_url.strip()}"
+
+            st.session_state["citation_generator_result"] = manual_reference
+            st.session_state["citation_generator_error"] = ""
+            st.success(
+                "Manual reference created. Review the APA 7 formatting before use."
+            )
+            st.code(manual_reference, language=None)
+
 
 
 
