@@ -1330,182 +1330,613 @@ elif choice == "Humanism Engine":
 
 # --- MODULE: CITATION GENERATOR ---
 
-elif choice == "Citation Generator":
-    st.title("Citation Generator")
-    st.caption("Create and copy references using source metadata — no AI.")
 
-    active_style = st.session_state.get(
-        "selected_citation_format", "APA 7th Generation"
+# ============================================================
+# VERSO PRO — APA 7 CITATION GENERATOR
+# Non-AI | URL-only | Automatic metadata lookup
+# ============================================================
+
+import re
+import json
+import html
+import requests
+import streamlit as st
+import streamlit.components.v1 as components
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse, unquote
+from datetime import datetime
+
+
+def citation_clean(value):
+    """Clean text extracted from website metadata."""
+    if not value:
+        return ""
+    return re.sub(r"\s+", " ", str(value)).strip()
+
+
+def citation_get_meta(soup, *names):
+    """Read common HTML metadata formats."""
+    for name in names:
+        tag = soup.find("meta", attrs={"name": name})
+        if tag and tag.get("content"):
+            return citation_clean(tag["content"])
+
+        tag = soup.find("meta", attrs={"property": name})
+        if tag and tag.get("content"):
+            return citation_clean(tag["content"])
+
+    return ""
+
+
+def citation_valid_url(raw_url):
+    """Accept only ordinary public HTTP/HTTPS URLs."""
+    raw_url = citation_clean(raw_url)
+
+    if not raw_url:
+        raise ValueError("Enter a URL first.")
+
+    if not re.match(r"^https?://", raw_url, re.I):
+        raw_url = "https://" + raw_url
+
+    parsed = urlparse(raw_url)
+
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("Enter a valid HTTP or HTTPS URL.")
+
+    host = parsed.hostname.lower()
+
+    # Block local/private destinations.
+    if (
+        host == "localhost"
+        or host.endswith(".localhost")
+        or host.endswith(".local")
+        or host == "metadata.google.internal"
+        or host == "169.254.169.254"
+        or host == "0.0.0.0"
+        or host == "::1"
+        or host.startswith("127.")
+        or host.startswith("10.")
+        or host.startswith("192.168.")
+        or host.startswith("172.16.")
+        or host.startswith("172.17.")
+        or host.startswith("172.18.")
+        or host.startswith("172.19.")
+        or host.startswith("172.2")
+        or host.startswith("172.30.")
+        or host.startswith("172.31.")
+    ):
+        raise ValueError("That address cannot be used.")
+
+    return raw_url
+
+
+def citation_fetch_page(url):
+    """Retrieve public-page metadata without using AI."""
+    headers = {
+        "User-Agent": (
+            "VersoCitationTool/1.0 "
+            "(academic citation metadata retrieval)"
+        ),
+        "Accept": (
+            "text/html,application/xhtml+xml,"
+            "application/json;q=0.9,*/*;q=0.8"
+        ),
+    }
+
+    response = requests.get(
+        url,
+        headers=headers,
+        timeout=15,
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+
+    # Avoid processing non-HTML responses as webpages.
+    content_type = response.headers.get("Content-Type", "").lower()
+    if "html" not in content_type and "xhtml" not in content_type:
+        raise ValueError(
+            "This URL did not return a readable webpage. "
+            "Try the article's main webpage or DOI link."
+        )
+
+    # Re-check the final URL after redirects.
+    final_url = citation_valid_url(response.url)
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    metadata = {
+        "url": final_url,
+        "title": "",
+        "author": "",
+        "date": "",
+        "site": "",
+        "description": "",
+        "doi": "",
+        "type": "webpage",
+    }
+
+    metadata["title"] = (
+        citation_get_meta(soup, "citation_title")
+        or citation_get_meta(soup, "og:title")
+        or citation_get_meta(soup, "twitter:title")
+        or citation_clean(soup.title.get_text(" ", strip=True))
+        if soup.title
+        else citation_get_meta(soup, "citation_title")
+        or citation_get_meta(soup, "og:title")
+        or citation_get_meta(soup, "twitter:title")
     )
 
-    st.info(f"Selected citation style: {active_style}")
-
-    st.markdown("### Generate a reference")
-
-    cite_url = st.text_input(
-        "Source URL, DOI, or publication title",
-        value=st.session_state.get("citation_text_input", ""),
-        placeholder="https://doi.org/10.xxxx/example",
-        key="citation_generator_input"
+    metadata["author"] = (
+        citation_get_meta(soup, "citation_author")
+        or citation_get_meta(soup, "author")
+        or citation_get_meta(soup, "article:author")
+        or citation_get_meta(soup, "parsely-author")
     )
-    st.session_state["citation_text_input"] = cite_url
 
-    if st.button("Generate Reference", use_container_width=True):
-        if not cite_url.strip():
-            st.warning("Enter a URL, DOI, or publication title first.")
-        elif "APA 7" in active_style or "APA 7th" in active_style:
-            with st.spinner("Checking available source metadata..."):
-                result, error = generate_apa7_citation(cite_url)
+    metadata["date"] = (
+        citation_get_meta(soup, "citation_publication_date")
+        or citation_get_meta(soup, "article:published_time")
+        or citation_get_meta(soup, "datePublished")
+        or citation_get_meta(soup, "date")
+        or citation_get_meta(soup, "pubdate")
+    )
 
-            st.session_state["citation_generator_result"] = result or ""
-            st.session_state["citation_generator_error"] = error or ""
+    metadata["site"] = (
+        citation_get_meta(soup, "og:site_name")
+        or citation_get_meta(soup, "application-name")
+        or urlparse(final_url).hostname.replace("www.", "")
+    )
+
+    metadata["description"] = citation_get_meta(
+        soup, "description", "og:description"
+    )
+
+    metadata["doi"] = (
+        citation_get_meta(soup, "citation_doi")
+        or citation_get_meta(soup, "dc.identifier")
+    )
+
+    # Inspect JSON-LD structured data where available.
+    for script in soup.find_all(
+        "script", attrs={"type": "application/ld+json"}
+    ):
+        try:
+            data = json.loads(script.string or script.get_text())
+            entries = data if isinstance(data, list) else [data]
+
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+
+                if "@graph" in entry and isinstance(entry["@graph"], list):
+                    entries.extend(entry["@graph"])
+
+                if not metadata["title"]:
+                    metadata["title"] = citation_clean(
+                        entry.get("headline") or entry.get("name")
+                    )
+
+                if not metadata["author"] and entry.get("author"):
+                    authors = entry["author"]
+                    if isinstance(authors, dict):
+                        authors = [authors]
+
+                    if isinstance(authors, list):
+                        names = []
+                        for author in authors:
+                            if isinstance(author, dict):
+                                name = author.get("name")
+                                if name:
+                                    names.append(citation_clean(name))
+                            elif isinstance(author, str):
+                                names.append(citation_clean(author))
+                        metadata["author"] = "; ".join(names)
+
+                if not metadata["date"]:
+                    metadata["date"] = citation_clean(
+                        entry.get("datePublished")
+                        or entry.get("dateCreated")
+                    )
+
+                if not metadata["doi"]:
+                    identifier = entry.get("identifier")
+                    if isinstance(identifier, str) and "doi.org/" in identifier:
+                        metadata["doi"] = identifier
+
+        except (json.JSONDecodeError, TypeError, AttributeError):
+            continue
+
+    # Normalize DOI identifiers.
+    doi = metadata["doi"]
+    doi_match = re.search(
+        r"(?:doi\.org/|doi:\s*)?(10\.\d{4,9}/\S+)",
+        doi,
+        re.I,
+    )
+    metadata["doi"] = (
+        doi_match.group(1).rstrip(".,;)")
+        if doi_match
+        else ""
+    )
+
+    # Also find DOI links embedded in the page.
+    if not metadata["doi"]:
+        for tag in soup.find_all("meta"):
+            content = tag.get("content", "")
+            match = re.search(r"10\.\d{4,9}/\S+", content, re.I)
+            if match:
+                metadata["doi"] = match.group(0).rstrip(".,;)")
+                break
+
+    # Recognize journal article metadata.
+    citation_journal = citation_get_meta(
+        soup, "citation_journal_title"
+    )
+    citation_volume = citation_get_meta(soup, "citation_volume")
+    citation_issue = citation_get_meta(soup, "citation_issue")
+    citation_pages = (
+        citation_get_meta(soup, "citation_firstpage")
+        or citation_get_meta(soup, "citation_pages")
+    )
+
+    if citation_journal:
+        metadata["type"] = "journal"
+        metadata["journal"] = citation_journal
+        metadata["volume"] = citation_volume
+        metadata["issue"] = citation_issue
+        metadata["pages"] = citation_pages
+
+    return metadata
+
+
+def citation_crossref_lookup(doi):
+    """Look up scholarly metadata through Crossref's public API."""
+    if not doi:
+        return None
+
+    api_url = (
+        "https://api.crossref.org/works/"
+        + requests.utils.quote(doi, safe="/")
+    )
+
+    try:
+        response = requests.get(
+            api_url,
+            headers={"User-Agent": "VersoCitationTool/1.0"},
+            timeout=12,
+        )
+        if response.status_code != 200:
+            return None
+
+        item = response.json().get("message", {})
+        if not item.get("title"):
+            return None
+
+        authors = []
+        for author in item.get("author", []):
+            family = citation_clean(author.get("family"))
+            given = citation_clean(author.get("given"))
+            if family:
+                authors.append({"family": family, "given": given})
+
+        issued = item.get("published-print") or item.get("published-online") or item.get("issued") or {}
+        date_parts = issued.get("date-parts", [[]])
+        date_parts = date_parts[0] if date_parts else []
+
+        return {
+            "title": citation_clean(item["title"][0]),
+            "authors": authors,
+            "year": str(date_parts[0]) if date_parts else "",
+            "month": str(date_parts[1]) if len(date_parts) > 1 else "",
+            "day": str(date_parts[2]) if len(date_parts) > 2 else "",
+            "journal": citation_clean(
+                (item.get("container-title") or [""])[0]
+            ),
+            "volume": citation_clean(item.get("volume")),
+            "issue": citation_clean(item.get("issue")),
+            "pages": citation_clean(item.get("page")),
+            "doi": citation_clean(item.get("DOI") or doi),
+            "type": citation_clean(item.get("type")),
+        }
+
+    except (requests.RequestException, ValueError, KeyError, TypeError):
+        return None
+
+
+def citation_author_apa(author_string):
+    """Format simple webpage author names in APA reference style."""
+    author_string = citation_clean(author_string)
+    if not author_string:
+        return ""
+
+    # Metadata commonly lists multiple authors separated by semicolons.
+    names = [citation_clean(x) for x in author_string.split(";") if x.strip()]
+    formatted = []
+
+    for name in names:
+        if "," in name:
+            parts = [p.strip() for p in name.split(",", 1)]
+            family, given = parts[0], parts[1]
         else:
-            # Use your existing citation engine for other styles.
+            parts = name.split()
+            if len(parts) < 2:
+                formatted.append(name)
+                continue
+            family = parts[-1]
+            given = " ".join(parts[:-1])
+
+        initials = " ".join(
+            part[0].upper() + "."
+            for part in re.split(r"[\s-]+", given)
+            if part
+        )
+        formatted.append(f"{family}, {initials}" if initials else family)
+
+    if len(formatted) == 1:
+        return formatted[0] + "."
+
+    if len(formatted) <= 20:
+        return ", ".join(formatted[:-1]) + ", & " + formatted[-1] + "."
+
+    return ", ".join(formatted[:19]) + ", … " + formatted[-1] + "."
+
+
+def citation_year(date_text):
+    """Extract a publication year when possible."""
+    match = re.search(r"\b(19|20)\d{2}\b", date_text or "")
+    return match.group(0) if match else "n.d."
+
+
+def citation_sentence_case(title):
+    """Apply a basic APA-style sentence-case transformation."""
+    title = citation_clean(title).strip(" .")
+    if not title:
+        return ""
+
+    # Avoid lowercasing titles that appear to be all uppercase acronyms.
+    words = title.split()
+    if len(words) > 1 and sum(w.isupper() for w in words) > len(words) * 0.7:
+        return title
+
+    return words[0] + (
+        " " + " ".join(words[1:]).lower() if len(words) > 1 else ""
+    )
+
+
+def citation_format_apa(metadata):
+    """Create an APA 7 reference from retrieved metadata."""
+    title = citation_sentence_case(metadata.get("title", ""))
+    if not title:
+        raise ValueError(
+            "The page did not provide a title, so a reliable reference "
+            "could not be created."
+        )
+
+    # Prefer scholarly DOI metadata when available.
+    doi = metadata.get("doi", "")
+    crossref = citation_crossref_lookup(doi) if doi else None
+
+    if crossref:
+        authors = crossref["authors"]
+        if authors:
+            if len(authors) == 1:
+                author_text = (
+                    f'{authors[0]["family"]}, '
+                    f'{authors[0]["given"][:1]}.'
+                    if authors[0]["given"]
+                    else authors[0]["family"]
+                )
+            elif len(authors) <= 20:
+                formatted = []
+                for author in authors:
+                    family = author["family"]
+                    given = author["given"]
+                    initials = " ".join(
+                        part[0].upper() + "."
+                        for part in re.split(r"[\s-]+", given)
+                        if part
+                    )
+                    formatted.append(
+                        f"{family}, {initials}" if initials else family
+                    )
+                author_text = ", ".join(formatted[:-1]) + ", & " + formatted[-1]
+            else:
+                formatted = []
+                for author in authors[:19]:
+                    given = author["given"]
+                    initials = " ".join(
+                        part[0].upper() + "."
+                        for part in re.split(r"[\s-]+", given)
+                        if part
+                    )
+                    formatted.append(
+                        f'{author["family"]}, {initials}'
+                        if initials else author["family"]
+                    )
+                last = authors[-1]
+                author_text = ", ".join(formatted) + ", … " + last["family"]
+            author_text += " "
+        else:
+            author_text = ""
+
+        year = crossref["year"] or "n.d."
+        journal = crossref["journal"]
+        volume = crossref["volume"]
+        issue = crossref["issue"]
+        pages = crossref["pages"]
+        doi_url = "https://doi.org/" + crossref["doi"]
+
+        if journal:
+            journal_part = f"*{journal}*"
+            if volume:
+                journal_part += f", *{volume}*"
+            if issue:
+                journal_part += f"({issue})"
+            if pages:
+                journal_part += f", {pages}"
+            return (
+                f"{author_text}({year}). {title}. "
+                f"{journal_part}. {doi_url}"
+            )
+
+        return f"{author_text}({year}). {title}. {doi_url}"
+
+    author = metadata.get("author", "")
+    year = citation_year(metadata.get("date", ""))
+
+    if author:
+        author_text = citation_author_apa(author) + " "
+        site = metadata.get("site", "")
+        if site and author.strip().lower() == site.strip().lower():
+            site = ""
+    else:
+        author_text = ""
+        site = metadata.get("site", "")
+
+    if site:
+        site_part = f"{site}. "
+    else:
+        site_part = ""
+
+    url = metadata.get("url", "")
+    return f"{author_text}({year}). {title}. {site_part}{url}"
+
+
+# -------------------- STREAMLIT UI --------------------
+
+def render_verso_citation_generator():
+    st.markdown(
+        """
+        <style>
+        .verso-citation-hero {
+            padding: 26px;
+            border-radius: 18px;
+            background: linear-gradient(125deg, #172554, #3730a3);
+            color: white;
+            margin-bottom: 22px;
+        }
+        .verso-citation-hero h2 {
+            color: white;
+            margin: 0 0 8px 0;
+        }
+        .verso-citation-hero p {
+            color: #e0e7ff;
+            margin: 0;
+        }
+        </style>
+        <div class="verso-citation-hero">
+            <h2>APA 7 Citation Generator</h2>
+            <p>Paste a source URL to create a reference automatically.
+            No AI. No manual-entry forms.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    url = st.text_input(
+        "Source URL",
+        placeholder="https://example.com/article",
+        key="verso_apa7_source_url",
+    )
+
+    if st.button(
+        "Generate APA 7 Reference",
+        type="primary",
+        use_container_width=True,
+        key="verso_generate_apa7",
+    ):
+        if not url.strip():
+            st.warning("Paste a source URL first.")
+        else:
             try:
-                result = generate_scribbr_citation(cite_url, active_style)
-                st.session_state["citation_generator_result"] = str(result or "")
-                st.session_state["citation_generator_error"] = ""
-            except Exception:
-                st.session_state["citation_generator_result"] = ""
-                st.session_state["citation_generator_error"] = (
-                    "Could not generate this citation style. "
-                    "Try APA 7 or enter the reference manually."
+                with st.spinner("Retrieving source metadata..."):
+                    safe_url = citation_valid_url(url)
+                    metadata = citation_fetch_page(safe_url)
+                    reference = citation_format_apa(metadata)
+
+                st.session_state["verso_apa7_reference"] = reference
+                st.session_state["verso_apa7_source"] = safe_url
+                st.session_state["verso_apa7_warning"] = (
+                    "Check the author, date, title, and formatting against "
+                    "the original source before submitting your work."
                 )
 
-    generated_reference = st.session_state.get(
-        "citation_generator_result", ""
-    )
-    generation_error = st.session_state.get(
-        "citation_generator_error", ""
-    )
+            except requests.Timeout:
+                st.error(
+                    "The website took too long to respond. Try again or "
+                    "use the source's DOI link if it has one."
+                )
+            except requests.RequestException:
+                st.error(
+                    "Verso couldn't retrieve this page. The website may "
+                    "block automated access. Try its DOI or a public article URL."
+                )
+            except ValueError as exc:
+                st.error(str(exc))
+            except Exception:
+                st.error(
+                    "A reference could not be generated from this page. "
+                    "The source may not expose enough citation metadata."
+                )
 
-    if generated_reference:
-        st.markdown("---")
-        st.markdown("### Generated Reference")
+    reference = st.session_state.get("verso_apa7_reference", "")
 
-        st.markdown(
-            f'<div class="notebook-card">{html.escape(generated_reference)}</div>',
-            unsafe_allow_html=True
-        )
-
+    if reference:
+        st.markdown("#### Your APA 7 Reference")
         st.text_area(
-            "Copyable Reference",
-            value=generated_reference,
-            height=110,
-            key="citation_generator_copy_text"
+            "Reference",
+            value=reference,
+            height=125,
+            key="verso_apa7_reference_display",
+            help="Review the reference before using it.",
         )
 
-        # Clipboard button with visible fallback text.
-        safe_reference = json.dumps(generated_reference)
-        copy_component = f"""
-        <div style="font-family: sans-serif; margin: 8px 0;">
-          <button id="copyCitation" style="
-            width:100%; padding:12px 16px; border:1px solid #d0d5dd;
-            border-radius:28px; background:#ffffff; color:#202124;
-            font-size:16px; font-weight:600; cursor:pointer;">
-            📋 Copy Reference
-          </button>
-          <div id="copyStatus" role="status"
-               style="font-size:13px;margin-top:8px;text-align:center;"></div>
-          <script>
-            const citation = {safe_reference};
-            const btn = document.getElementById("copyCitation");
-            const status = document.getElementById("copyStatus");
-            btn.addEventListener("click", async () => {{
-              try {{
-                await navigator.clipboard.writeText(citation);
-                btn.innerText = "✓ Copied!";
-                status.innerText = "Reference copied to clipboard.";
-              }} catch (err) {{
-                status.innerText =
-                  "Clipboard access is blocked here. Select the text above and copy it.";
-              }}
+        # Clipboard button in a small embedded component.
+        escaped_reference = json.dumps(reference)
+        components.html(
+            f"""
+            <button id="verso-copy-reference"
+                style="
+                    background:#4338ca;color:white;border:0;
+                    padding:11px 18px;border-radius:9px;
+                    font-weight:600;cursor:pointer;width:100%;
+                    font-size:14px;">
+                Copy Reference
+            </button>
+            <div id="verso-copy-status"
+                style="font:13px sans-serif;margin-top:7px;"></div>
+            <script>
+            const referenceText = {escaped_reference};
+            const copyButton = document.getElementById(
+                "verso-copy-reference"
+            );
+            const status = document.getElementById("verso-copy-status");
+
+            copyButton.addEventListener("click", async () => {{
+                try {{
+                    await navigator.clipboard.writeText(referenceText);
+                    status.textContent = "Reference copied.";
+                    status.style.color = "green";
+                }} catch (error) {{
+                    status.textContent =
+                        "Clipboard access was blocked. Select and copy the reference above.";
+                    status.style.color = "#b45309";
+                }}
             }});
-          </script>
-        </div>
-        """
-        components.html(copy_component, height=75)
+            </script>
+            """,
+            height=65,
+        )
 
         st.caption(
-            "Verify the author, date, title, and publication details before "
-            "using this reference in your bibliography."
+            "Always verify source details. Missing or incorrect metadata "
+            "can affect citation accuracy."
         )
 
-        if st.session_state.get("auto_bibliography", True):
-            st.success(
-                "Reference generated. Review it before adding it to your bibliography."
-            )
 
-    elif generation_error:
-        st.error(generation_error)
+# Call this where your existing Citation Generator module belongs:
+render_verso_citation_generator()
 
-    st.markdown("---")
-    st.markdown("### Enter reference details manually")
-    st.caption(
-        "Use this when a website blocks metadata retrieval or does not publish it."
-    )
-
-    with st.form("manual_apa7_reference_form"):
-        manual_author = st.text_input(
-            "Author or organization",
-            placeholder="Smith, J. A. or World Health Organization"
-        )
-        manual_year = st.text_input("Year", placeholder="2025 or n.d.")
-        manual_title = st.text_input("Title of the work")
-        manual_site = st.text_input(
-            "Website, journal, or publisher",
-            placeholder="Example Journal"
-        )
-        manual_volume = st.text_input("Volume (optional)")
-        manual_issue = st.text_input("Issue (optional)")
-        manual_pages = st.text_input("Page range (optional)")
-        manual_doi_url = st.text_input(
-            "DOI or URL",
-            placeholder="https://doi.org/10.xxxx/example"
-        )
-
-        manual_submit = st.form_submit_button(
-            "Build APA 7 Reference",
-            use_container_width=True
-        )
-
-    if manual_submit:
-        if not manual_title.strip():
-            st.warning("Enter the title of the work.")
-        else:
-            author = manual_author.strip() or manual_title.strip()
-            year = manual_year.strip() or "n.d."
-            title = manual_title.strip().rstrip(".")
-            site = manual_site.strip()
-            year = year if year == "n.d." or year.startswith("(") else f"({year})"
-
-            if manual_author.strip():
-                manual_reference = f"{author} {year}. {title}."
-            else:
-                manual_reference = f"{title} {year}."
-
-            if site:
-                if manual_volume.strip():
-                    volume_part = f"*{site}, {manual_volume.strip()}*"
-                    if manual_issue.strip():
-                        volume_part += f"({manual_issue.strip()})"
-                    if manual_pages.strip():
-                        volume_part += f", {manual_pages.strip()}"
-                    manual_reference = (
-                        f"{author} {year}. {title}. {volume_part}."
-                    )
-                else:
-                    manual_reference += f" *{site}*."
-
-            if manual_doi_url.strip():
-                manual_reference += f" {manual_doi_url.strip()}"
-
-            st.session_state["citation_generator_result"] = manual_reference
-            st.session_state["citation_generator_error"] = ""
-            st.success(
-                "Manual reference created. Review the APA 7 formatting before use."
-            )
-            st.code(manual_reference, language=None)
 
 
 
