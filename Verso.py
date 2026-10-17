@@ -1004,31 +1004,32 @@ elif choice == "Plagiarism Checker":
                 else: st.success(f"Content Unique: {plag_percent}% Similarity"); st.balloons()
 
 
-    # --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
-    elif choice == "Humanism Engine":
-        import streamlit.components.v1 as components
-        import json
+# --- MODULE: HUMANISM ENGINE ---
+elif choice == "Humanism Engine":
+    st.header("Verso Humanizer")
+    st.caption("Rewrite text for clarity and natural flow.")
 
-        st.header("Verso Humanizer")
+    text_to_humanize = st.text_area(
+        "Paste your text here:",
+        value=st.session_state.humanizer_text_input,
+        height=200,
+        placeholder="Enter the text you want to rewrite...",
+        key="humanizer_interactive_input"
+    )
 
-        text_to_humanize = st.text_area(
-            "Paste text here:",
-            value=st.session_state.humanizer_text_input,
-            height=200,
-            placeholder="Please input the text you want to humanize...",
-            key="humanizer_interactive_input"
-        )
-        st.session_state.humanizer_text_input = text_to_humanize
+    st.session_state.humanizer_text_input = text_to_humanize
 
-        if st.button("Humanize Output Text", type="primary"):
-            if not text_to_humanize.strip():
-                st.warning("Please add some text first!")
-            else:
-                with st.spinner("Rewriting..."):
-                    best, best_ov = "", 101.0
+    if st.button("Humanize Output Text", type="primary"):
+        if not text_to_humanize.strip():
+            st.warning("Please enter some text first.")
+        else:
+            try:
+                with st.spinner("Rewriting your text..."):
+                    best = text_to_humanize
+                    best_ov = float("inf")
 
                     for _ in range(5):
-                        cand = pure_python_humanizer(
+                        candidate = pure_python_humanizer(
                             text_to_humanize,
                             0.9,
                             False,
@@ -1038,44 +1039,56 @@ elif choice == "Plagiarism Checker":
                             force_zero=True
                         )
 
-                        ov = ngram_overlap(text_to_humanize, cand)
+                        if not isinstance(candidate, str) or not candidate.strip():
+                            continue
 
-                        if ov < best_ov:
-                            best, best_ov = cand, ov
+                        overlap = ngram_overlap(text_to_humanize, candidate)
+
+                        if overlap < best_ov:
+                            best = candidate.strip()
+                            best_ov = overlap
 
                         if best_ov == 0:
                             break
 
                     st.session_state.humanizer_output = best
 
-        if st.session_state.humanizer_output:
-            st.subheader("Humanized")
-            st.write(
-                st.session_state.humanizer_output.replace("\n", "  \n")
-            )
+            except Exception as exc:
+                st.error("The Humanism Engine encountered an error.")
+                st.exception(exc)
 
-            copy_text = json.dumps(st.session_state.humanizer_output)
+    output = st.session_state.get("humanizer_output", "")
 
-            components.html(
-                f"""
-                <div style="font-family: sans-serif; margin: 8px 0;">
-                    <button
-                        id="verso-copy-humanism"
-                        style="
-                            background: white;
-                            color: #333;
-                            border: 1px solid #ccc;
-                            border-radius: 8px;
-                            padding: 8px 14px;
-                            cursor: pointer;
-                        "
-                        onclick="navigator.clipboard.writeText({copy_text})">
-                        Copy Humanized Text
-                    </button>
-                </div>
-                """,
-                height=60
-            )
+    if output:
+        st.subheader("Rewritten Text")
+        st.text_area(
+            "Your result:",
+            value=output,
+            height=220,
+            key="humanizer_result_display"
+        )
+
+        st.button(
+            "Copying tip",
+            help="Select the result text above and copy it with Ctrl+C.",
+            disabled=True
+        )
+
+        overlap = ngram_overlap(
+            st.session_state.humanizer_text_input,
+            output
+        )
+
+        st.metric(
+            "Remaining 4-word overlap with original",
+            f"{overlap}%"
+        )
+
+        st.caption(
+            "This score compares the result with your input only. "
+            "It is not a plagiarism-detection score. Review the rewritten "
+            "text for accuracy and readability."
+        )
 
 # --- MODULE: CITATION GENERATOR ---
 elif choice == "Citation Generator":
