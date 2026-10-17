@@ -1386,7 +1386,7 @@ elif choice == "Verso Translate":
     import argostranslate.translate
 
     st.header("Verso Translator")
-    st.caption("Translation powered by locally installed language models.")
+    st.caption("Verso local translator.")
 
     LANGUAGES = {
         "Arabic": "ar",
@@ -1400,7 +1400,7 @@ elif choice == "Verso Translate":
         st.session_state["src_lang"] = "English"
 
     if "tgt_lang" not in st.session_state:
-        st.session_state["tgt_lang"] = "Arabic"
+        st.session_state["tgt_lang"] = "French"
 
     if "translator_input" not in st.session_state:
         st.session_state["translator_input"] = ""
@@ -1551,11 +1551,6 @@ elif choice == "Verso Translate":
                     "installation errors. The first download requires "
                     "an internet connection and enough server storage."
                 )
-
-    st.caption(
-        "Your text is translated using local models after installation. "
-        "The first model download requires an internet connection."
-    )
 
 
 # --- MODULE: SETTINGS ---
