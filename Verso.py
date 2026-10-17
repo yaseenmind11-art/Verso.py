@@ -1377,96 +1377,166 @@ elif choice == "Time Tracker":
 
 
 
-# --- 🌐 TRANSLATOR MODULE ENGINE (GEMINI-POWERED 100% UNBLOCKED TRANSLATION) ---
+# --- OFFLINE TRANSLATOR: ARGOS TRANSLATE ---
 elif choice == "Verso Translate":
-    st.header("Verso Translator")
-    st.write("Instant translation for languages Arabic, English, French, German.")
+    from pathlib import Path
+    import argostranslate.package
+    import argostranslate.translate
 
-    # Core language mapping framework configurations
-    lang_map = {
+    st.header("Verso Translator")
+    st.caption("Private, offline-model translation — no online translation API.")
+
+    LANG_MAP = {
         "Arabic": "ar",
         "English": "en",
         "French": "fr",
-        "German": "de"
+        "German": "de",
     }
-    lang_list = list(lang_map.keys())
+    LANGUAGES = list(LANG_MAP.keys())
 
-    # Safely cross-swap languages inside Streamlit's official widget state manager keys
-    def safe_language_swap():
-        old_src = st.session_state.src_lang
-        st.session_state.src_lang = st.session_state.tgt_lang
-        st.session_state.tgt_lang = old_src
+    # The models folder must be beside Verso.py.
+    MODEL_DIR = Path(__file__).resolve().parent / "models"
 
-    # Layout generation using an explicit column count parameter
-    col1, col_swap, col2 = st.columns(3)
-    
-    with col1:
-        st.selectbox(
-            "From Language:", 
-            options=lang_list, 
-            key="src_lang"
-        )
-        
-    with col_swap:
-        st.write("<br>", unsafe_allow_html=True)
-        if st.button("Swap", use_container_width=True, on_click=safe_language_swap):
-            st.rerun()
-            
-    with col2:
-        st.selectbox(
-            "To Language:", 
-            options=lang_list, 
-            key="tgt_lang"
-        )
+    @st.cache_resource
+    def load_offline_translation_models():
+        """Install downloaded model files included in the repository."""
+        model_files = sorted(MODEL_DIR.glob("*.argosmodel"))
 
-    # Workspace Text Layout Fields (Split Screen 50/50 Columns)
-    input_col, output_col = st.columns(2)
-    
-    with input_col:
-        st.text_area(
-            f"Enter text in {st.session_state.src_lang}:",
-            height=250,
-            placeholder="Please input the text you want to translate...",
-            key="translator_input"
-        )
+        if not model_files:
+            raise FileNotFoundError(
+                f"No .argosmodel files found in {MODEL_DIR}. "
+                "Add your downloaded model files to the models folder."
+            )
 
-    # Execution controls using Gemini infrastructure to completely bypass IP bans
-    if st.button("Translate Content", type="primary", use_container_width=True):
-        if not st.session_state.translator_input.strip():
-            st.warning("Please type some characters to process translation.")
-        else:
-            with st.spinner("Processing context-aware translation..."):
-                src_full = st.session_state.src_lang
-                tgt_full = st.session_state.tgt_lang
-                
-                if client is not None:
-                    system_instruction = f"""
-                    You are a professional, exact translation assistant. Your task is to translate the user text from {src_full} to {tgt_full}.
-                    Maintain exact meaning, tone, and punctuation structure.
-                    Output ONLY the translated result text. Do not add any introductory or explanatory text.
-                    """
-                    try:
-                        response = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=f"Translate this text payload:\n\n{st.session_state.translator_input}",
-                            config=types.GenerateContentConfig(
-                                system_instruction=system_instruction,
-                                temperature=0.3
-                            )
+        # Install the local files. No model-index download is required.
+        for model_file in model_files:
+            argostranslate.package.install_from_path(model_file)
+
+        return argostranslate.translate.get_installed_languages()
+
+    try:
+        installed_languages = load_offline_translation_models()
+        installed_codes = {language.code for language in installed_languages}
+
+        # Display which of the four language codes are installed.
+        available_names = [
+            name for name, code in LANG_MAP.items()
+            if code in installed_codes
+        ]
+
+        if len(available_names) < 2:
+            st.warning(
+                "The models were found, but fewer than two supported "
+                "languages are installed. Check the downloaded model files."
+            )
+
+        def swap_languages():
+            old_source = st.session_state.get("src_lang", "English")
+            old_target = st.session_state.get("tgt_lang", "Arabic")
+            st.session_state["src_lang"] = old_target
+            st.session_state["tgt_lang"] = old_source
+
+        # Set defaults before creating the widgets.
+        if "src_lang" not in st.session_state:
+            st.session_state["src_lang"] = "English"
+        if "tgt_lang" not in st.session_state:
+            st.session_state["tgt_lang"] = "Arabic"
+
+        col1, col_swap, col2 = st.columns([5, 1, 5])
+
+        with col1:
+            st.selectbox(
+                "Translate from",
+                options=LANGUAGES,
+                key="src_lang",
+            )
+
+        with col_swap:
+            st.write("")
+            st.write("")
+            st.button(
+                "⇄",
+                help="Swap languages",
+                use_container_width=True,
+                on_click=swap_languages,
+            )
+
+        with col2:
+            st.selectbox(
+                "Translate to",
+                options=LANGUAGES,
+                key="tgt_lang",
+            )
+
+        input_col, output_col = st.columns(2)
+
+        with input_col:
+            st.text_area(
+                "Text to translate",
+                height=250,
+                placeholder="Enter your text here...",
+                key="translator_input",
+            )
+
+        with output_col:
+            st.text_area(
+                "Translation",
+                height=250,
+                disabled=True,
+                key="translator_output",
+            )
+
+        if st.button(
+            "Translate",
+            type="primary",
+            use_container_width=True,
+        ):
+            source_name = st.session_state["src_lang"]
+            target_name = st.session_state["tgt_lang"]
+            source_code = LANG_MAP[source_name]
+            target_code = LANG_MAP[target_name]
+            input_text = st.session_state["translator_input"].strip()
+
+            if not input_text:
+                st.warning("Please enter some text first.")
+
+            elif source_code == target_code:
+                st.session_state["translator_output"] = input_text
+                st.rerun()
+
+            else:
+                try:
+                    with st.spinner("Translating with local models..."):
+                        result = argostranslate.translate.translate(
+                            input_text,
+                            source_code,
+                            target_code,
                         )
-                        st.session_state.translator_output = response.text.strip()
-                        st.rerun()
-                    except Exception as ai_err:
-                        st.session_state.translator_output = f"⚠️ System Connection Error: {ai_err}"
-                else:
-                    st.session_state.translator_output = "⚠️ Gemini Client is not initialized. Please verify your API Key in secrets."
 
-    with output_col:
-        st.text_area(
-            f"Translation in {st.session_state.tgt_lang}:",
-            height=250,
-            disabled=True,
-            key="translator_output"
+                    st.session_state["translator_output"] = result
+                    st.rerun()
+
+                except Exception as error:
+                    st.error(
+                        "Translation failed. The required language "
+                        "direction may be missing from your models."
+                    )
+                    st.caption(f"Technical details: {error}")
+
+        with st.expander("Installed translation languages"):
+            st.write(", ".join(available_names) or "None detected")
+            st.caption(
+                "A language appearing here does not guarantee that every "
+                "translation direction is installed. The required model "
+                "pair must be available, directly or through English."
+            )
+
+    except Exception as error:
+        st.error("The offline translator could not load its models.")
+        st.write(str(error))
+        st.info(
+            "Check that argostranslate is in requirements.txt and that "
+            "valid .argosmodel files are inside the repository's models folder."
         )
         
 # --- MODULE: SETTINGS ---
