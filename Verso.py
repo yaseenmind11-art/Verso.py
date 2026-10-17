@@ -432,10 +432,6 @@ def force_low_overlap(original: str, text: str, rng: random.Random, n: int = 4, 
                     edits.append((s0, e0, new.capitalize() if tok[0].isupper() else new))
                     edited.add(j)
                     break
-                if rnd >= 1 and tag in ('JJ', 'VB', 'VBP', 'VBZ', 'VBD', 'VBN', 'VBG') and tok[0].islower():
-                    edits.append((s0, s0, rng.choice(_FILLERS) + " "))
-                    edited.add(j)
-                    break
         if not edits:
             break
         for s0, e0, rep in sorted(edits, reverse=True):
@@ -1004,176 +1000,129 @@ elif choice == "Plagiarism Checker":
                 else: st.success(f"Content Unique: {plag_percent}% Similarity"); st.balloons()
 
 
-# --- MODULE: HUMANISM ENGINE ---
+# --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
 elif choice == "Humanism Engine":
     st.header("Verso Humanism Engine")
     st.caption(
-        "Improve clarity, grammar, flow, and readability while preserving "
-        "your original meaning."
+        "Rewrite text for better readability while preserving its meaning."
     )
 
+    def clean_humanizer_repetitions(text: str) -> str:
+        """Clean accidental repeated words and filler-word runs."""
+        if not text:
+            return text
+
+        # Collapse immediate repeated words: "the the" -> "the"
+        text = re.sub(
+            r"\b([A-Za-z]+)(?:\s+\1\b)+",
+            r"\1",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        # Collapse consecutive filler adverbs.
+        text = re.sub(
+            r"\b(?:(?:really|quite|actually|generally|often|clearly)"
+            r"\s+){2,}(really|quite|actually|generally|often|clearly)\b",
+            r"\1",
+            text,
+            flags=re.IGNORECASE
+        )
+
+        # Remove spaces before punctuation and tidy whitespace.
+        text = re.sub(r"\s+([,.;:!?])", r"\1", text)
+        text = re.sub(r"[ \t]{2,}", " ", text)
+
+        return text.strip()
+
     text_to_humanize = st.text_area(
-        "Your original text",
+        "Paste your text here:",
         value=st.session_state.get("humanizer_text_input", ""),
-        height=240,
-        placeholder="Paste your text here...",
+        height=220,
+        placeholder="Enter the text you want to rewrite...",
         key="humanizer_interactive_input"
     )
 
     st.session_state.humanizer_text_input = text_to_humanize
 
-    col1, col2 = st.columns([1, 1])
-
-    with col1:
-        rewrite_mode = st.selectbox(
-            "Writing style",
-            [
-                "Academic and professional",
-                "Clear and natural",
-                "Formal",
-                "Simple and easy to understand"
-            ],
-            key="humanizer_style"
-        )
-
-    with col2:
-        preserve_length = st.selectbox(
-            "Length",
-            [
-                "Keep approximately the same length",
-                "Make it more concise",
-                "Expand explanations where useful"
-            ],
-            key="humanizer_length"
-        )
-
     if st.button(
-        "✨ Improve My Writing",
+        "Humanize Output Text",
         type="primary",
         use_container_width=True
     ):
         if not text_to_humanize.strip():
             st.warning("Please enter some text first.")
 
-        elif len(text_to_humanize) > 30000:
-            st.warning(
-                "Please shorten your text to 30,000 characters or fewer "
-                "for one rewrite."
-            )
-
-        elif client is None:
-            st.error(
-                "The writing service is not configured. "
-                "Check the app's server configuration and API key."
-            )
-
         else:
-            prompt = f"""
-You are a professional editor and writing improvement assistant.
-
-Rewrite the user's text to improve its quality.
-
-WRITING STYLE:
-{rewrite_mode}
-
-LENGTH PREFERENCE:
-{preserve_length}
-
-STRICT REQUIREMENTS:
-1. Preserve the original meaning, facts, claims, names, dates,
-   technical terms, and important details.
-2. Correct grammar, spelling, punctuation, capitalization, and
-   sentence fragments.
-3. Produce fluent, coherent sentences and logically connected paragraphs.
-4. Remove accidental repetition, filler words, awkward phrasing,
-   and incorrect word substitutions.
-5. Do not add unsupported facts, examples, statistics, quotations,
-   citations, or references.
-6. Do not replace technical terms with inaccurate synonyms.
-7. Keep the language appropriate for the subject and intended audience.
-8. Do not artificially change wording merely to reduce text overlap.
-9. Return only the revised text, without an introduction, commentary,
-   a list of changes, or quotation marks around the result.
-
-USER'S TEXT:
-{text_to_humanize}
-"""
-
             try:
-                with st.spinner(
-                    "Improving grammar, clarity, and sentence flow..."
-                ):
-                    response = client.models.generate_content(
-                        model="gemini-2.5-flash",
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            temperature=0.3
-                        )
+                with st.spinner("Improving your text..."):
+                    candidate = pure_python_humanizer(
+                        text_to_humanize,
+                        0.35,
+                        False,
+                        seed=random.randint(0, 10**6),
+                        include_nouns=True,
+                        neural=None,
+                        force_zero=False
                     )
 
-                    result = getattr(response, "text", None)
+                    if not isinstance(candidate, str) or not candidate.strip():
+                        candidate = text_to_humanize
 
-                    if not result or not result.strip():
-                        st.error(
-                            "The writing service returned an empty result. "
-                            "Please try again."
-                        )
-                    else:
-                        result = result.strip()
-                        st.session_state.humanizer_output = result
-                        st.success("Your revised text is ready.")
+                    candidate = clean_humanizer_repetitions(candidate)
 
-            except Exception:
-                st.error(
-                    "The rewrite could not be completed. Please check "
-                    "your server logs and API configuration, then try again."
-                )
+                    st.session_state.humanizer_output = candidate
+
+            except Exception as exc:
+                st.error("The Humanism Engine could not process this text.")
+                st.exception(exc)
 
     output = st.session_state.get("humanizer_output", "")
 
     if output:
         st.divider()
-        st.subheader("Revised Text")
+        st.subheader("Humanized Text")
 
-        st.text_area(
-            "Review and edit your result",
+        edited_output = st.text_area(
+            "Review and edit your result:",
             value=output,
-            height=300,
+            height=280,
             key="humanizer_result_editor"
         )
 
-        st.download_button(
-            label="Download revised text",
-            data=st.session_state.get(
-                "humanizer_result_editor",
-                output
-            ),
-            file_name="verso_revised_text.txt",
-            mime="text/plain",
-            use_container_width=True
-        )
+        col1, col2 = st.columns(2)
 
-        original_words = len(
-            st.session_state.humanizer_text_input.split()
-        )
-        revised_words = len(
-            st.session_state.get(
-                "humanizer_result_editor",
-                output
-            ).split()
-        )
+        with col1:
+            st.download_button(
+                "Download Text",
+                data=edited_output,
+                file_name="verso_humanized_text.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
 
-        m1, m2 = st.columns(2)
+        with col2:
+            st.button(
+                "Copy tip",
+                disabled=True,
+                help="Select the text above and press Ctrl+C."
+            )
 
-        with m1:
-            st.metric("Original word count", original_words)
+        original_words = len(text_to_humanize.split())
+        output_words = len(edited_output.split())
 
-        with m2:
-            st.metric("Revised word count", revised_words)
+        metric1, metric2 = st.columns(2)
+
+        with metric1:
+            st.metric("Original Words", original_words)
+
+        with metric2:
+            st.metric("Rewritten Words", output_words)
 
         st.caption(
-            "Review the revised text before using it, especially "
-            "for factual accuracy and academic work."
+            "Review the result for accuracy and readability. "
+            "The local rewriting engine uses dictionary-based substitutions "
+            "and cannot guarantee perfect grammar or meaning preservation."
         )
 
 # --- MODULE: CITATION GENERATOR ---
