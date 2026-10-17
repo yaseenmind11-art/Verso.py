@@ -789,10 +789,10 @@ with st.sidebar:
         "Study Assistant",
         "Grammar Checker",
         "Plagiarism Checker",
+        "Humanism Engine",
         "Citation Generator",
         "Time Tracker",
         "Word Counter",
-        "Humanism Engine",
         "Verso Translate",
         "Settings",
         
