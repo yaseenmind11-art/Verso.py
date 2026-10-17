@@ -1122,7 +1122,6 @@ elif choice == "Humanism Engine":
         )
 
         st.caption(
-            "This measures overlap with your input only. It is not a real "
             "Always read the output. "
             "Lowest score is not always the most readable one."
         )
