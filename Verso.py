@@ -1379,17 +1379,14 @@ elif choice == "Time Tracker":
 
 
 
+
 # --- OFFLINE ARGOS TRANSLATOR ---
 elif choice == "Verso Translate":
-    import streamlit as st
     import argostranslate.package
     import argostranslate.translate
 
     st.header("Verso Translator")
-    st.caption(
-        "Translation using locally installed language models. "
-        "The translation text is not sent to an online translation API."
-    )
+    st.caption("Translation powered by locally installed language models.")
 
     LANGUAGES = {
         "Arabic": "ar",
@@ -1398,55 +1395,7 @@ elif choice == "Verso Translate":
         "German": "de",
     }
 
-    # Download and install the required models once per app process.
-    @st.cache_resource(show_spinner="Preparing translation models...")
-    def prepare_argos_models():
-        argostranslate.package.update_package_index()
-        available_packages = (
-            argostranslate.package.get_available_packages()
-        )
-
-        required_pairs = [
-            ("en", "ar"),
-            ("ar", "en"),
-            ("en", "fr"),
-            ("fr", "en"),
-            ("en", "de"),
-            ("de", "en"),
-        ]
-
-        installed_pairs = {
-            (package.from_code, package.to_code)
-            for package in argostranslate.package.get_installed_packages()
-        }
-
-        for source_code, target_code in required_pairs:
-            if (source_code, target_code) in installed_pairs:
-                continue
-
-            package = next(
-                (
-                    item
-                    for item in available_packages
-                    if item.from_code == source_code
-                    and item.to_code == target_code
-                ),
-                None,
-            )
-
-            if package is None:
-                raise RuntimeError(
-                    f"No model found for {source_code} → {target_code}."
-                )
-
-            downloaded_path = package.download()
-            argostranslate.package.install_from_path(downloaded_path)
-
-            installed_pairs.add((source_code, target_code))
-
-        return True
-
-    # Initialise widget state before creating widgets.
+    # Initialise state before displaying the widgets.
     if "src_lang" not in st.session_state:
         st.session_state["src_lang"] = "English"
 
@@ -1459,111 +1408,155 @@ elif choice == "Verso Translate":
     if "translation_result" not in st.session_state:
         st.session_state["translation_result"] = ""
 
-    def swap_languages():
+    def verso_swap_languages():
         source = st.session_state["src_lang"]
         target = st.session_state["tgt_lang"]
         st.session_state["src_lang"] = target
         st.session_state["tgt_lang"] = source
 
-    try:
-        prepare_argos_models()
+    @st.cache_resource(show_spinner=False)
+    def verso_prepare_argos_models():
+        # Internet is needed for the initial model download.
+        argostranslate.package.update_package_index()
+        available = argostranslate.package.get_available_packages()
 
-        source_col, swap_col, target_col = st.columns([5, 1, 5])
+        required_pairs = [
+            ("en", "ar"),
+            ("ar", "en"),
+            ("en", "fr"),
+            ("fr", "en"),
+            ("en", "de"),
+            ("de", "en"),
+        ]
 
-        with source_col:
-            st.selectbox(
-                "Translate from",
-                options=list(LANGUAGES.keys()),
-                key="src_lang",
+        installed = {
+            (p.from_code, p.to_code)
+            for p in argostranslate.package.get_installed_packages()
+        }
+
+        for source_code, target_code in required_pairs:
+            if (source_code, target_code) in installed:
+                continue
+
+            package = next(
+                (
+                    p for p in available
+                    if p.from_code == source_code
+                    and p.to_code == target_code
+                ),
+                None,
             )
 
-        with swap_col:
-            st.write("")
-            st.write("")
-            st.button(
-                "⇄",
-                help="Swap source and target languages",
-                use_container_width=True,
-                on_click=swap_languages,
-            )
-
-        with target_col:
-            st.selectbox(
-                "Translate to",
-                options=list(LANGUAGES.keys()),
-                key="tgt_lang",
-            )
-
-        input_col, output_col = st.columns(2)
-
-        with input_col:
-            st.text_area(
-                "Text to translate",
-                height=250,
-                placeholder="Enter your text here...",
-                key="translator_input",
-            )
-
-      with output_col:
-    st.text_area(
-        "Translation",
-        height=250,
-        value=st.session_state.get("translation_result", ""),
-        disabled=True,
-    )
-
-        if st.button(
-            "Translate",
-            type="primary",
-            use_container_width=True,
-        ):
-            text_to_translate = (
-                st.session_state["translator_input"].strip()
-            )
-
-            source_code = LANGUAGES[
-                st.session_state["src_lang"]
-            ]
-            target_code = LANGUAGES[
-                st.session_state["tgt_lang"]
-            ]
-
-            if not text_to_translate:
-                st.warning("Please enter some text first.")
-
-            elif source_code == target_code:
-                st.session_state["translation_result"] = (
-                    text_to_translate
+            if package is None:
+                raise RuntimeError(
+                    "No downloadable model found for "
+                    f"{source_code} -> {target_code}. "
+                    "Check the available Argos language packages."
                 )
-                st.rerun()
 
-            else:
-                try:
-                    with st.spinner("Translating..."):
-                        translated_text = (
-                            argostranslate.translate.translate(
-                                text_to_translate,
-                                source_code,
-                                target_code,
-                            )
-                        )
+            model_path = package.download()
+            argostranslate.package.install_from_path(model_path)
+            installed.add((source_code, target_code))
 
-                    st.session_state["translation_result"] = (
-                        translated_text
+        return True
+
+    # Language selectors.
+    source_col, swap_col, target_col = st.columns([5, 1, 5])
+
+    with source_col:
+        st.selectbox(
+            "Translate from",
+            options=list(LANGUAGES.keys()),
+            key="src_lang",
+        )
+
+    with swap_col:
+        st.write("")
+        st.write("")
+        st.button(
+            "⇄",
+            help="Swap languages",
+            use_container_width=True,
+            on_click=verso_swap_languages,
+        )
+
+    with target_col:
+        st.selectbox(
+            "Translate to",
+            options=list(LANGUAGES.keys()),
+            key="tgt_lang",
+        )
+
+    # Input and output areas.
+    input_col, output_col = st.columns(2)
+
+    with input_col:
+        st.text_area(
+            "Text to translate",
+            height=250,
+            placeholder="Enter your text here...",
+            key="translator_input",
+        )
+
+    with output_col:
+        st.text_area(
+            "Translation",
+            height=250,
+            value=st.session_state.get("translation_result", ""),
+            disabled=True,
+        )
+
+    # Translate button.
+    if st.button(
+        "Translate",
+        type="primary",
+        use_container_width=True,
+    ):
+        input_text = st.session_state["translator_input"].strip()
+        source_code = LANGUAGES[st.session_state["src_lang"]]
+        target_code = LANGUAGES[st.session_state["tgt_lang"]]
+
+        if not input_text:
+            st.warning("Please enter some text first.")
+
+        elif source_code == target_code:
+            st.session_state["translation_result"] = input_text
+            st.rerun()
+
+        else:
+            try:
+                with st.spinner("Preparing local models and translating..."):
+                    verso_prepare_argos_models()
+
+                    result = argostranslate.translate.translate(
+                        input_text,
+                        source_code,
+                        target_code,
                     )
+
+                if not result or not result.strip():
+                    st.warning(
+                        "The translation was empty. Check that the "
+                        "required language models are installed."
+                    )
+                else:
+                    st.session_state["translation_result"] = result
                     st.rerun()
 
-                except Exception as translation_error:
-                    st.error("Translation failed.")
-                    st.code(str(translation_error))
+            except Exception as error:
+                st.error("Translation could not be completed.")
+                st.code(str(error))
+                st.info(
+                    "Check Manage app -> Logs for model download or "
+                    "installation errors. The first download requires "
+                    "an internet connection and enough server storage."
+                )
 
-    except Exception as setup_error:
-        st.error("Could not prepare the offline translator.")
-        st.write(str(setup_error))
-        st.info(
-            "Check requirements.txt, the Streamlit app logs, "
-            "and whether the server can download the language models."
-        )
+    st.caption(
+        "Your text is translated using local models after installation. "
+        "The first model download requires an internet connection."
+    )
+
 
 # --- MODULE: SETTINGS ---
 elif choice == "Settings":
