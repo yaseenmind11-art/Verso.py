@@ -1486,6 +1486,7 @@ elif choice == "Verso Translate":
                 disabled=True,
             )
 
+       
         if st.button("Translate", type="primary", use_container_width=True):
             text = st.session_state["translator_input"].strip()
             source = LANGUAGES[st.session_state["src_lang"]]
@@ -1493,14 +1494,21 @@ elif choice == "Verso Translate":
 
             if not text:
                 st.warning("Enter some text first.")
+
+            elif source == target:
+                st.session_state["translation_result"] = text
+                st.rerun()
+
             else:
                 try:
                     with st.spinner("Translating locally..."):
                         result = argostranslate.translate.translate(
                             text, source, target
                         )
-                    st.session_state["translator_output"] = result
+
+                    st.session_state["translation_result"] = result
                     st.rerun()
+
                 except Exception as error:
                     st.error("Translation failed.")
                     st.caption(str(error))
