@@ -486,6 +486,211 @@ def pure_python_humanizer(text: str, strength: float = 0.8,
     return result
 
 # --- 📜 CITATION GENERATOR ENGINE ---
+
+def generate_apa7_citation(source):
+    """Create an APA 7 reference using source metadata, without AI."""
+    import re
+    import html
+    import requests
+    from urllib.parse import urlparse, quote
+    from bs4 import BeautifulSoup
+
+    def clean(value):
+        return re.sub(r"\s+", " ", str(value or "")).strip()
+
+    def escape(value):
+        return html.escape(clean(value))
+
+    def initials(given):
+        parts = re.findall(r"[A-Za-zÀ-ÿ]+", clean(given))
+        return " ".join(part[0].upper() + "." for part in parts)
+
+    def format_authors(authors):
+        names = []
+        for author in authors:
+            family = clean(author.get("family"))
+            given = initials(author.get("given"))
+            if family:
+                names.append(f"{family}, {given}" if given else family)
+
+        if not names:
+            return ""
+
+        if len(names) <= 20:
+            return (
+                ", ".join(names[:-1]) + ", & " + names[-1]
+                if len(names) > 1 else names[0]
+            )
+
+        return ", ".join(names[:19]) + ", ... " + names[-1]
+
+    def italic(value):
+        return "<i>" + escape(value) + "</i>"
+
+    source = clean(source)
+    if not source:
+        return "Please enter a DOI or URL."
+
+    headers = {"User-Agent": "VersoCitationHelper/1.0"}
+    doi_match = re.search(
+        r"(?:doi\.org/|doi:\s*)(10\.\d{4,9}/\S+)",
+        source,
+        re.IGNORECASE
+    )
+    doi = doi_match.group(1).rstrip(".,;") if doi_match else ""
+
+    parsed = urlparse(source if "://" in source else "")
+    if not parsed.scheme and not doi:
+        return "Enter a complete URL or DOI, not only a source title."
+
+    # DOI: retrieve scholarly metadata from Crossref.
+    if doi or (
+        parsed.hostname and parsed.hostname.lower() in
+        ("doi.org", "www.doi.org")
+    ):
+        if not doi:
+            candidate = parsed.path.strip("/")
+            if re.match(r"^10\.\d{4,9}/", candidate):
+                doi = candidate
+
+        if doi:
+            try:
+                response = requests.get(
+                    "https://api.crossref.org/works/" + quote(doi, safe="/"),
+                    headers=headers,
+                    timeout=12
+                )
+                response.raise_for_status()
+                item = response.json()["message"]
+
+                title = clean((item.get("title") or [""])[0])
+                journal = clean((item.get("container-title") or [""])[0])
+                authors = format_authors(item.get("author", []))
+
+                date_data = (
+                    item.get("published-print")
+                    or item.get("published-online")
+                    or item.get("issued")
+                    or {}
+                )
+                date_parts = date_data.get("date-parts", [[]])[0]
+                year = str(date_parts[0]) if date_parts else "n.d."
+
+                volume = clean(item.get("volume"))
+                issue = clean(item.get("issue"))
+                pages = clean(item.get("page"))
+                article_number = clean(item.get("article-number"))
+                doi_value = clean(item.get("DOI") or doi)
+
+                if title and journal:
+                    result = (
+                        escape(authors) + " (" + year + "). "
+                        if authors else "(" + year + "). "
+                    )
+                    result += escape(title) + ". " + italic(journal)
+
+                    if volume:
+                        result += ", " + italic(volume)
+                    if issue:
+                        result += "(" + escape(issue) + ")"
+                    if pages:
+                        result += ", " + escape(pages)
+                    elif article_number:
+                        result += ", Article " + escape(article_number)
+
+                    result += "."
+                    if doi_value:
+                        doi_url = "https://doi.org/" + doi_value
+                        result += (
+                            ' <a href="' + html.escape(doi_url, quote=True)
+                            + '">' + escape(doi_url) + "</a>"
+                        )
+                    return result
+
+            except Exception:
+                pass
+
+    # URL: extract metadata from the webpage.
+    try:
+        page_url = source
+        if doi and not parsed.scheme:
+            page_url = "https://doi.org/" + doi
+
+        response = requests.get(
+            page_url,
+            headers={
+                **headers,
+                "User-Agent": "Mozilla/5.0 (compatible; VersoCitationHelper/1.0)"
+            },
+            timeout=12
+        )
+        response.raise_for_status()
+
+        final_url = response.url
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        def meta(*keys):
+            for key in keys:
+                tag = (
+                    soup.find("meta", attrs={"name": key})
+                    or soup.find("meta", attrs={"property": key})
+                )
+                if tag and tag.get("content"):
+                    return clean(tag["content"])
+            return ""
+
+        title = (
+            meta("citation_title", "og:title", "twitter:title")
+            or (
+                clean(soup.title.get_text(" ", strip=True))
+                if soup.title else ""
+            )
+        )
+        author = meta(
+            "citation_author", "author", "article:author"
+        )
+        date_text = meta(
+            "citation_publication_date",
+            "article:published_time",
+            "date",
+            "pubdate"
+        )
+        year_match = re.search(r"\b(?:19|20)\d{2}\b", date_text)
+        year = year_match.group(0) if year_match else "n.d."
+
+        site = (
+            meta("og:site_name", "application-name")
+            or urlparse(final_url).hostname
+            or ""
+        )
+        host = (urlparse(final_url).hostname or "").lower()
+        if host.endswith("wikipedia.org"):
+            site = "Wikipedia"
+
+        if not title:
+            return (
+                "Could not identify the page title. Check the URL or "
+                "enter the reference details manually."
+            )
+
+        result = escape(author) + ". " if author else ""
+        result += "(" + year + "). " + italic(title) + "."
+
+        if site and author.casefold() != site.casefold():
+            result += " " + escape(site) + "."
+
+        result += (
+            ' <a href="' + html.escape(final_url, quote=True) + '">'
+            + escape(final_url) + "</a>"
+        )
+        return result
+
+    except Exception:
+        return (
+            "Could not retrieve source metadata. Check the URL and your "
+            "internet connection, or enter the reference details manually."
+        )
+
 def generate_scribbr_citation(url, style_format):
     if not url: return "Please enter a valid URL or reference title."
 
@@ -1125,27 +1330,104 @@ elif choice == "Humanism Engine":
 
 # --- MODULE: CITATION GENERATOR ---
 elif choice == "Citation Generator":
+    import re
+    import html
+    import streamlit as st
+
     st.title("Citation Generator Workspace")
     st.markdown("### Generate Reference Citations")
+    st.caption("Rule-based citation formatting. No AI is used.")
 
-    cite_url = st.text_input("Enter Source URL, DOI, or Document Link:", value=st.session_state.citation_text_input, placeholder="https://example.com/article...", key="c_input")
+    cite_url = st.text_input(
+        "Enter Source URL or DOI:",
+        value=st.session_state.get("citation_text_input", ""),
+        placeholder="https://doi.org/10.xxxx/example",
+        key="c_input"
+    )
     st.session_state.citation_text_input = cite_url
 
-    active_style = st.session_state.get("selected_citation_format", "APA 7th Generation")
-    st.caption(f"Active Output Style: **{active_style}** (Change this inside control center settings)")
+    active_style = st.session_state.get(
+        "selected_citation_format",
+        "APA 7th Generation"
+    )
+    st.caption(f"Active Output Style: **{active_style}**")
 
-    if st.button("Generate Reference", use_container_width=True):
-        if cite_url:
-            with st.spinner("Processing source data attributes..."):
-                time.sleep(0.8)
-                output = generate_scribbr_citation(cite_url, active_style)
-                st.markdown(f'<div class="notebook-card"><b>Generated Entry:</b><br><br>{output}</div>', unsafe_allow_html=True)
-
-                if st.session_state.get("auto_bibliography", True):
-                    st.success("Reference entry systematically pushed to active Auto-Bibliography.")
+    if st.button(
+        "Generate Reference",
+        type="primary",
+        use_container_width=True
+    ):
+        if not cite_url.strip():
+            st.warning("Please enter a source URL or DOI.")
         else:
-            st.warning("Please provide a valid source link or title inside the input workspace.")
+            with st.spinner("Retrieving source metadata..."):
+                try:
+                    if active_style in (
+                        "APA 7th Generation",
+                        "APA 7th Edition",
+                        "APA 7"
+                    ):
+                        output = generate_apa7_citation(cite_url)
+                    else:
+                        output = generate_scribbr_citation(
+                            cite_url, active_style
+                        )
 
+                    st.session_state["latest_citation_output"] = output
+                    st.session_state["latest_citation_style"] = active_style
+
+                except Exception as exc:
+                    st.error("Could not generate the reference.")
+                    st.caption(str(exc))
+
+    output = st.session_state.get("latest_citation_output", "")
+
+    if output:
+        st.divider()
+        st.subheader("Generated Reference")
+
+        st.markdown(
+            '<div class="notebook-card" '
+            'style="line-height:1.9; overflow-wrap:anywhere;">'
+            + output
+            + "</div>",
+            unsafe_allow_html=True
+        )
+
+        plain_output = re.sub(
+            r'<a href="[^"]*">([^<]*)</a>',
+            r"\1",
+            output
+        )
+        plain_output = re.sub(r"</?i>", "", plain_output)
+        plain_output = html.unescape(plain_output)
+
+        st.text_area(
+            "Copyable Reference",
+            value=plain_output,
+            height=110,
+            key="citation_copy_area"
+        )
+
+        st.download_button(
+            "⬇️ Download Reference",
+            data=plain_output,
+            file_name="verso_reference.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+
+        if st.session_state.get("auto_bibliography", True):
+            st.success(
+                "Reference generated. Verify the source details "
+                "before using it in your bibliography."
+            )
+
+        st.caption(
+            "APA 7 references depend on the metadata available from the "
+            "source. Verify author names, dates, titles, and publication "
+            "details. Incomplete metadata may require manual correction."
+        )
 
 
 
