@@ -1478,13 +1478,15 @@ elif choice == "Verso Translate":
                 placeholder="Enter your text...",
             )
 
-        with output_col:
-            st.text_area(
-                "Translation",
-                height=250,
-                key="translator_output",
-                disabled=True,
-            )
+
+        st.text_area(
+        "Translation",
+        height=250,
+        value=st.session_state.get("translation_result", ""),
+        disabled=True,
+        key="translator_output",
+   )
+
 
        
         if st.button("Translate", type="primary", use_container_width=True):
@@ -1513,13 +1515,6 @@ elif choice == "Verso Translate":
                     st.error("Translation failed.")
                     st.caption(str(error))
 
-    except Exception as error:
-        st.error("Could not prepare the translation models.")
-        st.write(str(error))
-        st.info(
-            "Check the app logs and confirm argostranslate is listed "
-            "in requirements.txt."
-        )
 
         
 # --- MODULE: SETTINGS ---
