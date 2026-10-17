@@ -1004,92 +1004,78 @@ elif choice == "Plagiarism Checker":
                 else: st.success(f"Content Unique: {plag_percent}% Similarity"); st.balloons()
 
 
+    # --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
+    elif choice == "Humanism Engine":
+        import streamlit.components.v1 as components
+        import json
 
+        st.header("Verso Humanizer")
 
-                    if ov < best_ov:
-                        best, best_ov = cand, ov
-
-                    if best_ov == 0:
-                        break
-
-                st.session_state.humanizer_output = best
-
-    if st.session_state.humanizer_output:
-        st.subheader("Humanized")
-
-        # Display the generated output
-        st.write(
-            st.session_state.humanizer_output.replace("\n", "  \n")
+        text_to_humanize = st.text_area(
+            "Paste text here:",
+            value=st.session_state.humanizer_text_input,
+            height=200,
+            placeholder="Please input the text you want to humanize...",
+            key="humanizer_interactive_input"
         )
+        st.session_state.humanizer_text_input = text_to_humanize
 
-        # Copy button using the browser clipboard
-        copy_text = json.dumps(
-            st.session_state.humanizer_output
-        )
+        if st.button("Humanize Output Text", type="primary"):
+            if not text_to_humanize.strip():
+                st.warning("Please add some text first!")
+            else:
+                with st.spinner("Rewriting..."):
+                    best, best_ov = "", 101.0
 
-        components.html(
-            f"""
-            <div style="font-family: sans-serif; margin: 8px 0;">
-                <button
-                    id="verso-copy-humanism"
-                    style="
-                        background: white;
-                        color: #262730;
-                        border: 1px solid #D1D5DB;
-                        border-radius: 8px;
-                        padding: 8px 16px;
-                        font-size: 14px;
-                        font-weight: 500;
-                        cursor: pointer;
-                    "
-                > Copy</button>
-                <span id="verso-copy-status"
-                    style="margin-left: 10px; font-size: 13px;">
-                </span>
-            </div>
+                    for _ in range(5):
+                        cand = pure_python_humanizer(
+                            text_to_humanize,
+                            0.9,
+                            False,
+                            seed=random.randint(0, 10**6),
+                            include_nouns=True,
+                            neural=None,
+                            force_zero=True
+                        )
 
-            <script>
-                const copyButton =
-                    document.getElementById("verso-copy-humanism");
-                const status =
-                    document.getElementById("verso-copy-status");
-                const textToCopy = {copy_text};
+                        ov = ngram_overlap(text_to_humanize, cand)
 
-                copyButton.addEventListener("click", async () => {{
-                    try {{
-                        await navigator.clipboard.writeText(textToCopy);
-                        status.textContent = "Copied!";
-                    }} catch (error) {{
-                        const area = document.createElement("textarea");
-                        area.value = textToCopy;
-                        document.body.appendChild(area);
-                        area.select();
-                        const success =
-                            document.execCommand("copy");
-                        area.remove();
-                        status.textContent =
-                            success ? "Copied!" : "Copy failed";
-                    }}
-                }});
-            </script>
-            """,
-            height=50
-        )
+                        if ov < best_ov:
+                            best, best_ov = cand, ov
 
-        overlap = ngram_overlap(
-            st.session_state.humanizer_text_input,
-            st.session_state.humanizer_output
-        )
+                        if best_ov == 0:
+                            break
 
-        st.metric(
-            "Remaining 4-word overlap with original",
-            f"{overlap}%"
-        )
+                    st.session_state.humanizer_output = best
 
-        st.caption(
-            "Always read the output. "
-            "Lowest score is not always the most readable one."
-        )
+        if st.session_state.humanizer_output:
+            st.subheader("Humanized")
+            st.write(
+                st.session_state.humanizer_output.replace("\n", "  \n")
+            )
+
+            copy_text = json.dumps(st.session_state.humanizer_output)
+
+            components.html(
+                f"""
+                <div style="font-family: sans-serif; margin: 8px 0;">
+                    <button
+                        id="verso-copy-humanism"
+                        style="
+                            background: white;
+                            color: #333;
+                            border: 1px solid #ccc;
+                            border-radius: 8px;
+                            padding: 8px 14px;
+                            cursor: pointer;
+                        "
+                        onclick="navigator.clipboard.writeText({copy_text})">
+                        Copy Humanized Text
+                    </button>
+                </div>
+                """,
+                height=60
+            )
 
 # --- MODULE: CITATION GENERATOR ---
 elif choice == "Citation Generator":
@@ -1345,7 +1331,7 @@ elif choice == "Time Tracker":
 
 
 
-# --- OFFLINE ARGOS TRANSLATOR ---
+# --- Verso TRANSLATOR ---
 elif choice == "Verso Translate":
     import argostranslate.package
     import argostranslate.translate
