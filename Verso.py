@@ -1005,41 +1005,6 @@ elif choice == "Plagiarism Checker":
 
 
 
-# --- MODULE: HUMANISM ENGINE (PURE PYTHON) ---
-elif choice == "Humanism Engine":
-    import streamlit.components.v1 as components
-    import json
-
-    st.header("Verso Humanizer")
-
-    text_to_humanize = st.text_area(
-        "Paste text here:",
-        value=st.session_state.humanizer_text_input,
-        height=200,
-        placeholder="Please input the text you want to humanize...",
-        key="humanizer_interactive_input"
-    )
-    st.session_state.humanizer_text_input = text_to_humanize
-
-    if st.button("Humanize Output Text", type="primary"):
-        if not text_to_humanize.strip():
-            st.warning("Please add some text first!")
-        else:
-            with st.spinner("Rewriting..."):
-                best, best_ov = "", 101.0
-
-                for _ in range(5):
-                    cand = pure_python_humanizer(
-                        text_to_humanize,
-                        0.9,
-                        False,
-                        seed=random.randint(0, 10**6),
-                        include_nouns=True,
-                        neural=None,
-                        force_zero=True
-                    )
-
-                    ov = ngram_overlap(text_to_humanize, cand)
 
                     if ov < best_ov:
                         best, best_ov = cand, ov
